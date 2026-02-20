@@ -19,8 +19,11 @@ python manage.py collectstatic --noinput
 echo "== Starting gunicorn (preload) =="
 gunicorn config.wsgi:application \
   --bind 0.0.0.0:${PORT:-8080} \
-  --log-level debug \
+  --workers 1 \
+  --threads 2 \
+  --timeout 180 \
+  --graceful-timeout 180 \
+  --log-level info \
   --access-logfile - \
   --error-logfile - \
-  --capture-output \
-  --preload
+  --capture-output
