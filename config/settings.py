@@ -35,6 +35,7 @@ INSTALLED_APPS = [
 
     # storage (Backblaze B2 / S3)
     "storages",
+    "core",
 ]
 
 MIDDLEWARE = [
