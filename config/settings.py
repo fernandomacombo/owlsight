@@ -155,8 +155,8 @@ USE_B2 = all([AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_STORAGE_BUCKET_NAME,
 
 if USE_B2:
     STORAGES["default"] = {
-        "BACKEND": "storages.backends.s3.S3Storage",
-    }
+    "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+}
     # MEDIA_URL apenas "lógico"; URL real pode vir assinada via storage
     MEDIA_URL = "/media/"
 else:
@@ -168,3 +168,7 @@ else:
 # Outros
 # =========================
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+AWS_S3_ADDRESSING_STYLE = os.getenv("AWS_S3_ADDRESSING_STYLE", "path")
+AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "us-east-005")
+AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL", "https://s3.us-east-005.backblazeb2.com")
