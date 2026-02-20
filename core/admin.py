@@ -1,3 +1,6 @@
 from django.contrib import admin
+from .models import UploadTest
 
-# Register your models here.
+@admin.register(UploadTest)
+class UploadTestAdmin(admin.ModelAdmin):
+    list_display = ("id", "title", "created_at")
