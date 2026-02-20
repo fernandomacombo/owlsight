@@ -21,8 +21,8 @@ gunicorn config.wsgi:application \
   --bind 0.0.0.0:${PORT:-8080} \
   --workers 1 \
   --threads 2 \
-  --timeout 180 \
-  --graceful-timeout 180 \
+  --timeout 200 \
+  --graceful-timeout 200 \
   --log-level info \
   --access-logfile - \
   --error-logfile - \
