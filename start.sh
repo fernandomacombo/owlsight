@@ -13,10 +13,11 @@ python manage.py migrate --noinput
 echo "== Collectstatic =="
 python manage.py collectstatic --noinput
 
-echo "== Starting gunicorn =="
+echo "== Starting gunicorn (preload) =="
 gunicorn config.wsgi:application \
   --bind 0.0.0.0:${PORT:-8080} \
   --log-level debug \
   --access-logfile - \
   --error-logfile - \
-  --capture-output
+  --capture-output \
+  --preload
