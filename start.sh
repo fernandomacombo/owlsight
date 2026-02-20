@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+echo "== Python version =="
+python --version
+
 echo "== Running migrate =="
 python manage.py migrate --noinput
 
