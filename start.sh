@@ -10,6 +10,9 @@ python manage.py check
 echo "== Running migrate =="
 python manage.py migrate --noinput
 
+echo "== Ensuring admin =="
+python manage.py ensure_admin
+
 echo "== Collectstatic =="
 python manage.py collectstatic --noinput
 
