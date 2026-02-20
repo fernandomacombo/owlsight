@@ -177,3 +177,24 @@ AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL", "https://s3.us-east-005.b
 # Upload limits (ajuste conforme seu plano)
 DATA_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024      # 200MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024      # 200MB
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {"class": "logging.StreamHandler"},
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": True,
+        },
+        "django.security": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": True,
+        },
+    },
+}
