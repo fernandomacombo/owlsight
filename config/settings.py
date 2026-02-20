@@ -173,3 +173,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AWS_S3_ADDRESSING_STYLE = os.getenv("AWS_S3_ADDRESSING_STYLE", "path")
 AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "us-east-005")
 AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL", "https://s3.us-east-005.backblazeb2.com")
+
+# Upload limits (ajuste conforme seu plano)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024      # 100MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024      # 100MB
