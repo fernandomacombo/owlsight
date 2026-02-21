@@ -260,15 +260,15 @@ AXES_ENABLE_ACCESS_FAILURE_LOG = True
 
 
 # =========================
-# CSP (django-csp)
+# CSP (django-csp >= 4.0) — formato novo
 # =========================
-# ✅ Formato novo (django-csp >= 4)
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
         "connect-src": ("'self'",),
         "img-src": ("'self'", "data:", "blob:"),
         "font-src": ("'self'", "data:"),
+        # Tailwind CDN + inline (por causa do tailwind CDN e pequenos scripts)
         "script-src": ("'self'", "https://cdn.tailwindcss.com", "'unsafe-inline'"),
         "style-src": ("'self'", "'unsafe-inline'"),
     }
