@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "storages",
 
     # apps do projeto
+     "frontend",
     "books",
     "reading",
     "accounts",
