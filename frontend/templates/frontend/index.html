@@ -16,67 +16,33 @@
     :root{
       --bg:#070707;
       --text: rgba(255,255,255,.92);
-      --muted: rgba(255,255,255,.62);
+      --muted: rgba(255,255,255,.65);
+      --muted2: rgba(255,255,255,.45);
       --stroke: rgba(255,255,255,.10);
       --red:#E10600;
       --red2:#8A0000;
+      --panel: rgba(0,0,0,.55);
     }
 
     html,body{ height:100%; background:var(--bg); color:var(--text); }
     body{ overflow-x:hidden; }
 
-    /* ====== NAV ====== */
-    .nav-glass{
-      background: linear-gradient(180deg, rgba(0,0,0,.70), rgba(0,0,0,.15));
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+    /* ===== NAV ===== */
+    .nav{
+      position:fixed; top:0; left:0; right:0; z-index:50;
+      background: linear-gradient(180deg, rgba(0,0,0,.85), rgba(0,0,0,.25));
       border-bottom: 1px solid rgba(255,255,255,.06);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
+    .nav-link{
+      color: rgba(255,255,255,.75);
+      transition: color .15s ease, transform .15s ease;
+    }
+    .nav-link:hover{ color: rgba(255,255,255,.95); transform: translateY(-1px); }
 
-    /* ====== HERO (Netflix banner) ====== */
-    .hero{
-      position: relative;
-      height: 100vh;           /* ocupa toda tela */
-      min-height: 640px;
-      display: grid;
-      align-items: end;
-    }
-    @media (max-width: 640px){
-      .hero{ min-height: 720px; }
-    }
-
-    .hero-bg{
-      position:absolute; inset:0;
-      background:
-        radial-gradient(900px 520px at 15% 10%, rgba(225,6,0,.25), transparent 60%),
-        radial-gradient(700px 420px at 85% 15%, rgba(138,0,0,.20), transparent 60%),
-        #070707;
-      overflow:hidden;
-    }
-    .hero-bg img{
-      width:100%; height:100%;
-      object-fit: cover;
-      opacity:.55;
-      filter: saturate(1.08) contrast(1.08);
-      transform: scale(1.04);
-      animation: slowZoom 10s ease-in-out infinite alternate;
-    }
-    @keyframes slowZoom{
-      from{ transform: scale(1.04) translateY(0); }
-      to{ transform: scale(1.10) translateY(1%); }
-    }
-
-    /* Gradientes Netflix */
-    .hero-shade{
-      position:absolute; inset:0;
-      background:
-        linear-gradient(90deg, rgba(7,7,7,.95) 0%, rgba(7,7,7,.55) 45%, rgba(7,7,7,.08) 100%),
-        linear-gradient(180deg, rgba(7,7,7,.12) 0%, rgba(7,7,7,.85) 80%, rgba(7,7,7,1) 100%);
-    }
-
-    /* ====== BUTTONS ====== */
     .btn-red{
-      background: linear-gradient(135deg, var(--red), var(--red2));
+      background: linear-gradient(135deg,var(--red),var(--red2));
       border: 1px solid rgba(255,255,255,.12);
       box-shadow: 0 18px 50px rgba(0,0,0,.55);
     }
@@ -87,19 +53,97 @@
       -webkit-backdrop-filter: blur(10px);
     }
 
-    /* ====== ROWS ====== */
+    /* ===== HERO ===== */
+    .hero{
+      min-height: 100vh;
+      position: relative;
+      display:flex;
+      align-items: center;
+      padding-top: 84px; /* nav height */
+    }
+
+    .hero-bg{
+      position:absolute; inset:0;
+      overflow:hidden;
+      background: #050505;
+    }
+    .hero-bg .bg-img{
+      position:absolute; inset:-2%;
+      width:104%; height:104%;
+      object-fit: cover;
+      filter: blur(10px) saturate(1.1) contrast(1.05);
+      opacity:.35;
+      transform: scale(1.10);
+      animation: slowMove 10s ease-in-out infinite alternate;
+    }
+    @keyframes slowMove{
+      from{ transform: scale(1.10) translateY(0px); }
+      to  { transform: scale(1.16) translateY(10px); }
+    }
+
+    .hero-shade{
+      position:absolute; inset:0;
+      background:
+        radial-gradient(900px 520px at 78% 35%, rgba(225,6,0,.20), transparent 60%),
+        radial-gradient(700px 420px at 20% 18%, rgba(138,0,0,.18), transparent 60%),
+        linear-gradient(90deg, rgba(7,7,7,.95) 0%, rgba(7,7,7,.72) 45%, rgba(7,7,7,.15) 100%),
+        linear-gradient(180deg, rgba(7,7,7,.25) 0%, rgba(7,7,7,.95) 85%, rgba(7,7,7,1) 100%);
+    }
+
+    .fade-up{ animation: fadeUp .55s ease both; }
+    @keyframes fadeUp{
+      from{ opacity:0; transform: translateY(10px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+
+    /* Book “3D-ish” */
+    .book-wrap{
+      position: relative;
+      width: min(420px, 80vw);
+      aspect-ratio: 3/4;
+      transform: translateZ(0);
+      filter: drop-shadow(0 30px 70px rgba(0,0,0,.75));
+    }
+    .book{
+      width:100%; height:100%;
+      border-radius: 18px;
+      overflow:hidden;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.06);
+      transform: perspective(900px) rotateY(-14deg) rotateX(2deg);
+      animation: bookFloat 4.8s ease-in-out infinite;
+    }
+    @keyframes bookFloat{
+      0%,100%{ transform: perspective(900px) rotateY(-14deg) rotateX(2deg) translateY(0); }
+      50%{ transform: perspective(900px) rotateY(-12deg) rotateX(1deg) translateY(-10px); }
+    }
+    .book img{ width:100%; height:100%; object-fit: cover; display:block; }
+    .book:after{
+      content:"";
+      position:absolute; inset:-35% -50%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.16), transparent);
+      transform: rotate(12deg);
+      animation: shine 2.8s ease-in-out infinite;
+      pointer-events:none;
+    }
+    @keyframes shine{
+      from{ transform: translateX(-28%) rotate(12deg); opacity:.25; }
+      to  { transform: translateX(28%) rotate(12deg); opacity:.25; }
+    }
+
+    /* ===== ROWS ===== */
     .row{
       display:flex;
       gap: 14px;
       overflow-x:auto;
-      padding-bottom: 12px;
+      padding: 8px 2px 14px;
       scroll-snap-type: x mandatory;
     }
     .row::-webkit-scrollbar{ height: 10px; }
     .row::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.14); border-radius: 999px; }
     .row::-webkit-scrollbar-track{ background: rgba(255,255,255,.04); border-radius: 999px; }
 
-    .card{
+    .tile{
       width: 180px;
       flex: 0 0 auto;
       scroll-snap-align: start;
@@ -107,42 +151,31 @@
       transform: translateZ(0);
       transition: transform .18s ease;
     }
-    @media (min-width: 640px){ .card{ width: 210px; } }
-    @media (min-width: 1024px){ .card{ width: 230px; } }
+    @media (min-width:640px){ .tile{ width: 210px; } }
+    @media (min-width:1024px){ .tile{ width: 230px; } }
 
     .poster{
-      height: 280px;
+      height: 300px;
       border-radius: 14px;
-      overflow: hidden;
+      overflow:hidden;
       border: 1px solid rgba(255,255,255,.10);
-      background: rgba(255,255,255,.05);
+      background: rgba(255,255,255,.06);
     }
-    .poster img{
-      width:100%; height:100%;
-      object-fit: cover;
-      display:block;
-    }
+    .poster img{ width:100%; height:100%; object-fit: cover; display:block; }
 
-    .card:hover{ transform: scale(1.08); z-index: 30; }
-    .info{
-      position:absolute;
-      left:0; right:0;
-      bottom:-10px;
+    .tile:hover{ transform: scale(1.10); z-index: 30; }
+    .tile-info{
+      position:absolute; left:0; right:0; bottom:-8px;
       transform: translateY(16px);
       opacity:0;
       transition: opacity .18s ease, transform .18s ease;
       padding: 10px;
       border-radius: 14px;
-      background: rgba(0,0,0,.85);
+      background: rgba(0,0,0,.86);
       border: 1px solid rgba(255,255,255,.10);
       box-shadow: 0 20px 60px rgba(0,0,0,.65);
-      pointer-events:none;
     }
-    .card:hover .info{
-      opacity:1;
-      transform: translateY(0);
-      pointer-events:auto;
-    }
+    .tile:hover .tile-info{ opacity:1; transform: translateY(0); }
 
     .clamp-2{
       display:-webkit-box;
@@ -151,13 +184,14 @@
       overflow:hidden;
     }
 
-    /* ====== small subtle motion ====== */
-    .fade-up{
-      animation: fadeUp .6s ease both;
-    }
-    @keyframes fadeUp{
-      from{ opacity:0; transform: translateY(10px); }
-      to{ opacity:1; transform: translateY(0); }
+    /* Premium strip */
+    .premium-strip{
+      border: 1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(800px 420px at 80% 50%, rgba(225,6,0,.25), transparent 60%),
+        rgba(255,255,255,.04);
+      border-radius: 18px;
+      overflow:hidden;
     }
 
     @media (prefers-reduced-motion: reduce){
@@ -169,58 +203,52 @@
 <body>
 
   <!-- NAV -->
-  <header class="fixed top-0 left-0 right-0 z-50 nav-glass">
+  <header class="nav">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-[72px] flex items-center justify-between">
-      <!-- Logo livre -->
+      <!-- logo livre (sem caixa) -->
       <a href="{% url 'frontend:home' %}" class="flex items-center gap-3">
         <img src="{% static 'frontend/images/logo.png' %}" alt="Owlsight"
-             class="h-10 w-auto object-contain"
+             class="h-9 w-auto object-contain"
              onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=&quot;color:white;font-weight:900;font-size:20px&quot;>Owlsight</span>';">
       </a>
 
-      <nav class="hidden md:flex items-center gap-6 text-sm text-white/80">
-        <a href="#mais-lidos" class="hover:text-white">Mais lidos</a>
-        <a href="#mais-recentes" class="hover:text-white">Mais recentes</a>
-        <a href="#todos" class="hover:text-white">Todos</a>
-
+      <nav class="hidden md:flex items-center gap-7 text-sm">
+        <a class="nav-link" href="{% url 'frontend:home' %}">Início</a>
+        <a class="nav-link" href="#todos">Explorar</a>
         {% if user.is_authenticated %}
-          <a href="{% url 'frontend:favorites' %}" class="hover:text-white">Favoritos</a>
-          <a href="{% url 'frontend:account' %}" class="hover:text-white">Minha conta</a>
-          {% if user.is_staff or user.is_superuser %}
-            <a href="/admin/" class="hover:text-white">Admin</a>
-          {% endif %}
-          <form method="post" action="{% url 'frontend:logout' %}">
-            {% csrf_token %}
-            <button class="px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10">Sair</button>
-          </form>
+          <a class="nav-link" href="{% url 'frontend:account' %}">Minha biblioteca</a>
         {% else %}
-          <a href="{% url 'frontend:login' %}" class="hover:text-white">Login</a>
-          <a href="{% url 'frontend:register' %}" class="px-3 py-2 rounded-lg btn-red font-semibold">Criar conta</a>
+          <a class="nav-link" href="{% url 'frontend:login' %}">Minha biblioteca</a>
         {% endif %}
+        <a class="nav-link" href="#premium">Premium</a>
       </nav>
 
-      <button id="menuBtn" class="md:hidden px-3 py-2 rounded-lg bg-white/10 border border-white/10">
-        ☰
-      </button>
+      <div class="hidden md:flex items-center gap-3">
+        <a href="#premium" class="px-4 py-2 rounded-lg btn-red font-semibold">Upgrade</a>
+
+        {% if user.is_authenticated %}
+          <a href="{% url 'frontend:account' %}" class="flex items-center gap-2 px-2 py-2 rounded-lg bg-white/5 border border-white/10">
+            <div class="w-8 h-8 rounded-full bg-white/10 grid place-items-center text-xs">👤</div>
+            <span class="text-sm text-white/80 hidden lg:inline">{{ user.username|default:"Conta" }}</span>
+            <span class="text-white/60">▾</span>
+          </a>
+        {% else %}
+          <a href="{% url 'frontend:login' %}" class="px-4 py-2 rounded-lg bg-white/10 border border-white/10">Login</a>
+        {% endif %}
+      </div>
+
+      <button id="menuBtn" class="md:hidden px-3 py-2 rounded-lg bg-white/10 border border-white/10">☰</button>
     </div>
 
     <div id="mobileMenu" class="hidden md:hidden border-t border-white/10 bg-black/80">
       <div class="mx-auto max-w-7xl px-4 py-3 grid gap-2 text-sm">
-        <a href="#mais-lidos" class="py-2">Mais lidos</a>
-        <a href="#mais-recentes" class="py-2">Mais recentes</a>
-        <a href="#todos" class="py-2">Todos</a>
-
+        <a href="{% url 'frontend:home' %}" class="py-2">Início</a>
+        <a href="#todos" class="py-2">Explorar</a>
+        <a href="#premium" class="py-2">Premium</a>
         {% if user.is_authenticated %}
-          <a href="{% url 'frontend:favorites' %}" class="py-2">Favoritos</a>
-          <a href="{% url 'frontend:account' %}" class="py-2">Minha conta</a>
-          {% if user.is_staff or user.is_superuser %}
-            <a href="/admin/" class="py-2">Admin</a>
-          {% endif %}
-          <form method="post" action="{% url 'frontend:logout' %}">
-            {% csrf_token %}
-            <button class="w-full text-left py-2">Sair</button>
-          </form>
+          <a href="{% url 'frontend:account' %}" class="py-2">Minha biblioteca</a>
         {% else %}
+          <a href="{% url 'frontend:login' %}" class="py-2">Minha biblioteca</a>
           <a href="{% url 'frontend:login' %}" class="py-2">Login</a>
           <a href="{% url 'frontend:register' %}" class="py-2">Criar conta</a>
         {% endif %}
@@ -232,58 +260,76 @@
   <section class="hero">
     <div class="hero-bg">
       {% if featured and featured.cover %}
-        <img src="{{ featured.cover.url }}" alt="{{ featured.title }}">
+        <img class="bg-img" src="{{ featured.cover.url }}" alt="{{ featured.title }}">
       {% else %}
-        <!-- fallback sem quebrar -->
-        <img src="{% static 'frontend/images/hero_fallback.jpg' %}" alt="Owlsight">
+        <!-- se você não tiver este arquivo, pode criar depois (qualquer imagem escura) -->
+        <img class="bg-img" src="{% static 'frontend/images/hero_fallback.jpg' %}" alt="Owlsight">
       {% endif %}
     </div>
     <div class="hero-shade"></div>
 
-    <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-12">
-      <div class="max-w-2xl fade-up">
-        <div class="text-xs text-white/70">
-          {% if featured %}
-            {% if featured.book_type == "premium" %}💎 Premium{% else %}🎁 Free{% endif %}
-            {% if featured.genre %} • {{ featured.genre }}{% endif %}
-          {% else %}
-            Biblioteca inteligente
-          {% endif %}
+    <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
+      <div class="grid lg:grid-cols-2 gap-10 items-center">
+        <!-- LEFT -->
+        <div class="fade-up max-w-2xl">
+          <div class="text-sm text-white/70">
+            {% if featured %}
+              {{ featured.author|default:"" }}
+              {% if featured.genre %} • {{ featured.genre }}{% endif %}
+              {% if featured.book_type == "premium" %} • 💎 Premium{% else %} • 🎁 Free{% endif %}
+            {% else %}
+              Biblioteca inteligente — estilo cinema
+            {% endif %}
+          </div>
+
+          <h1 class="mt-4 text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight">
+            {% if featured %}{{ featured.title }}{% else %}Owlsight{% endif %}
+          </h1>
+
+          <p class="mt-4 text-white/70 text-base sm:text-lg clamp-2">
+            {% if featured and featured.description %}
+              {{ featured.description }}
+            {% else %}
+              Explore livros em um layout cinematográfico moderno, com recomendações e leitura fluida.
+            {% endif %}
+          </p>
+
+          <!-- rating visual simples (estático por enquanto) -->
+          <div class="mt-4 flex items-center gap-1 text-yellow-400">
+            ★ ★ ★ ★ <span class="text-white/30">★</span>
+            <span class="text-white/50 text-sm ml-2">4.0</span>
+          </div>
+
+          <div class="mt-6 flex flex-col sm:flex-row gap-3">
+            {% if featured %}
+              <a href="{% url 'frontend:read' featured.id 1 %}" class="px-6 py-3 rounded-lg btn-red font-bold text-center">
+                Ler Agora
+              </a>
+              <a href="#todos" class="px-6 py-3 rounded-lg btn-ghost font-semibold text-center">
+                Ver Detalhes
+              </a>
+            {% else %}
+              <a href="/admin/" class="px-6 py-3 rounded-lg btn-red font-bold text-center">Adicionar Livros</a>
+              <a href="#todos" class="px-6 py-3 rounded-lg btn-ghost font-semibold text-center">Explorar</a>
+            {% endif %}
+          </div>
+
+          <div class="mt-4 text-xs text-white/45">
+            Dica: para capas não quebrarem, configure MEDIA_URL/MEDIA_ROOT corretamente.
+          </div>
         </div>
 
-        <h1 class="mt-3 text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight">
-          {% if featured %}{{ featured.title }}{% else %}Owlsight{% endif %}
-        </h1>
-
-        <p class="mt-4 text-white/70 text-base sm:text-lg clamp-2">
-          {% if featured and featured.description %}
-            {{ featured.description }}
-          {% else %}
-            Explore livros em um layout cinematográfico e moderno — estilo Netflix.
-          {% endif %}
-        </p>
-
-        <div class="mt-6 flex flex-col sm:flex-row gap-3">
-          {% if featured %}
-            <a href="{% url 'frontend:read' featured.id 1 %}"
-               class="px-6 py-3 rounded-lg font-bold btn-red text-center">
-              ▶ Ler agora
-            </a>
-          {% else %}
-            <a href="/admin/"
-               class="px-6 py-3 rounded-lg font-bold btn-red text-center">
-              Abrir Admin
-            </a>
-          {% endif %}
-
-          <a href="#todos"
-             class="px-6 py-3 rounded-lg font-semibold btn-ghost text-center">
-            ⓘ Ver catálogo
-          </a>
-        </div>
-
-        <div class="mt-4 text-xs text-white/45">
-          Livros no banco: {{ db_books_count|default:"0" }}
+        <!-- RIGHT (capa grande) -->
+        <div class="hidden lg:flex justify-end">
+          <div class="book-wrap fade-up">
+            <div class="book relative">
+              {% if featured and featured.cover %}
+                <img src="{{ featured.cover.url }}" alt="{{ featured.title }}">
+              {% else %}
+                <div class="w-full h-full grid place-items-center text-6xl bg-white/5">📕</div>
+              {% endif %}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -293,16 +339,16 @@
   <main class="relative -mt-10 pb-16">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-      <!-- ROW: MOST READ -->
-      <section id="mais-lidos" class="pt-10">
+      <!-- RECOMMENDED -->
+      <section class="pt-10">
         <div class="flex items-center justify-between">
-          <h2 class="text-xl sm:text-2xl font-black">Mais lidos</h2>
-          <a href="#todos" class="text-sm text-white/60 hover:text-white">Ver todos →</a>
+          <h2 class="text-xl sm:text-2xl font-black">Recomendados para você</h2>
+          <a href="#todos" class="text-sm text-white/60 hover:text-white">Ver tudo →</a>
         </div>
 
         <div class="row mt-4">
-          {% for b in most_read %}
-            <article class="card">
+          {% for b in recommended %}
+            <article class="tile">
               <div class="poster">
                 {% if b.cover %}
                   <img src="{{ b.cover.url }}" alt="{{ b.title }}">
@@ -311,78 +357,80 @@
                 {% endif %}
               </div>
 
-              <div class="info">
+              <div class="tile-info">
                 <div class="text-sm font-extrabold clamp-2">{{ b.title }}</div>
                 <div class="text-xs text-white/70 mt-1">
                   {{ b.author|default:"" }}{% if b.genre %} • {{ b.genre }}{% endif %}
                 </div>
-                <p class="text-xs text-white/70 mt-2 clamp-2">
-                  {{ b.description|default:""|truncatechars:120 }}
-                </p>
                 <div class="mt-3 flex gap-2">
-                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 px-3 py-2 rounded-lg btn-red text-center text-sm font-semibold">
-                    Ler
-                  </a>
-                  <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">
-                    ♡
-                  </a>
+                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 px-3 py-2 rounded-lg btn-red text-center text-sm font-semibold">Ler</a>
+                  <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">♡</a>
                 </div>
               </div>
             </article>
           {% empty %}
-            <div class="text-white/60 text-sm">Ainda não há livros.</div>
+            <div class="text-white/60 text-sm">Sem recomendações por enquanto.</div>
           {% endfor %}
         </div>
       </section>
 
-      <!-- ROW: MOST RECENT -->
-      <section id="mais-recentes" class="pt-10">
+      <!-- MOST READ -->
+      <section class="pt-10">
         <div class="flex items-center justify-between">
-          <h2 class="text-xl sm:text-2xl font-black">Mais recentes</h2>
-          <a href="#todos" class="text-sm text-white/60 hover:text-white">Ver todos →</a>
+          <h2 class="text-xl sm:text-2xl font-black">Mais lidos</h2>
+          <a href="#todos" class="text-sm text-white/60 hover:text-white">Ver tudo →</a>
         </div>
 
         <div class="row mt-4">
-          {% for b in most_recent %}
-            <article class="card">
+          {% for b in most_read %}
+            <article class="tile">
               <div class="poster">
                 {% if b.cover %}
                   <img src="{{ b.cover.url }}" alt="{{ b.title }}">
                 {% else %}
-                  <div class="h-full grid place-items-center text-4xl">🆕</div>
+                  <div class="h-full grid place-items-center text-4xl">🔥</div>
                 {% endif %}
               </div>
 
-              <div class="info">
+              <div class="tile-info">
                 <div class="text-sm font-extrabold clamp-2">{{ b.title }}</div>
                 <div class="text-xs text-white/70 mt-1">
                   {{ b.author|default:"" }}{% if b.genre %} • {{ b.genre }}{% endif %}
                 </div>
-                <p class="text-xs text-white/70 mt-2 clamp-2">
-                  {{ b.description|default:""|truncatechars:120 }}
-                </p>
                 <div class="mt-3 flex gap-2">
-                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 px-3 py-2 rounded-lg btn-red text-center text-sm font-semibold">
-                    Ler
-                  </a>
-                  <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">
-                    ♡
-                  </a>
+                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 px-3 py-2 rounded-lg btn-red text-center text-sm font-semibold">Ler</a>
+                  <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">♡</a>
                 </div>
               </div>
             </article>
           {% empty %}
-            <div class="text-white/60 text-sm">Sem livros recentes.</div>
+            <div class="text-white/60 text-sm">Sem livros ainda.</div>
           {% endfor %}
         </div>
       </section>
 
-      <!-- GRID: ALL -->
+      <!-- PREMIUM STRIP -->
+      <section id="premium" class="pt-12">
+        <div class="premium-strip p-6 sm:p-8 grid lg:grid-cols-2 gap-6 items-center">
+          <div>
+            <h3 class="text-2xl sm:text-3xl font-black">Seja Premium</h3>
+            <p class="text-white/70 mt-2">
+              Acesso ilimitado a todos os livros Premium, recursos avançados e recomendações completas.
+            </p>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-3 lg:justify-end">
+            <a href="#" class="px-6 py-3 rounded-lg btn-red font-bold text-center">Assinar Agora</a>
+            <a href="#todos" class="px-6 py-3 rounded-lg btn-ghost font-semibold text-center">Ver catálogo</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ALL BOOKS -->
       <section id="todos" class="pt-12">
         <div class="flex items-end justify-between gap-4">
           <div>
-            <h2 class="text-xl sm:text-2xl font-black">Todos os livros</h2>
-            <p class="text-sm text-white/60 mt-1">Catálogo vindo do banco de dados.</p>
+            <h2 class="text-xl sm:text-2xl font-black">Explorar</h2>
+            <p class="text-sm text-white/60 mt-1">Todos os livros no banco.</p>
           </div>
         </div>
 
@@ -402,13 +450,10 @@
                 <div class="text-xs text-white/60 mt-1">
                   {{ b.author|default:"" }}{% if b.genre %} • {{ b.genre }}{% endif %}
                 </div>
+
                 <div class="mt-3 flex gap-2">
-                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 px-3 py-2 rounded-lg btn-red text-center text-sm font-semibold">
-                    Ler
-                  </a>
-                  <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">
-                    ♡
-                  </a>
+                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 px-3 py-2 rounded-lg btn-red text-center text-sm font-semibold">Ler</a>
+                  <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">♡</a>
                 </div>
               </div>
             </article>
