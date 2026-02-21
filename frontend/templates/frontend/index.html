@@ -31,12 +31,13 @@
     body{ overflow-x:hidden; }
     html { scroll-behavior: smooth; }
 
+    /* Netflix-ish cinematic background + motion */
     .cinema-bg{
       background:
-        radial-gradient(1100px 560px at 15% 0%, rgba(225,6,0,.18), transparent 60%),
-        radial-gradient(980px 520px at 85% 10%, rgba(138,0,0,.14), transparent 55%),
-        radial-gradient(760px 420px at 50% 85%, rgba(255,255,255,.06), transparent 65%),
-        linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.35)),
+        radial-gradient(1200px 600px at 15% 0%, rgba(225,6,0,.22), transparent 60%),
+        radial-gradient(1000px 520px at 85% 10%, rgba(138,0,0,.16), transparent 55%),
+        radial-gradient(800px 520px at 50% 90%, rgba(255,255,255,.06), transparent 60%),
+        linear-gradient(180deg, rgba(0,0,0,.15), rgba(0,0,0,.65)),
         var(--bg);
     }
 
@@ -44,7 +45,7 @@
       content:"";
       position:fixed; inset:-20%;
       background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
-      opacity:.07;
+      opacity:.08;
       pointer-events:none;
       transform:translateZ(0);
       animation: grainMove 10s linear infinite;
@@ -66,15 +67,13 @@
     .glow{
       box-shadow:
         0 0 0 1px rgba(255,255,255,.06),
-        0 18px 60px rgba(0,0,0,.55),
-        0 0 80px rgba(225,6,0,.10);
+        0 18px 60px rgba(0,0,0,.60),
+        0 0 90px rgba(225,6,0,.12);
     }
-
     .pill{
-      border:1px solid rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.04);
     }
-
     .u{ position:relative; }
     .u:after{
       content:"";
@@ -85,28 +84,89 @@
     }
     .u:hover:after{ width:100%; }
 
-    .shimmer{ position:relative; overflow:hidden; }
-    .shimmer:after{
-      content:"";
-      position:absolute; inset:-120% -60%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
-      transform: rotate(12deg);
-      animation: shimmer 2.8s ease-in-out infinite;
-      opacity:.45;
+    /* HERO spotlight animation */
+    .spotlight{
+      position:absolute; inset:-20%;
+      background:
+        radial-gradient(420px 240px at 30% 40%, rgba(225,6,0,.25), transparent 60%),
+        radial-gradient(520px 320px at 70% 30%, rgba(138,0,0,.18), transparent 62%),
+        radial-gradient(520px 340px at 55% 75%, rgba(255,255,255,.08), transparent 66%);
+      filter: blur(1px);
+      animation: drift 10s ease-in-out infinite;
+      opacity: .9;
+      pointer-events:none;
     }
-    @keyframes shimmer{
-      0%{ transform: translateX(-30%) rotate(12deg); }
-      100%{ transform: translateX(30%) rotate(12deg); }
+    @keyframes drift{
+      0%{ transform: translate(0,0) scale(1); }
+      50%{ transform: translate(-1.5%, 1%) scale(1.02); }
+      100%{ transform: translate(0,0) scale(1); }
     }
 
-    @keyframes floaty{
-      0%,100%{ transform: translateY(0px); }
-      50%{ transform: translateY(-10px); }
+    /* Row scrolling */
+    .row{
+      display:flex;
+      gap: .9rem;
+      overflow-x:auto;
+      padding-bottom: 10px;
+      scroll-snap-type: x mandatory;
     }
-    .floaty{ animation: floaty 4.5s ease-in-out infinite; }
+    .row::-webkit-scrollbar{ height: 10px; }
+    .row::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.10); border-radius: 999px; }
+    .row::-webkit-scrollbar-track{ background: rgba(255,255,255,.04); border-radius: 999px; }
+
+    /* Card (Netflix-ish) */
+    .card{
+      width: 170px;
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+      transform: translateZ(0);
+      transition: transform .18s ease, filter .18s ease;
+    }
+    @media (min-width: 640px){ .card{ width: 200px; } }
+    @media (min-width: 1024px){ .card{ width: 220px; } }
+
+    .card:hover{ transform: scale(1.06); z-index: 20; }
+    .poster{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+    }
+    .overlay{
+      opacity:0;
+      transform: translateY(10px);
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .card:hover .overlay{
+      opacity:1;
+      transform: translateY(0);
+    }
+    .clamp-2{
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
+    .clamp-3{
+      display:-webkit-box;
+      -webkit-line-clamp:3;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+    }
+
+    /* Modal preview */
+    .modal-backdrop{ display:none; }
+    .modal-backdrop.open{ display:block; }
+    .modal-panel{
+      transform: translateY(14px) scale(.98);
+      opacity:0;
+      transition: transform .18s ease, opacity .18s ease;
+    }
+    .modal-backdrop.open .modal-panel{
+      transform: translateY(0) scale(1);
+      opacity:1;
+    }
 
     @media (prefers-reduced-motion: reduce){
-      *{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+      *{ animation:none !important; transition:none !important; }
     }
   </style>
 </head>
@@ -133,7 +193,7 @@
           <a class="u" href="#catalogo">Catálogo</a>
           <a class="u" href="#mais-lidos">Mais lidos</a>
           <a class="u" href="#mais-recentes">Mais recentes</a>
-          <a class="u" href="#filtro">Filtro avançado</a>
+          <a class="u" href="#todos">Todos</a>
 
           {% if user.is_authenticated %}
             <a class="u" href="{% url 'frontend:favorites' %}">Favoritos</a>
@@ -171,7 +231,7 @@
           <a href="#catalogo" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Catálogo</a>
           <a href="#mais-lidos" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Mais lidos</a>
           <a href="#mais-recentes" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Mais recentes</a>
-          <a href="#filtro" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Filtro avançado</a>
+          <a href="#todos" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Todos</a>
 
           {% if user.is_authenticated %}
             <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Favoritos</a>
@@ -197,11 +257,19 @@
     </div>
   </header>
 
-  <!-- HERO -->
+  <!-- HERO (Netflix style: simples, vivo, sem quadros feios) -->
   <main class="pt-28">
-    <section class="min-h-[calc(100vh-7rem)] flex items-center">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
+    <section class="relative">
+      <div class="absolute inset-0 overflow-hidden">
+        <div class="spotlight"></div>
+        <!-- bottom fade like Netflix -->
+        <div class="absolute inset-0"
+             style="background:linear-gradient(90deg, rgba(7,7,7,.92) 0%, rgba(7,7,7,.55) 45%, rgba(7,7,7,.25) 100%);"></div>
+        <div class="absolute inset-x-0 bottom-0 h-40"
+             style="background:linear-gradient(180deg, transparent, rgba(7,7,7,1));"></div>
+      </div>
 
+      <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         {% if messages %}
           <div class="mb-6 grid gap-2">
             {% for message in messages %}
@@ -215,351 +283,349 @@
           </div>
         {% endif %}
 
-        <div class="grid lg:grid-cols-2 gap-7 items-center">
-          <!-- LEFT -->
-          <div class="glass glow rounded-3xl p-6 sm:p-8">
-            <div class="flex flex-wrap items-center gap-2 text-xs">
+        <div class="grid lg:grid-cols-12 gap-8 items-center">
+          <!-- Text -->
+          <div class="lg:col-span-7">
+            <div class="inline-flex items-center gap-2 text-xs">
+              <span class="px-3 py-1 rounded-full pill">🎬 Cinematic</span>
               <span class="px-3 py-1 rounded-full pill">📚 Biblioteca</span>
-              <span class="px-3 py-1 rounded-full pill">🔎 Busca</span>
-              <span class="px-3 py-1 rounded-full pill">🔒 Segurança</span>
+              <span class="px-3 py-1 rounded-full pill">⚡ Rápido</span>
             </div>
 
-            <h1 class="mt-5 text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight">
-              Encontra o próximo livro
-              <span style="color:var(--red)">em segundos</span>.
+            <h1 class="mt-5 text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight">
+              Owlsight
+              <span style="color:var(--red)">Netflix-style</span>
+              para livros.
             </h1>
 
-            <p class="mt-4 text-white/70 text-base sm:text-lg">
-              Explore o catálogo. Para ler e favoritar, faça login.
+            <p class="mt-4 text-white/70 text-base sm:text-lg max-w-2xl">
+              Scroll horizontal, hover com descrição e preview — tudo puxado do banco.
+              {% if not db_books_count %}
+                <span class="text-white/60">Adicione livros no Admin para começar.</span>
+              {% endif %}
             </p>
 
-            {% if featured %}
-              <div class="mt-6 grid sm:grid-cols-3 gap-3">
-                <div class="rounded-2xl glass p-4">
-                  <div class="text-xs" style="color:var(--muted2)">Tipo</div>
-                  <div class="mt-1 text-lg font-extrabold">
-                    {% if featured.book_type == "premium" %}💎 Premium{% else %}🎁 Free{% endif %}
-                  </div>
-                </div>
-                <div class="rounded-2xl glass p-4">
-                  <div class="text-xs" style="color:var(--muted2)">Gênero</div>
-                  <div class="mt-1 text-lg font-extrabold">🏷️ {{ featured.genre|default:"—" }}</div>
-                </div>
-                <div class="rounded-2xl glass p-4">
-                  <div class="text-xs" style="color:var(--muted2)">Páginas</div>
-                  <div class="mt-1 text-lg font-extrabold">📖 {{ featured.total_pages|default:"—" }}</div>
-                </div>
+            <!-- Search mini bar -->
+            <form method="get" action="#todos" class="mt-6 flex flex-col sm:flex-row gap-3 max-w-2xl">
+              <div class="flex-1 glass rounded-2xl px-4 py-3 border border-white/10">
+                <input name="q" value="{{ request.GET.q|default:'' }}"
+                       placeholder="Pesquisar por título, autor, género..."
+                       class="w-full bg-transparent outline-none text-sm placeholder:text-white/40"/>
               </div>
-            {% endif %}
 
-            <div class="mt-6 flex flex-col sm:flex-row gap-3">
+              <div class="sm:w-52 glass rounded-2xl px-4 py-3 border border-white/10">
+                <select name="type" class="w-full bg-transparent outline-none text-sm">
+                  <option value="">Todos</option>
+                  <option value="free" {% if request.GET.type == "free" %}selected{% endif %}>Free</option>
+                  <option value="premium" {% if request.GET.type == "premium" %}selected{% endif %}>Premium</option>
+                </select>
+              </div>
+
+              <button type="submit"
+                      class="px-5 py-3 rounded-2xl font-bold text-center"
+                      style="background:linear-gradient(135deg,var(--red),var(--red2));">
+                Buscar
+              </button>
+            </form>
+
+            <!-- Featured actions -->
+            <div class="mt-6 flex flex-wrap gap-3">
               <a href="#catalogo"
-                 class="px-5 py-3 rounded-2xl font-bold text-center"
+                 class="px-5 py-3 rounded-2xl font-bold"
                  style="background:linear-gradient(135deg,var(--red),var(--red2));">
-                Ver o catálogo
+                Explorar agora
               </a>
 
               {% if featured %}
                 <a href="{% url 'frontend:read' featured.id 1 %}"
-                   class="px-5 py-3 rounded-2xl font-semibold text-center pill hover:bg-white/10 transition">
-                  Ler agora
+                   class="px-5 py-3 rounded-2xl font-semibold pill hover:bg-white/10 transition">
+                  ▶ Ler destaque
                 </a>
+
+                <button type="button"
+                        class="px-5 py-3 rounded-2xl font-semibold pill hover:bg-white/10 transition"
+                        data-open-preview="1"
+                        data-id="{{ featured.id }}"
+                        data-title="{{ featured.title|escape }}"
+                        data-author="{{ featured.author|default:''|escape }}"
+                        data-genre="{{ featured.genre|default:''|escape }}"
+                        data-type="{{ featured.book_type|escape }}"
+                        data-pages="{{ featured.total_pages|default:'' }}"
+                        data-desc="{{ featured.description|default:''|striptags|escape }}"
+                        data-cover="{% if featured.cover %}{{ featured.cover.url }}{% else %}{% endif %}">
+                  ⓘ Mais info
+                </button>
               {% else %}
-                <a href="{% url 'frontend:login' %}"
-                   class="px-5 py-3 rounded-2xl font-semibold text-center pill hover:bg-white/10 transition">
-                  Ler agora
+                <a href="/admin/"
+                   class="px-5 py-3 rounded-2xl font-semibold pill hover:bg-white/10 transition">
+                  Abrir Admin
                 </a>
               {% endif %}
             </div>
 
             <div class="mt-4 text-xs text-white/45">
-              {% if db_books_count %}
-                Livros no banco: {{ db_books_count }}
-              {% else %}
-                Ainda não há livros no banco. Adicione no Admin.
-              {% endif %}
+              Livros no banco: {{ db_books_count|default:"0" }}
             </div>
           </div>
 
-          <!-- RIGHT -->
-          <div class="glass glow rounded-3xl p-6 sm:p-8 overflow-hidden relative">
-            <div class="absolute -top-28 -right-28 w-72 h-72 rounded-full"
-                 style="background:radial-gradient(circle at 30% 30%, rgba(225,6,0,.35), transparent 60%); filter: blur(2px);"></div>
+          <!-- Featured poster (right) -->
+          <div class="lg:col-span-5">
+            <div class="relative rounded-3xl overflow-hidden glow border border-white/10">
+              <div class="absolute inset-0"
+                   style="background:linear-gradient(135deg, rgba(225,6,0,.18), rgba(0,0,0,.0));"></div>
 
-            <div class="flex items-start justify-between gap-4">
-              <div>
-                <div class="text-xs" style="color:var(--muted2)">Livro em destaque</div>
-                <div class="text-2xl font-black mt-1">
-                  {% if featured %}{{ featured.title }}{% else %}Sem livros{% endif %}
+              {% if featured and featured.cover %}
+                <img src="{{ featured.cover.url }}" alt="{{ featured.title }}"
+                     class="w-full h-[420px] object-cover" />
+              {% else %}
+                <div class="w-full h-[420px] bg-white/5 grid place-items-center">
+                  <div class="text-center">
+                    <div class="text-6xl">📕</div>
+                    <div class="mt-2 text-sm text-white/60">Sem capa (por enquanto)</div>
+                  </div>
                 </div>
-                <div class="text-sm text-white/60 mt-1">
-                  {% if featured %}{{ featured.author|default:"" }}{% endif %}
-                </div>
+              {% endif %}
+
+              <div class="absolute inset-x-0 bottom-0 p-5"
+                   style="background:linear-gradient(180deg, transparent, rgba(0,0,0,.88));">
+                {% if featured %}
+                  <div class="text-sm text-white/70">Destaque</div>
+                  <div class="text-2xl font-black">{{ featured.title }}</div>
+                  <div class="text-sm text-white/60 mt-1">
+                    {{ featured.author|default:"" }}
+                    {% if featured.genre %} • {{ featured.genre }}{% endif %}
+                    • {% if featured.book_type == "premium" %}💎 Premium{% else %}🎁 Free{% endif %}
+                  </div>
+                  <p class="mt-2 text-sm text-white/70 clamp-2">{{ featured.description|default:"—" }}</p>
+                {% else %}
+                  <div class="text-sm text-white/70">Destaque</div>
+                  <div class="text-2xl font-black">Adicione livros no Admin</div>
+                  <div class="text-sm text-white/60 mt-1">Para a hero ficar viva com dados reais.</div>
+                {% endif %}
               </div>
-
-              <a href="#mais-lidos" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">
-                Ver tendências →
-              </a>
-            </div>
-
-            <!-- ✅ FIX HERO GRID (não bagunça no mobile) -->
-            <div class="mt-6 grid grid-cols-1 sm:grid-cols-12 gap-4 items-start">
-              <div class="sm:col-span-5">
-                <div class="rounded-2xl overflow-hidden border border-white/10 shimmer floaty">
-                  {% if featured and featured.cover %}
-                    <img src="{{ featured.cover.url }}" alt="{{ featured.title }}" class="w-full h-[300px] sm:h-[340px] object-cover" />
-                  {% else %}
-                    <div class="w-full h-[300px] sm:h-[340px] bg-white/5 grid place-items-center">
-                      <div class="text-center">
-                        <div class="text-5xl">📕</div>
-                        <div class="text-xs text-white/50 mt-2">Capa indisponível</div>
-                      </div>
-                    </div>
-                  {% endif %}
-                </div>
-              </div>
-
-              <div class="sm:col-span-7">
-                <div class="rounded-2xl glass p-4">
-                  <div class="text-xs" style="color:var(--muted2)">Descrição</div>
-                  {% if featured %}
-                    <p class="mt-2 text-sm text-white/70 leading-relaxed">
-                      {{ featured.description|default:"—"|truncatechars:220 }}
-                    </p>
-
-                    {% if featured.tags.all %}
-                      <div class="mt-4 flex flex-wrap gap-2">
-                        {% for t in featured.tags.all %}
-                          <span class="px-3 py-1 rounded-full pill text-xs">#{{ t.name }}</span>
-                        {% endfor %}
-                      </div>
-                    {% endif %}
-
-                    <div class="mt-4">
-                      <a href="{% url 'frontend:read' featured.id 1 %}"
-                         class="inline-flex w-full justify-center px-4 py-3 rounded-2xl font-bold"
-                         style="background:linear-gradient(135deg,var(--red),var(--red2));">
-                        Ler este livro
-                      </a>
-                    </div>
-                  {% else %}
-                    <p class="mt-2 text-sm text-white/60">Adicione livros no Admin para aparecerem aqui.</p>
-                  {% endif %}
-                </div>
-
-                <div class="mt-4 text-xs text-white/45">
-                  Segurança: validações no servidor e controle de acesso por sessão.
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-6 flex justify-center">
-              <a href="#catalogo" class="text-xs text-white/60 hover:text-white transition inline-flex items-center gap-2">
-                Explorar abaixo <span class="inline-block animate-bounce">↓</span>
-              </a>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- DISCOVERY -->
+    <!-- CATALOG ROWS (Netflix horizontal rows) -->
     <section id="catalogo" class="py-10">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex items-end justify-between gap-4">
           <div>
-            <h2 class="text-2xl sm:text-3xl font-black">Descoberta rápida</h2>
-            <p class="text-white/60 mt-1 text-sm">
-              Explore livros reais do banco. Use o filtro para refinar.
-            </p>
+            <h2 class="text-2xl sm:text-3xl font-black">Catálogo</h2>
+            <p class="text-white/60 mt-1 text-sm">Passe o mouse e veja a descrição. Clique para abrir o preview.</p>
           </div>
-          <div class="hidden sm:flex gap-2">
-            <a href="#filtro" class="px-4 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ir ao filtro</a>
-            <a href="#todos" class="px-4 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ver resultados</a>
+          <a href="#todos" class="text-sm text-white/60 hover:text-white transition">Ver todos →</a>
+        </div>
+
+        <!-- Row: Mais lidos -->
+        <div id="mais-lidos" class="mt-7">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg sm:text-xl font-black">Mais lidos</h3>
+            <a href="#todos" class="text-xs text-white/55 hover:text-white transition">Ir para resultados</a>
+          </div>
+
+          <div class="row mt-4">
+            {% for b in most_read %}
+              <article class="card group">
+                <div class="relative rounded-2xl overflow-hidden poster">
+                  {% if b.cover %}
+                    <img src="{{ b.cover.url }}" alt="{{ b.title }}"
+                         class="w-full h-[250px] object-cover" />
+                  {% else %}
+                    <div class="w-full h-[250px] bg-white/5 grid place-items-center">📘</div>
+                  {% endif %}
+
+                  <!-- hover overlay -->
+                  <div class="overlay absolute inset-0 p-3 flex flex-col justify-end"
+                       style="background:linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.92));">
+                    <div class="text-sm font-extrabold leading-tight clamp-2">{{ b.title }}</div>
+                    <div class="text-xs text-white/70 mt-1">
+                      {{ b.author|default:"" }}{% if b.genre %} • {{ b.genre }}{% endif %}
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-2 text-[11px]">
+                      <span class="px-2 py-1 rounded-full pill">
+                        {% if b.book_type == "premium" %}💎 Premium{% else %}🎁 Free{% endif %}
+                      </span>
+                      {% if b.total_pages %}
+                        <span class="px-2 py-1 rounded-full pill">📖 {{ b.total_pages }}p</span>
+                      {% endif %}
+                    </div>
+
+                    <p class="mt-2 text-xs text-white/70 clamp-3">
+                      {{ b.description|default:""|truncatechars:140 }}
+                    </p>
+
+                    <div class="mt-3 flex gap-2">
+                      <a href="{% url 'frontend:read' b.id 1 %}"
+                         class="flex-1 text-center px-3 py-2 rounded-xl font-semibold"
+                         style="background:linear-gradient(135deg,var(--red),var(--red2));">
+                        Ler
+                      </a>
+                      <button type="button"
+                              class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition"
+                              data-open-preview="1"
+                              data-id="{{ b.id }}"
+                              data-title="{{ b.title|escape }}"
+                              data-author="{{ b.author|default:''|escape }}"
+                              data-genre="{{ b.genre|default:''|escape }}"
+                              data-type="{{ b.book_type|escape }}"
+                              data-pages="{{ b.total_pages|default:'' }}"
+                              data-desc="{{ b.description|default:''|striptags|escape }}"
+                              data-cover="{% if b.cover %}{{ b.cover.url }}{% else %}{% endif %}">
+                        ⓘ
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            {% empty %}
+              <div class="glass rounded-2xl p-5 text-sm text-white/60 border border-white/10">
+                Ainda não há livros no banco.
+              </div>
+            {% endfor %}
           </div>
         </div>
 
-        <div class="mt-5 flex flex-wrap gap-2">
-          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="new">🆕 Recentes</button>
-          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="free">🎁 Free</button>
-          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="premium">💎 Premium</button>
+        <!-- Row: Mais recentes -->
+        <div id="mais-recentes" class="mt-10">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg sm:text-xl font-black">Mais recentes</h3>
+            <a href="#todos" class="text-xs text-white/55 hover:text-white transition">Ir para resultados</a>
+          </div>
+
+          <div class="row mt-4">
+            {% for b in most_recent %}
+              <article class="card group">
+                <div class="relative rounded-2xl overflow-hidden poster">
+                  {% if b.cover %}
+                    <img src="{{ b.cover.url }}" alt="{{ b.title }}"
+                         class="w-full h-[250px] object-cover" />
+                  {% else %}
+                    <div class="w-full h-[250px] bg-white/5 grid place-items-center">🆕</div>
+                  {% endif %}
+
+                  <div class="overlay absolute inset-0 p-3 flex flex-col justify-end"
+                       style="background:linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.92));">
+                    <div class="text-sm font-extrabold leading-tight clamp-2">{{ b.title }}</div>
+                    <div class="text-xs text-white/70 mt-1">
+                      {{ b.author|default:"" }}{% if b.genre %} • {{ b.genre }}{% endif %}
+                    </div>
+
+                    <div class="mt-2 flex flex-wrap gap-2 text-[11px]">
+                      <span class="px-2 py-1 rounded-full pill">
+                        {% if b.book_type == "premium" %}💎 Premium{% else %}🎁 Free{% endif %}
+                      </span>
+                      {% if b.total_pages %}
+                        <span class="px-2 py-1 rounded-full pill">📖 {{ b.total_pages }}p</span>
+                      {% endif %}
+                    </div>
+
+                    <p class="mt-2 text-xs text-white/70 clamp-3">
+                      {{ b.description|default:""|truncatechars:140 }}
+                    </p>
+
+                    <div class="mt-3 flex gap-2">
+                      <a href="{% url 'frontend:read' b.id 1 %}"
+                         class="flex-1 text-center px-3 py-2 rounded-xl font-semibold"
+                         style="background:linear-gradient(135deg,var(--red),var(--red2));">
+                        Ler
+                      </a>
+                      <button type="button"
+                              class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition"
+                              data-open-preview="1"
+                              data-id="{{ b.id }}"
+                              data-title="{{ b.title|escape }}"
+                              data-author="{{ b.author|default:''|escape }}"
+                              data-genre="{{ b.genre|default:''|escape }}"
+                              data-type="{{ b.book_type|escape }}"
+                              data-pages="{{ b.total_pages|default:'' }}"
+                              data-desc="{{ b.description|default:''|striptags|escape }}"
+                              data-cover="{% if b.cover %}{{ b.cover.url }}{% else %}{% endif %}">
+                        ⓘ
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </article>
+            {% empty %}
+              <div class="glass rounded-2xl p-5 text-sm text-white/60 border border-white/10">
+                Sem livros recentes ainda.
+              </div>
+            {% endfor %}
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- MOST READ (REAL) -->
-    <section id="mais-lidos" class="py-8">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xl sm:text-2xl font-black">Mais lidos</h3>
-          <a href="#todos" class="text-sm text-white/60 hover:text-white transition">Ver resultados →</a>
-        </div>
-
-        <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {% for b in most_read %}
-            <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
-              <div class="rounded-xl overflow-hidden border border-white/10">
-                {% if b.cover %}
-                  <img src="{{ b.cover.url }}" alt="{{ b.title }}" class="h-40 w-full object-cover" />
-                {% else %}
-                  <div class="h-40 bg-white/5 grid place-items-center">📘</div>
-                {% endif %}
-              </div>
-
-              <div class="mt-3">
-                <div class="font-bold">{{ b.title }}</div>
-                <div class="text-xs text-white/60">
-                  {{ b.author|default:"" }}{% if b.genre %} • {{ b.genre }}{% endif %}
-                </div>
-
-                <div class="mt-3 flex gap-2">
-                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
-                  <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
-                </div>
-              </div>
-            </article>
-          {% empty %}
-            <div class="col-span-full glass glow rounded-2xl p-5 text-sm text-white/60">
-              Ainda não há livros no banco.
-            </div>
-          {% endfor %}
-        </div>
-      </div>
-    </section>
-
-    <!-- MOST RECENT (REAL) -->
-    <section id="mais-recentes" class="py-8">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xl sm:text-2xl font-black">Mais recentes</h3>
-          <a href="#todos" class="text-sm text-white/60 hover:text-white transition">Ver resultados →</a>
-        </div>
-
-        <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {% for b in most_recent %}
-            <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
-              <div class="rounded-xl overflow-hidden border border-white/10">
-                {% if b.cover %}
-                  <img src="{{ b.cover.url }}" alt="{{ b.title }}" class="h-40 w-full object-cover" />
-                {% else %}
-                  <div class="h-40 bg-white/5 grid place-items-center">🆕</div>
-                {% endif %}
-              </div>
-
-              <div class="mt-3">
-                <div class="font-bold">{{ b.title }}</div>
-                <div class="text-xs text-white/60">
-                  {{ b.author|default:"" }}{% if b.genre %} • {{ b.genre }}{% endif %}
-                </div>
-
-                <div class="mt-3 flex gap-2">
-                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
-                  <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
-                </div>
-              </div>
-            </article>
-          {% empty %}
-            <div class="col-span-full glass glow rounded-2xl p-5 text-sm text-white/60">
-              Ainda não há livros recentes.
-            </div>
-          {% endfor %}
-        </div>
-      </div>
-    </section>
-
-    <!-- FILTER (REAL) -->
-    <section id="filtro" class="py-10">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between gap-4">
-          <div>
-            <h3 class="text-xl sm:text-2xl font-black">Filtro</h3>
-            <p class="text-white/60 text-sm mt-1">Pesquisar por título, autor, género e ordenar.</p>
-          </div>
-          <a href="#todos" class="text-sm text-white/60 hover:text-white transition">Aplicar e ver resultados ↓</a>
-        </div>
-
-        <form method="get" action="#todos" class="mt-5 grid lg:grid-cols-12 gap-4">
-          <div class="lg:col-span-5 glass glow rounded-2xl p-4">
-            <label class="text-xs text-white/60">Pesquisar</label>
-            <input name="q" value="{{ request.GET.q|default:'' }}"
-                   placeholder="Título, autor, género..."
-                   class="mt-2 w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 outline-none focus:border-white/25" />
-          </div>
-
-          <div class="lg:col-span-3 glass glow rounded-2xl p-4">
-            <label class="text-xs text-white/60">Tipo</label>
-            <select name="type" class="mt-2 w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 outline-none focus:border-white/25">
-              <option value="">Todos</option>
-              <option value="free" {% if request.GET.type == "free" %}selected{% endif %}>Free</option>
-              <option value="premium" {% if request.GET.type == "premium" %}selected{% endif %}>Premium</option>
-            </select>
-          </div>
-
-          <div class="lg:col-span-4 glass glow rounded-2xl p-4">
-            <label class="text-xs text-white/60">Ordenar por</label>
-            <select name="sort" class="mt-2 w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 outline-none focus:border-white/25">
-              <option value="recentes" {% if request.GET.sort == "recentes" %}selected{% endif %}>Mais recentes</option>
-              <option value="antigos" {% if request.GET.sort == "antigos" %}selected{% endif %}>Mais antigos</option>
-              <option value="titulo" {% if request.GET.sort == "titulo" %}selected{% endif %}>Título</option>
-            </select>
-
-            <div class="mt-3 flex gap-2">
-              <button type="submit"
-                      class="flex-1 px-4 py-3 rounded-2xl font-bold"
-                      style="background:linear-gradient(135deg,var(--red),var(--red2));">
-                Filtrar
-              </button>
-              <a href="{% url 'frontend:home' %}#todos"
-                 class="px-4 py-3 rounded-2xl pill hover:bg-white/10 transition text-center font-semibold">
-                Limpar
-              </a>
-            </div>
-          </div>
-        </form>
-      </div>
-    </section>
-
-    <!-- ALL BOOKS (REAL) -->
+    <!-- ALL RESULTS (grid) -->
     <section id="todos" class="py-10">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex items-end justify-between gap-4">
           <div>
-            <h3 class="text-xl sm:text-2xl font-black">Todos os livros</h3>
-            <p class="text-white/60 text-sm mt-1">Resultados reais do banco.</p>
+            <h3 class="text-xl sm:text-2xl font-black">Resultados</h3>
+            <p class="text-white/60 text-sm mt-1">Catálogo completo (DB).</p>
           </div>
+
+          <form method="get" action="#todos" class="hidden sm:flex items-center gap-2">
+            <select name="sort" class="px-3 py-2 rounded-xl pill text-sm bg-transparent">
+              <option value="recentes" {% if request.GET.sort == "recentes" %}selected{% endif %}>Recentes</option>
+              <option value="antigos" {% if request.GET.sort == "antigos" %}selected{% endif %}>Antigos</option>
+              <option value="titulo" {% if request.GET.sort == "titulo" %}selected{% endif %}>Título</option>
+            </select>
+            <button class="px-4 py-2 rounded-xl text-sm font-semibold"
+                    style="background:linear-gradient(135deg,var(--red),var(--red2));">
+              Ordenar
+            </button>
+          </form>
         </div>
 
-        <div class="mt-5 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {% for b in books %}
-            <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
-              <div class="rounded-xl overflow-hidden border border-white/10">
+            <article class="group rounded-2xl overflow-hidden poster hover:scale-[1.02] transition will-change-transform">
+              <div class="relative">
                 {% if b.cover %}
-                  <img src="{{ b.cover.url }}" alt="{{ b.title }}" class="h-36 w-full object-cover" />
+                  <img src="{{ b.cover.url }}" alt="{{ b.title }}" class="h-40 w-full object-cover" />
                 {% else %}
-                  <div class="h-36 bg-white/5 grid place-items-center">📗</div>
+                  <div class="h-40 bg-white/5 grid place-items-center">📗</div>
                 {% endif %}
-              </div>
 
-              <div class="mt-3">
-                <div class="font-bold text-sm">{{ b.title }}</div>
-                <div class="text-xs text-white/60">
-                  {{ b.author|default:"" }}{% if b.genre %} • {{ b.genre }}{% endif %}
-                </div>
+                <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition"
+                     style="background:linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.92));"></div>
 
-                <div class="mt-3 flex gap-2">
-                  <a href="{% url 'frontend:read' b.id 1 %}"
-                     class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">
-                    Ler
-                  </a>
-                  <a href="{% url 'frontend:favorites' %}"
-                     class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">
-                    ♡
-                  </a>
+                <div class="absolute inset-x-0 bottom-0 p-3 opacity-0 group-hover:opacity-100 transition">
+                  <div class="text-sm font-extrabold clamp-2">{{ b.title }}</div>
+                  <div class="text-xs text-white/70 mt-1">
+                    {{ b.author|default:"" }}{% if b.genre %} • {{ b.genre }}{% endif %}
+                  </div>
+                  <p class="mt-2 text-xs text-white/70 clamp-2">{{ b.description|default:""|truncatechars:120 }}</p>
+                  <div class="mt-3 flex gap-2">
+                    <a href="{% url 'frontend:read' b.id 1 %}"
+                       class="flex-1 text-center px-3 py-2 rounded-xl font-semibold"
+                       style="background:linear-gradient(135deg,var(--red),var(--red2));">
+                      Ler
+                    </a>
+                    <button type="button"
+                            class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition"
+                            data-open-preview="1"
+                            data-id="{{ b.id }}"
+                            data-title="{{ b.title|escape }}"
+                            data-author="{{ b.author|default:''|escape }}"
+                            data-genre="{{ b.genre|default:''|escape }}"
+                            data-type="{{ b.book_type|escape }}"
+                            data-pages="{{ b.total_pages|default:'' }}"
+                            data-desc="{{ b.description|default:''|striptags|escape }}"
+                            data-cover="{% if b.cover %}{{ b.cover.url }}{% else %}{% endif %}">
+                      ⓘ
+                    </button>
+                  </div>
                 </div>
               </div>
             </article>
           {% empty %}
-            <div class="col-span-full glass glow rounded-2xl p-5 text-sm text-white/60">
+            <div class="col-span-full glass glow rounded-2xl p-5 text-sm text-white/60 border border-white/10">
               Nenhum livro encontrado.
             </div>
           {% endfor %}
@@ -587,33 +653,133 @@
     </div>
   </footer>
 
+  <!-- PREVIEW MODAL (Netflix “More Info”) -->
+  <div id="previewModal" class="modal-backdrop fixed inset-0 z-[80]">
+    <div class="absolute inset-0 bg-black/75"></div>
+
+    <div class="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-10">
+      <div class="modal-panel glass glow rounded-3xl overflow-hidden border border-white/10">
+        <div class="relative">
+          <div id="pmCoverWrap" class="h-[260px] sm:h-[320px] bg-white/5">
+            <img id="pmCover" src="" alt="" class="w-full h-full object-cover hidden">
+            <div id="pmNoCover" class="w-full h-full grid place-items-center text-5xl">📕</div>
+          </div>
+
+          <div class="absolute inset-0"
+               style="background:linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.92));"></div>
+
+          <button id="pmClose" class="absolute top-3 right-3 px-3 py-2 rounded-xl pill hover:bg-white/10 transition">
+            ✕
+          </button>
+
+          <div class="absolute inset-x-0 bottom-0 p-5">
+            <div id="pmTitle" class="text-2xl sm:text-3xl font-black"></div>
+            <div id="pmMeta" class="text-sm text-white/70 mt-1"></div>
+          </div>
+        </div>
+
+        <div class="p-5 sm:p-6">
+          <div class="flex flex-wrap gap-2">
+            <span id="pmType" class="px-3 py-1 rounded-full pill text-xs"></span>
+            <span id="pmPages" class="px-3 py-1 rounded-full pill text-xs hidden"></span>
+          </div>
+
+          <p id="pmDesc" class="mt-4 text-sm text-white/70 leading-relaxed"></p>
+
+          <div class="mt-5 flex flex-col sm:flex-row gap-3">
+            <a id="pmRead" href="#" class="px-5 py-3 rounded-2xl font-bold text-center"
+               style="background:linear-gradient(135deg,var(--red),var(--red2));">
+              Ler agora
+            </a>
+            <a href="{% url 'frontend:login' %}" class="px-5 py-3 rounded-2xl font-semibold text-center pill hover:bg-white/10 transition">
+              Favoritar (login)
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
+    // Mobile menu
     const menuBtn = document.getElementById("menuBtn");
     const mobileMenu = document.getElementById("mobileMenu");
-
     if(menuBtn && mobileMenu){
-      menuBtn.addEventListener("click", () => {
-        mobileMenu.classList.toggle("hidden");
-      });
+      menuBtn.addEventListener("click", () => mobileMenu.classList.toggle("hidden"));
     }
 
-    // chips -> aplica filtros reais
-    document.querySelectorAll("[data-chip]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const chip = btn.getAttribute("data-chip");
-        const url = new URL(window.location.href);
-        url.hash = "todos";
+    // Modal preview
+    const modal = document.getElementById("previewModal");
+    const pmClose = document.getElementById("pmClose");
+    const pmCover = document.getElementById("pmCover");
+    const pmNoCover = document.getElementById("pmNoCover");
+    const pmTitle = document.getElementById("pmTitle");
+    const pmMeta = document.getElementById("pmMeta");
+    const pmDesc = document.getElementById("pmDesc");
+    const pmType = document.getElementById("pmType");
+    const pmPages = document.getElementById("pmPages");
+    const pmRead = document.getElementById("pmRead");
 
-        // limpa antes
-        url.searchParams.delete("type");
-        url.searchParams.delete("sort");
+    function openModalFromBtn(btn){
+      const id = btn.getAttribute("data-id");
+      const title = btn.getAttribute("data-title") || "Livro";
+      const author = btn.getAttribute("data-author") || "";
+      const genre = btn.getAttribute("data-genre") || "";
+      const type = btn.getAttribute("data-type") || "";
+      const pages = btn.getAttribute("data-pages") || "";
+      const desc = btn.getAttribute("data-desc") || "";
+      const cover = btn.getAttribute("data-cover") || "";
 
-        if(chip === "new") url.searchParams.set("sort", "recentes");
-        if(chip === "free") url.searchParams.set("type", "free");
-        if(chip === "premium") url.searchParams.set("type", "premium");
+      pmTitle.textContent = title;
+      pmMeta.textContent = [author, genre].filter(Boolean).join(" • ");
 
-        window.location.href = url.toString();
-      });
+      pmDesc.textContent = desc || "Sem descrição.";
+      pmType.textContent = (type === "premium") ? "💎 Premium" : "🎁 Free";
+
+      if(pages){
+        pmPages.classList.remove("hidden");
+        pmPages.textContent = "📖 " + pages + " páginas";
+      }else{
+        pmPages.classList.add("hidden");
+        pmPages.textContent = "";
+      }
+
+      // cover
+      if(cover){
+        pmCover.src = cover;
+        pmCover.alt = title;
+        pmCover.classList.remove("hidden");
+        pmNoCover.classList.add("hidden");
+      }else{
+        pmCover.src = "";
+        pmCover.classList.add("hidden");
+        pmNoCover.classList.remove("hidden");
+      }
+
+      // read link (mantém teu padrão /read/<id>/1/)
+      pmRead.href = "/read/" + id + "/1/";
+
+      modal.classList.add("open");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeModal(){
+      modal.classList.remove("open");
+      document.body.style.overflow = "";
+    }
+
+    document.querySelectorAll("[data-open-preview='1']").forEach(btn => {
+      btn.addEventListener("click", () => openModalFromBtn(btn));
+    });
+
+    pmClose.addEventListener("click", closeModal);
+    modal.addEventListener("click", (e) => {
+      // click fora do painel fecha
+      if(e.target === modal || e.target.classList.contains("bg-black/75")) closeModal();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if(e.key === "Escape" && modal.classList.contains("open")) closeModal();
     });
   </script>
 </body>
