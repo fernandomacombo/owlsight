@@ -28,7 +28,6 @@
     html,body{ height:100%; background:var(--bg); color:var(--text); }
     body{ overflow-x:hidden; }
 
-    /* ===== NAV ===== */
     .nav{
       position:fixed; top:0; left:0; right:0; z-index:50;
       background: linear-gradient(180deg, rgba(0,0,0,.86), rgba(0,0,0,.25));
@@ -60,7 +59,6 @@
       padding: 6px 12px;
     }
 
-    /* ===== HERO ===== */
     .hero{
       min-height: 100vh;
       position: relative;
@@ -110,7 +108,6 @@
       padding: 10px 12px;
     }
 
-    /* Book “3D-ish” */
     .book-wrap{
       position: relative;
       width: min(430px, 82vw);
@@ -147,7 +144,6 @@
       to  { transform: translateX(28%) rotate(12deg); }
     }
 
-    /* ===== ROWS ===== */
     .row{
       display:flex;
       gap: 14px;
@@ -226,7 +222,6 @@
       background: linear-gradient(90deg, var(--red), rgba(225,6,0,.65));
     }
 
-    /* Premium strip */
     .premium-strip{
       border: 1px solid rgba(255,255,255,.10);
       background:
@@ -244,10 +239,8 @@
 
 <body>
 
-  <!-- NAV -->
   <header class="nav">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-[72px] flex items-center justify-between">
-      <!-- logo livre -->
       <a href="{% url 'frontend:home' %}" class="flex items-center gap-3">
         <img src="{% static 'frontend/images/logo.png' %}" alt="Owlsight"
              class="h-9 w-auto object-contain"
@@ -305,7 +298,6 @@
     </div>
   </header>
 
-  <!-- HERO -->
   <section class="hero">
     <div class="hero-bg">
       {% if featured and featured.cover %}
@@ -318,7 +310,6 @@
 
     <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
       <div class="grid lg:grid-cols-2 gap-10 items-center">
-        <!-- LEFT -->
         <div class="fade-up max-w-2xl">
           <div class="flex flex-wrap gap-2 text-xs text-white/80">
             <span class="chip">🎬 Cinematic</span>
@@ -349,11 +340,10 @@
             {% if featured and featured.description %}
               {{ featured.description }}
             {% else %}
-              Explore livros com recomendações, progresso de leitura e favoritos — tudo em um visual cinematográfico.
+              Explore livros com recomendações, progresso e favoritos — com um visual cinematográfico.
             {% endif %}
           </p>
 
-          <!-- STATS -->
           <div class="mt-5 grid grid-cols-3 gap-3">
             <div class="stat">
               <div class="text-xs text-white/50">Avaliação</div>
@@ -364,9 +354,9 @@
               </div>
             </div>
             <div class="stat">
-              <div class="text-xs text-white/50">Lido por</div>
+              <div class="text-xs text-white/50">Tipo</div>
               <div class="mt-1 font-extrabold">
-                👀 {{ featured.read_count|default:featured.views|default:"—" }}
+                {% if featured and featured.book_type == "premium" %}💎 Premium{% else %}🎁 Free{% endif %}
               </div>
             </div>
             <div class="stat">
@@ -403,7 +393,6 @@
           </div>
         </div>
 
-        <!-- RIGHT -->
         <div class="hidden lg:flex justify-end">
           <div class="book-wrap fade-up">
             <div class="book">
@@ -420,11 +409,9 @@
     </div>
   </section>
 
-  <!-- CONTENT -->
   <main id="explorar" class="relative -mt-10 pb-16">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-      <!-- CONTINUE READING (progresso) -->
       {% if user.is_authenticated %}
       <section class="pt-10">
         <div class="flex items-center justify-between">
@@ -465,7 +452,6 @@
       </section>
       {% endif %}
 
-      <!-- RECOMMENDED -->
       <section class="pt-10">
         <div class="flex items-center justify-between">
           <h2 class="text-xl sm:text-2xl font-black">Recomendados para você</h2>
@@ -496,7 +482,8 @@
 
                 <div class="mt-2 text-xs text-white/70 flex items-center justify-between">
                   <span>★ {{ b.rating|default:"4.6" }}</span>
-                  <span>👀 {{ b.read_count|default:b.views|default:"—" }}</span>
+                  <span class="text-white/55">•</span>
+                  <span>{{ b.book_type|default:"free"|upper }}</span>
                 </div>
 
                 <div class="mt-3 flex gap-2">
@@ -515,95 +502,6 @@
         </div>
       </section>
 
-      <!-- MOST READ -->
-      <section class="pt-10">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl sm:text-2xl font-black">Mais lidos</h2>
-          <a href="#todos" class="text-sm text-white/60 hover:text-white">Ver tudo →</a>
-        </div>
-
-        <div class="row mt-4">
-          {% for b in most_read %}
-            <article class="tile">
-              <div class="poster">
-                {% if b.cover %}
-                  <img src="{{ b.cover.url }}" alt="{{ b.title }}">
-                {% else %}
-                  <div class="h-full grid place-items-center text-4xl">🔥</div>
-                {% endif %}
-                <span class="badge">🔥 Em alta</span>
-              </div>
-
-              <div class="tile-info">
-                <div class="text-sm font-extrabold clamp-2">{{ b.title }}</div>
-                <div class="text-xs text-white/70 mt-1">{{ b.author|default:"" }}</div>
-
-                <div class="mt-2 text-xs text-white/70 flex items-center justify-between">
-                  <span>★ {{ b.rating|default:"4.7" }}</span>
-                  <span>👀 {{ b.read_count|default:b.views|default:"—" }}</span>
-                </div>
-
-                <div class="mt-3 flex gap-2">
-                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 px-3 py-2 rounded-lg btn-red text-center text-sm font-semibold">Ler</a>
-                  {% if user.is_authenticated %}
-                    <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">♡</a>
-                  {% else %}
-                    <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">♡</a>
-                  {% endif %}
-                </div>
-              </div>
-            </article>
-          {% empty %}
-            <div class="text-white/60 text-sm">Sem livros ainda.</div>
-          {% endfor %}
-        </div>
-      </section>
-
-      <!-- NOVIDADES -->
-      <section class="pt-10">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl sm:text-2xl font-black">Novidades</h2>
-          <a href="#todos" class="text-sm text-white/60 hover:text-white">Ver tudo →</a>
-        </div>
-
-        <div class="row mt-4">
-          {% for b in novelties %}
-            <article class="tile">
-              <div class="poster">
-                {% if b.cover %}
-                  <img src="{{ b.cover.url }}" alt="{{ b.title }}">
-                {% else %}
-                  <div class="h-full grid place-items-center text-4xl">🆕</div>
-                {% endif %}
-                <span class="badge">🆕 Novo</span>
-              </div>
-
-              <div class="tile-info">
-                <div class="text-sm font-extrabold clamp-2">{{ b.title }}</div>
-                <div class="text-xs text-white/70 mt-1">{{ b.author|default:"" }}</div>
-
-                <div class="mt-2 text-xs text-white/70 flex items-center justify-between">
-                  <span>★ {{ b.rating|default:"4.5" }}</span>
-                  <span>👀 {{ b.read_count|default:b.views|default:"—" }}</span>
-                </div>
-
-                <div class="mt-3 flex gap-2">
-                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 px-3 py-2 rounded-lg btn-red text-center text-sm font-semibold">Ler</a>
-                  {% if user.is_authenticated %}
-                    <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">♡</a>
-                  {% else %}
-                    <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">♡</a>
-                  {% endif %}
-                </div>
-              </div>
-            </article>
-          {% empty %}
-            <div class="text-white/60 text-sm">Sem novidades ainda.</div>
-          {% endfor %}
-        </div>
-      </section>
-
-      <!-- PREMIUM STRIP -->
       <section id="premium" class="pt-12">
         <div class="premium-strip p-6 sm:p-8 grid lg:grid-cols-2 gap-6 items-center">
           <div>
@@ -619,7 +517,6 @@
         </div>
       </section>
 
-      <!-- ALL BOOKS -->
       <section id="todos" class="pt-12">
         <div class="flex items-end justify-between gap-4">
           <div>
@@ -650,7 +547,7 @@
 
                 <div class="mt-2 text-xs text-white/70 flex items-center justify-between">
                   <span>★ {{ b.rating|default:"4.6" }}</span>
-                  <span>👀 {{ b.read_count|default:b.views|default:"—" }}</span>
+                  <span>{{ b.book_type|default:"free"|upper }}</span>
                 </div>
 
                 <div class="mt-3 flex gap-2">
