@@ -259,16 +259,19 @@ AXES_ENABLE_ACCESS_FAILURE_LOG = True
 
 
 # =========================
-# CSP (anti XSS)
+# CSP (django-csp >= 4.0) — formato novo
 # =========================
-CSP_DEFAULT_SRC = ("'self'",)
-CSP_IMG_SRC = ("'self'", "data:", "blob:")
-CSP_FONT_SRC = ("'self'", "data:")
-CSP_CONNECT_SRC = ("'self'",)
-
-# Tailwind CDN + inline (porque teu login tem tailwind CDN e toggle password inline)
-CSP_SCRIPT_SRC = ("'self'", "https://cdn.tailwindcss.com", "'unsafe-inline'")
-CSP_STYLE_SRC = ("'self'", "'unsafe-inline'")
+CONTENT_SECURITY_POLICY = {
+    "DIRECTIVES": {
+        "default-src": ("'self'",),
+        "connect-src": ("'self'",),
+        "img-src": ("'self'", "data:", "blob:"),
+        "font-src": ("'self'", "data:"),
+        # Tailwind CDN + inline (por causa do toggle password e tailwind CDN)
+        "script-src": ("'self'", "https://cdn.tailwindcss.com", "'unsafe-inline'"),
+        "style-src": ("'self'", "'unsafe-inline'"),
+    }
+}
 
 
 # =========================
