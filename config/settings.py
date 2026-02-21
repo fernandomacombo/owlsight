@@ -253,7 +253,8 @@ AXES_ENABLED = True
 AXES_FAILURE_LIMIT = 5        # 5 falhas
 AXES_COOLOFF_TIME = 1         # 1 hora bloqueado
 AXES_RESET_ON_SUCCESS = True
-AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True
+# Bloqueia por combinação (username + ip)
+AXES_LOCKOUT_PARAMETERS = ["username", "ip_address"]
 AXES_USERNAME_FORM_FIELD = "username"
 AXES_ENABLE_ACCESS_FAILURE_LOG = True
 
