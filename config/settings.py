@@ -174,6 +174,7 @@ STORAGES = {
     }
 }
 
+WHITENOISE_MANIFEST_STRICT = False  # ✅ ADICIONA ISTO
 
 # =========================
 # Media / Storage (Backblaze B2 via S3)
