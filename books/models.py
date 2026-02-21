@@ -1,5 +1,6 @@
 from django.db import models
 
+
 class Tag(models.Model):
     name = models.CharField(max_length=40, unique=True)
 
@@ -18,11 +19,16 @@ class Book(models.Model):
     release_year = models.PositiveIntegerField(null=True, blank=True)
     description = models.TextField(blank=True)
 
-    book_type = models.CharField(max_length=10, choices=BookType.choices, default=BookType.FREE)
+    book_type = models.CharField(
+        max_length=10,
+        choices=BookType.choices,
+        default=BookType.FREE
+    )
     total_pages = models.PositiveIntegerField(null=True, blank=True)
 
-    cover = models.ImageField(upload_to="media/covers/", blank=True, null=True)
-    pdf_file = models.FileField(upload_to="media/pdfs/", blank=True, null=True)
+    # ✅ NÃO coloque "media/" aqui
+    cover = models.ImageField(upload_to="covers/", blank=True, null=True)
+    pdf_file = models.FileField(upload_to="pdfs/", blank=True, null=True)
 
     tags = models.ManyToManyField(Tag, blank=True, related_name="books")
     created_at = models.DateTimeField(auto_now_add=True)
