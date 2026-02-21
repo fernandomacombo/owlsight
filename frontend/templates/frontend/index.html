@@ -121,7 +121,6 @@
           <div class="w-10 h-10 rounded-xl glass grid place-items-center">
             <img src="{% static 'frontend/images/logo.png' %}" alt="Owlsight" class="w-7 h-7 object-contain"
                  onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=&quot;color:rgba(255,255,255,.9);font-weight:900;&quot;>O</span>';">
-
           </div>
           <div class="leading-tight">
             <div class="text-white font-black tracking-tight">Owlsight</div>
@@ -219,37 +218,39 @@
         <div class="grid lg:grid-cols-2 gap-7 items-center">
           <!-- LEFT -->
           <div class="glass glow rounded-3xl p-6 sm:p-8">
-            <div class="flex items-center gap-2 text-xs">
-              <span class="px-3 py-1 rounded-full pill">📚 Biblioteca viva</span>
-              <span class="px-3 py-1 rounded-full pill">⚡ Recomendação inteligente</span>
-              <span class="px-3 py-1 rounded-full pill">🔒 Segurança & privacidade</span>
+            <div class="flex flex-wrap items-center gap-2 text-xs">
+              <span class="px-3 py-1 rounded-full pill">📚 Biblioteca</span>
+              <span class="px-3 py-1 rounded-full pill">🔎 Busca</span>
+              <span class="px-3 py-1 rounded-full pill">🔒 Segurança</span>
             </div>
 
             <h1 class="mt-5 text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight">
               Encontra o próximo livro
               <span style="color:var(--red)">em segundos</span>.
             </h1>
+
             <p class="mt-4 text-white/70 text-base sm:text-lg">
-              Owlsight combina catálogo, tendências e (quando você entra) seu histórico de leitura
-              para sugerir livros com precisão — sem confusão, sem ruído.
+              Explore o catálogo. Para ler e favoritar, faça login.
             </p>
 
-            <div class="mt-6 grid sm:grid-cols-3 gap-3">
-              <div class="rounded-2xl glass p-4">
-                <div class="text-xs" style="color:var(--muted2)">Avaliação</div>
-                <div class="mt-1 text-lg font-extrabold">
-                  ⭐ {{ featured.rating|default:"4.8" }} <span class="text-xs text-white/50">/5</span>
+            {% if featured %}
+              <div class="mt-6 grid sm:grid-cols-3 gap-3">
+                <div class="rounded-2xl glass p-4">
+                  <div class="text-xs" style="color:var(--muted2)">Tipo</div>
+                  <div class="mt-1 text-lg font-extrabold">
+                    {% if featured.book_type == "premium" %}💎 Premium{% else %}🎁 Free{% endif %}
+                  </div>
+                </div>
+                <div class="rounded-2xl glass p-4">
+                  <div class="text-xs" style="color:var(--muted2)">Gênero</div>
+                  <div class="mt-1 text-lg font-extrabold">🏷️ {{ featured.genre|default:"—" }}</div>
+                </div>
+                <div class="rounded-2xl glass p-4">
+                  <div class="text-xs" style="color:var(--muted2)">Páginas</div>
+                  <div class="mt-1 text-lg font-extrabold">📖 {{ featured.total_pages|default:"—" }}</div>
                 </div>
               </div>
-              <div class="rounded-2xl glass p-4">
-                <div class="text-xs" style="color:var(--muted2)">Leitores</div>
-                <div class="mt-1 text-lg font-extrabold">👀 {{ featured.readers|default:"12.4k" }}</div>
-              </div>
-              <div class="rounded-2xl glass p-4">
-                <div class="text-xs" style="color:var(--muted2)">Categoria</div>
-                <div class="mt-1 text-lg font-extrabold">🏷️ {{ featured.category|default:"Ficção" }}</div>
-              </div>
-            </div>
+            {% endif %}
 
             <div class="mt-6 flex flex-col sm:flex-row gap-3">
               <a href="#catalogo"
@@ -258,8 +259,8 @@
                 Ver o catálogo
               </a>
 
-              {% if featured and featured.read_url %}
-                <a href="{{ featured.read_url }}"
+              {% if featured %}
+                <a href="{% url 'frontend:read' featured.id 1 %}"
                    class="px-5 py-3 rounded-2xl font-semibold text-center pill hover:bg-white/10 transition">
                   Ler agora
                 </a>
@@ -272,7 +273,11 @@
             </div>
 
             <div class="mt-4 text-xs text-white/45">
-              Dica: você pode explorar o catálogo sem login. Para ler, favoritar e receber recomendações completas, faça login.
+              {% if db_books_count %}
+                Livros no banco: {{ db_books_count }}
+              {% else %}
+                Ainda não há livros no banco. Adicione no Admin.
+              {% endif %}
             </div>
           </div>
 
@@ -284,8 +289,12 @@
             <div class="flex items-start justify-between gap-4">
               <div>
                 <div class="text-xs" style="color:var(--muted2)">Livro em destaque</div>
-                <div class="text-2xl font-black mt-1">{{ featured.title|default:"O Voo da Coruja" }}</div>
-                <div class="text-sm text-white/60 mt-1">{{ featured.author|default:"Autor(a) Desconhecido(a)" }}</div>
+                <div class="text-2xl font-black mt-1">
+                  {% if featured %}{{ featured.title }}{% else %}Sem livros{% endif %}
+                </div>
+                <div class="text-sm text-white/60 mt-1">
+                  {% if featured %}{{ featured.author|default:"" }}{% endif %}
+                </div>
               </div>
 
               <a href="#mais-lidos" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">
@@ -293,49 +302,53 @@
               </a>
             </div>
 
-            <div class="mt-6 grid grid-cols-12 gap-4 items-center">
-              <div class="col-span-5">
+            <!-- ✅ FIX HERO GRID (não bagunça no mobile) -->
+            <div class="mt-6 grid grid-cols-1 sm:grid-cols-12 gap-4 items-start">
+              <div class="sm:col-span-5">
                 <div class="rounded-2xl overflow-hidden border border-white/10 shimmer floaty">
-                  {% if featured.cover %}
-                    <img src="{{ featured.cover }}" alt="{{ featured.title }}" class="w-full h-[260px] sm:h-[320px] object-cover" />
+                  {% if featured and featured.cover %}
+                    <img src="{{ featured.cover.url }}" alt="{{ featured.title }}" class="w-full h-[300px] sm:h-[340px] object-cover" />
                   {% else %}
-                    <div class="w-full h-[260px] sm:h-[320px] bg-white/5 grid place-items-center">
+                    <div class="w-full h-[300px] sm:h-[340px] bg-white/5 grid place-items-center">
                       <div class="text-center">
                         <div class="text-5xl">📕</div>
-                        <div class="text-xs text-white/50 mt-2">Capa em breve</div>
+                        <div class="text-xs text-white/50 mt-2">Capa indisponível</div>
                       </div>
                     </div>
                   {% endif %}
                 </div>
               </div>
 
-              <div class="col-span-7">
+              <div class="sm:col-span-7">
                 <div class="rounded-2xl glass p-4">
-                  <div class="text-xs" style="color:var(--muted2)">Resumo rápido</div>
-                  <p class="mt-2 text-sm text-white/70 leading-relaxed">
-                    {{ featured.blurb|default:"Uma história intensa, cinematográfica e inteligente. Descubra por que tantos leitores estão a comentar este título." }}
-                  </p>
+                  <div class="text-xs" style="color:var(--muted2)">Descrição</div>
+                  {% if featured %}
+                    <p class="mt-2 text-sm text-white/70 leading-relaxed">
+                      {{ featured.description|default:"—"|truncatechars:220 }}
+                    </p>
 
-                  <div class="mt-4 flex flex-wrap gap-2">
-                    <span class="px-3 py-1 rounded-full pill text-xs">🔥 Em alta</span>
-                    <span class="px-3 py-1 rounded-full pill text-xs">🎧 Áudio (em breve)</span>
-                    <span class="px-3 py-1 rounded-full pill text-xs">📌 Favoritar</span>
-                  </div>
+                    {% if featured.tags.all %}
+                      <div class="mt-4 flex flex-wrap gap-2">
+                        {% for t in featured.tags.all %}
+                          <span class="px-3 py-1 rounded-full pill text-xs">#{{ t.name }}</span>
+                        {% endfor %}
+                      </div>
+                    {% endif %}
 
-                  <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
-                    <div class="rounded-xl pill px-3 py-2">
-                      <div class="text-xs text-white/50">Tempo médio</div>
-                      <div class="font-bold">⏱️ {{ featured.avg_time|default:"1h 20m" }}</div>
+                    <div class="mt-4">
+                      <a href="{% url 'frontend:read' featured.id 1 %}"
+                         class="inline-flex w-full justify-center px-4 py-3 rounded-2xl font-bold"
+                         style="background:linear-gradient(135deg,var(--red),var(--red2));">
+                        Ler este livro
+                      </a>
                     </div>
-                    <div class="rounded-xl pill px-3 py-2">
-                      <div class="text-xs text-white/50">Dificuldade</div>
-                      <div class="font-bold">🧠 {{ featured.level|default:"Média" }}</div>
-                    </div>
-                  </div>
+                  {% else %}
+                    <p class="mt-2 text-sm text-white/60">Adicione livros no Admin para aparecerem aqui.</p>
+                  {% endif %}
                 </div>
 
                 <div class="mt-4 text-xs text-white/45">
-                  Segurança: leitura e conta protegidas com autenticação e validações no servidor.
+                  Segurança: validações no servidor e controle de acesso por sessão.
                 </div>
               </div>
             </div>
@@ -357,148 +370,137 @@
           <div>
             <h2 class="text-2xl sm:text-3xl font-black">Descoberta rápida</h2>
             <p class="text-white/60 mt-1 text-sm">
-              Explore livros por tendência, novidade e recomendações. Use o filtro avançado para precisão total.
+              Explore livros reais do banco. Use o filtro para refinar.
             </p>
           </div>
           <div class="hidden sm:flex gap-2">
             <a href="#filtro" class="px-4 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ir ao filtro</a>
-            <a href="#todos" class="px-4 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ver todos</a>
+            <a href="#todos" class="px-4 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ver resultados</a>
           </div>
         </div>
 
         <div class="mt-5 flex flex-wrap gap-2">
-          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="trending">🔥 Em alta</button>
-          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="new">🆕 Novos</button>
-          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="top">⭐ Top avaliados</button>
-          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="short">⚡ Leituras curtas</button>
-          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="free">🎁 Gratuitos</button>
+          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="new">🆕 Recentes</button>
+          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="free">🎁 Free</button>
+          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="premium">💎 Premium</button>
         </div>
       </div>
     </section>
 
-    <!-- MOST READ -->
+    <!-- MOST READ (REAL) -->
     <section id="mais-lidos" class="py-8">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between">
           <h3 class="text-xl sm:text-2xl font-black">Mais lidos</h3>
-          <a href="#todos" class="text-sm text-white/60 hover:text-white transition">Ver tudo →</a>
+          <a href="#todos" class="text-sm text-white/60 hover:text-white transition">Ver resultados →</a>
         </div>
 
         <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {% if most_read %}
-            {% for b in most_read %}
-              <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
-                <div class="rounded-xl overflow-hidden border border-white/10">
+          {% for b in most_read %}
+            <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
+              <div class="rounded-xl overflow-hidden border border-white/10">
+                {% if b.cover %}
+                  <img src="{{ b.cover.url }}" alt="{{ b.title }}" class="h-40 w-full object-cover" />
+                {% else %}
                   <div class="h-40 bg-white/5 grid place-items-center">📘</div>
-                </div>
-                <div class="mt-3">
-                  <div class="font-bold">{{ b.title }}</div>
-                  <div class="text-xs text-white/60">⭐ {{ b.rating }} • 👀 {{ b.readers }}</div>
-                  <div class="mt-3 flex gap-2">
-                    <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
-                    <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
-                  </div>
-                </div>
-              </article>
-            {% endfor %}
-          {% else %}
-            {% for i in "1234" %}
-              <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
-                <div class="rounded-xl overflow-hidden border border-white/10">
-                  <div class="h-40 bg-white/5 grid place-items-center">📘</div>
-                </div>
-                <div class="mt-3">
-                  <div class="font-bold">Livro Popular {{ forloop.counter }}</div>
-                  <div class="text-xs text-white/60">⭐ 4.7 • 👀 9.3k</div>
-                  <div class="mt-3 flex gap-2">
-                    <a href="{% url 'frontend:login' %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
-                    <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
-                  </div>
-                </div>
-              </article>
-            {% endfor %}
-          {% endif %}
-        </div>
-      </div>
-    </section>
-
-    <!-- MOST RECENT -->
-    <section id="mais-recentes" class="py-8">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xl sm:text-2xl font-black">Mais recentes</h3>
-          <a href="#todos" class="text-sm text-white/60 hover:text-white transition">Ver tudo →</a>
-        </div>
-
-        <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {% for i in "1234" %}
-          <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
-            <div class="rounded-xl overflow-hidden border border-white/10">
-              <div class="h-40 bg-white/5 grid place-items-center">🆕</div>
-            </div>
-            <div class="mt-3">
-              <div class="font-bold">Novo Livro {{ forloop.counter }}</div>
-              <div class="text-xs text-white/60">⭐ 4.5 • 👀 2.1k</div>
-              <div class="mt-3 flex gap-2">
-                <a href="{% url 'frontend:login' %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
-                <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
+                {% endif %}
               </div>
+
+              <div class="mt-3">
+                <div class="font-bold">{{ b.title }}</div>
+                <div class="text-xs text-white/60">
+                  {{ b.author|default:"" }}{% if b.genre %} • {{ b.genre }}{% endif %}
+                </div>
+
+                <div class="mt-3 flex gap-2">
+                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
+                  <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
+                </div>
+              </div>
+            </article>
+          {% empty %}
+            <div class="col-span-full glass glow rounded-2xl p-5 text-sm text-white/60">
+              Ainda não há livros no banco.
             </div>
-          </article>
           {% endfor %}
         </div>
       </div>
     </section>
 
-    <!-- ADVANCED FILTER -->
+    <!-- MOST RECENT (REAL) -->
+    <section id="mais-recentes" class="py-8">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xl sm:text-2xl font-black">Mais recentes</h3>
+          <a href="#todos" class="text-sm text-white/60 hover:text-white transition">Ver resultados →</a>
+        </div>
+
+        <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {% for b in most_recent %}
+            <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
+              <div class="rounded-xl overflow-hidden border border-white/10">
+                {% if b.cover %}
+                  <img src="{{ b.cover.url }}" alt="{{ b.title }}" class="h-40 w-full object-cover" />
+                {% else %}
+                  <div class="h-40 bg-white/5 grid place-items-center">🆕</div>
+                {% endif %}
+              </div>
+
+              <div class="mt-3">
+                <div class="font-bold">{{ b.title }}</div>
+                <div class="text-xs text-white/60">
+                  {{ b.author|default:"" }}{% if b.genre %} • {{ b.genre }}{% endif %}
+                </div>
+
+                <div class="mt-3 flex gap-2">
+                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
+                  <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
+                </div>
+              </div>
+            </article>
+          {% empty %}
+            <div class="col-span-full glass glow rounded-2xl p-5 text-sm text-white/60">
+              Ainda não há livros recentes.
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <!-- FILTER (REAL) -->
     <section id="filtro" class="py-10">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between gap-4">
           <div>
-            <h3 class="text-xl sm:text-2xl font-black">Filtro altamente avançado</h3>
-            <p class="text-white/60 text-sm mt-1">Refina por título, autor, categoria, avaliação, duração e ordenação.</p>
+            <h3 class="text-xl sm:text-2xl font-black">Filtro</h3>
+            <p class="text-white/60 text-sm mt-1">Pesquisar por título, autor, género e ordenar.</p>
           </div>
           <a href="#todos" class="text-sm text-white/60 hover:text-white transition">Aplicar e ver resultados ↓</a>
         </div>
 
         <form method="get" action="#todos" class="mt-5 grid lg:grid-cols-12 gap-4">
-          <div class="lg:col-span-4 glass glow rounded-2xl p-4">
+          <div class="lg:col-span-5 glass glow rounded-2xl p-4">
             <label class="text-xs text-white/60">Pesquisar</label>
             <input name="q" value="{{ request.GET.q|default:'' }}"
-                   placeholder="Título, autor, palavra-chave..."
+                   placeholder="Título, autor, género..."
                    class="mt-2 w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 outline-none focus:border-white/25" />
-            <div class="mt-3 text-xs text-white/45">Segurança: esta busca é via GET, sem expor dados sensíveis.</div>
           </div>
 
           <div class="lg:col-span-3 glass glow rounded-2xl p-4">
-            <label class="text-xs text-white/60">Categoria</label>
-            <select name="cat" class="mt-2 w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 outline-none focus:border-white/25">
-              <option value="">Todas</option>
-              <option value="ficcao">Ficção</option>
-              <option value="negocios">Negócios</option>
-              <option value="autoajuda">Autoajuda</option>
-              <option value="historia">História</option>
-              <option value="programacao">Programação</option>
+            <label class="text-xs text-white/60">Tipo</label>
+            <select name="type" class="mt-2 w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 outline-none focus:border-white/25">
+              <option value="">Todos</option>
+              <option value="free" {% if request.GET.type == "free" %}selected{% endif %}>Free</option>
+              <option value="premium" {% if request.GET.type == "premium" %}selected{% endif %}>Premium</option>
             </select>
           </div>
 
-          <div class="lg:col-span-2 glass glow rounded-2xl p-4">
-            <label class="text-xs text-white/60">Avaliação mínima</label>
-            <select name="min_rating" class="mt-2 w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 outline-none focus:border-white/25">
-              <option value="">Qualquer</option>
-              <option value="3">3+</option>
-              <option value="4">4+</option>
-              <option value="4.5">4.5+</option>
-            </select>
-          </div>
-
-          <div class="lg:col-span-3 glass glow rounded-2xl p-4">
+          <div class="lg:col-span-4 glass glow rounded-2xl p-4">
             <label class="text-xs text-white/60">Ordenar por</label>
             <select name="sort" class="mt-2 w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 outline-none focus:border-white/25">
-              <option value="relevancia">Relevância</option>
-              <option value="recentes">Mais recentes</option>
-              <option value="lidos">Mais lidos</option>
-              <option value="rating">Melhor avaliação</option>
+              <option value="recentes" {% if request.GET.sort == "recentes" %}selected{% endif %}>Mais recentes</option>
+              <option value="antigos" {% if request.GET.sort == "antigos" %}selected{% endif %}>Mais antigos</option>
+              <option value="titulo" {% if request.GET.sort == "titulo" %}selected{% endif %}>Título</option>
             </select>
 
             <div class="mt-3 flex gap-2">
@@ -517,30 +519,49 @@
       </div>
     </section>
 
-    <!-- ALL BOOKS -->
+    <!-- ALL BOOKS (REAL) -->
     <section id="todos" class="py-10">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex items-end justify-between gap-4">
           <div>
             <h3 class="text-xl sm:text-2xl font-black">Todos os livros</h3>
-            <p class="text-white/60 text-sm mt-1">Resultados do filtro e catálogo completo.</p>
+            <p class="text-white/60 text-sm mt-1">Resultados reais do banco.</p>
           </div>
-          <div class="text-xs text-white/45">Dica: Paginação e busca real entram no backend.</div>
         </div>
 
         <div class="mt-5 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {% for i in "12345678910" %}
-          <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
-            <div class="h-36 rounded-xl bg-white/5 grid place-items-center">📗</div>
-            <div class="mt-3">
-              <div class="font-bold text-sm">Livro {{ forloop.counter }}</div>
-              <div class="text-xs text-white/60">⭐ 4.6 • 👀 1.2k</div>
-              <div class="mt-3 flex gap-2">
-                <a href="{% url 'frontend:login' %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
-                <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
+          {% for b in books %}
+            <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
+              <div class="rounded-xl overflow-hidden border border-white/10">
+                {% if b.cover %}
+                  <img src="{{ b.cover.url }}" alt="{{ b.title }}" class="h-36 w-full object-cover" />
+                {% else %}
+                  <div class="h-36 bg-white/5 grid place-items-center">📗</div>
+                {% endif %}
               </div>
+
+              <div class="mt-3">
+                <div class="font-bold text-sm">{{ b.title }}</div>
+                <div class="text-xs text-white/60">
+                  {{ b.author|default:"" }}{% if b.genre %} • {{ b.genre }}{% endif %}
+                </div>
+
+                <div class="mt-3 flex gap-2">
+                  <a href="{% url 'frontend:read' b.id 1 %}"
+                     class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">
+                    Ler
+                  </a>
+                  <a href="{% url 'frontend:favorites' %}"
+                     class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">
+                    ♡
+                  </a>
+                </div>
+              </div>
+            </article>
+          {% empty %}
+            <div class="col-span-full glass glow rounded-2xl p-5 text-sm text-white/60">
+              Nenhum livro encontrado.
             </div>
-          </article>
           {% endfor %}
         </div>
       </div>
@@ -576,12 +597,21 @@
       });
     }
 
+    // chips -> aplica filtros reais
     document.querySelectorAll("[data-chip]").forEach(btn => {
       btn.addEventListener("click", () => {
         const chip = btn.getAttribute("data-chip");
         const url = new URL(window.location.href);
         url.hash = "todos";
-        url.searchParams.set("chip", chip);
+
+        // limpa antes
+        url.searchParams.delete("type");
+        url.searchParams.delete("sort");
+
+        if(chip === "new") url.searchParams.set("sort", "recentes");
+        if(chip === "free") url.searchParams.set("type", "free");
+        if(chip === "premium") url.searchParams.set("type", "premium");
+
         window.location.href = url.toString();
       });
     });
