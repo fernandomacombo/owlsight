@@ -1,51 +1,230 @@
-{% extends "frontend/base.html" %}
-{% block title %}Owlsight — Login{% endblock %}
+{% load static %}
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
 
-{% block content %}
-<div class="max-w-md mx-auto fade-in">
-  <div class="glass soft-shadow rounded-3xl p-5">
-    <h1 class="text-2xl font-black">Entrar</h1>
-    <p class="text-sm mt-1" style="color: rgba(255,255,255,.62);">A tua conta dá acesso ao progresso, favoritos e avaliações.</p>
+  <title>Owlsight — Login</title>
+  <link rel="icon" type="image/x-icon" href="{% static 'frontend/images/favicon.ico' %}">
 
-    <div class="mt-4 grid gap-2">
-      <input id="username" class="input px-3 py-2 rounded-xl" placeholder="Username" />
-      <input id="password" type="password" class="input px-3 py-2 rounded-xl" placeholder="Senha" />
-      <button id="btn" class="btn-red px-4 py-2 rounded-xl font-semibold">Login</button>
-      <p id="msg" class="text-sm" style="color: rgba(225,6,0,.92);"></p>
-    </div>
+  <style>
+    html, body { height: 100%; overflow: hidden; }
 
-    <div class="mt-4 text-sm flex justify-between">
-      <a class="underline" style="color: rgba(255,255,255,.72)" href="/forgot-password/">Esqueceu a senha?</a>
-      <a class="underline" style="color: rgba(255,255,255,.72)" href="/register/">Criar conta</a>
+    :root{
+      --bg:#060606;
+      --panel: rgba(15,15,15,.82);
+      --stroke: rgba(255,255,255,.10);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.65);
+      --red:#8A0000;
+      --red2:#E10600;
+    }
+
+    body{
+      background:
+        radial-gradient(900px 520px at 18% 10%, rgba(138,0,0,.28), transparent 60%),
+        radial-gradient(800px 500px at 85% 20%, rgba(225,6,0,.10), transparent 55%),
+        linear-gradient(180deg, #050505, #090909 60%, #050505);
+      color: var(--text);
+    }
+
+    .glass{
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+
+    .input{
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.10);
+      outline: none;
+    }
+    .input:focus{
+      border-color: rgba(225,6,0,.45);
+      box-shadow: 0 0 0 4px rgba(225,6,0,.10);
+    }
+
+    .btn-primary{
+      background: linear-gradient(90deg, rgba(138,0,0,1), rgba(225,6,0,.85));
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    .btn-primary:hover{ filter: brightness(1.08); }
+
+    .btn-ghost{
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    .btn-ghost:hover{ background: rgba(255,255,255,.06); }
+  </style>
+</head>
+
+<body class="h-full">
+  <div class="h-full w-full">
+    <div class="h-full max-w-6xl mx-auto px-4">
+      <div class="h-full grid grid-cols-1 lg:grid-cols-2 gap-5 items-center">
+
+        <!-- LEFT -->
+        <section class="glass rounded-3xl p-6 lg:p-8 h-[86vh] lg:h-[78vh] flex flex-col justify-between">
+          <header class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-2xl grid place-items-center"
+                 style="background: rgba(138,0,0,.18); border:1px solid rgba(255,255,255,.10);">
+              <img src="{% static 'frontend/images/logo.png' %}" alt="Owlsight"
+                   class="w-7 h-7 object-contain"
+                   onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=&quot;color:#fff; font-weight:800;&quot;>O</span>';">
+            </div>
+
+            <div class="leading-tight">
+              <div class="text-lg font-extrabold tracking-tight">Owlsight</div>
+              <div class="text-xs text-white/60">See beyond</div>
+            </div>
+          </header>
+
+          <div class="mt-6 lg:mt-0">
+            <h1 class="text-2xl lg:text-3xl font-extrabold tracking-tight">
+              Bem-vindo de volta.
+            </h1>
+            <p class="mt-2 text-sm text-white/65 max-w-md">
+              Entra para continuar na tua biblioteca digital.
+            </p>
+
+            <div class="mt-6 grid grid-cols-2 gap-3">
+              <div class="rounded-2xl p-4"
+                   style="background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);">
+                <div class="text-xs text-white/60">Segurança</div>
+                <div class="mt-1 text-sm font-semibold">Proteção anti brute-force</div>
+              </div>
+              <div class="rounded-2xl p-4"
+                   style="background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);">
+                <div class="text-xs text-white/60">Acesso</div>
+                <div class="mt-1 text-sm font-semibold">Desktop • Tablet • Mobile</div>
+              </div>
+            </div>
+          </div>
+
+          <footer class="flex items-center justify-between text-xs text-white/55">
+            <span>Owlsight v1.0 — todos direitos reservados</span>
+            <span class="hidden sm:inline">© {% now "Y" %}</span>
+          </footer>
+        </section>
+
+        <!-- RIGHT -->
+        <section class="glass rounded-3xl p-6 lg:p-8 h-[86vh] lg:h-[78vh] flex flex-col">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="text-sm text-white/60">Acesso</div>
+              <div class="text-2xl font-extrabold mt-1">Entrar</div>
+            </div>
+
+            <a href="{% url 'register' %}" class="text-sm font-semibold" style="color: rgba(225,6,0,.95);">
+              Criar conta →
+            </a>
+          </div>
+
+          <!-- mensagens -->
+          <div class="mt-4 space-y-2">
+            {% if messages %}
+              {% for message in messages %}
+                <div class="rounded-2xl px-4 py-3 text-sm"
+                     style="background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.10);">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+
+          <form method="post" action="{% url 'login' %}" class="mt-5 flex-1 flex flex-col">
+            {% csrf_token %}
+
+            <div class="space-y-4">
+              <div>
+                <label class="text-sm text-white/70">User name ou email</label>
+                <input
+                  name="username"
+                  value="{{ form.username.value|default_if_none:'' }}"
+                  autocomplete="username"
+                  required
+                  class="input mt-2 w-full rounded-2xl px-4 py-3 text-sm text-white placeholder-white/40"
+                  placeholder="ex: fernando ou fernando@email.com"
+                />
+              </div>
+
+              <div>
+                <label class="text-sm text-white/70">Password</label>
+                <div class="relative mt-2">
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                    class="input w-full rounded-2xl px-4 py-3 text-sm text-white placeholder-white/40 pr-12"
+                    placeholder="••••••••"
+                  />
+                  <button type="button"
+                          onclick="togglePassword()"
+                          class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-2 rounded-xl btn-ghost text-xs">
+                    Ver
+                  </button>
+                </div>
+              </div>
+
+              <div class="flex items-center justify-between">
+                <label class="flex items-center gap-2 text-sm text-white/70 select-none">
+                  <input type="checkbox" name="remember" class="accent-red-600" />
+                  Lembrar-me
+                </label>
+
+                <a href="{% url 'forgot_password' %}" class="text-sm text-white/70 hover:text-white">
+                  Recuperar senha
+                </a>
+              </div>
+
+              <button type="submit" class="btn-primary w-full rounded-2xl py-3 font-extrabold">
+                Entrar
+              </button>
+            </div>
+
+            <div class="mt-6">
+              <div class="flex items-center gap-3">
+                <div class="h-px flex-1 bg-white/10"></div>
+                <div class="text-xs text-white/55">Social</div>
+                <div class="h-px flex-1 bg-white/10"></div>
+              </div>
+
+              <!-- botões social (UI pronta; liga depois) -->
+              <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button type="button" class="btn-ghost rounded-2xl py-3 text-sm font-semibold text-center w-full"
+                        onclick="alert('Google login ainda não está ativo nesta versão.');">
+                  Continuar com Google
+                </button>
+
+                <button type="button" class="btn-ghost rounded-2xl py-3 text-sm font-semibold text-center w-full"
+                        onclick="alert('Apple login ainda não está ativo nesta versão.');">
+                  Continuar com Apple
+                </button>
+              </div>
+
+              <p class="mt-4 text-xs text-white/55">
+                Ao continuar, confirmas que és o dono da conta.
+              </p>
+            </div>
+
+            <input type="hidden" name="next" value="{{ next|default:'/' }}">
+          </form>
+        </section>
+
+      </div>
     </div>
   </div>
-</div>
-{% endblock %}
 
-{% block extra_js %}
-<script>
-document.getElementById("btn").onclick = async () => {
-  const username = document.getElementById("username").value.trim();
-  const password = document.getElementById("password").value;
-  const msg = document.getElementById("msg");
-  msg.textContent = "";
-
-  const res = await fetch("/api/token/", {
-    method: "POST",
-    headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ username, password })
-  });
-
-  const data = await res.json().catch(() => ({}));
-
-  if(!res.ok){
-    msg.textContent = (data.detail || "Falha no login. Verifique os dados.");
-    return;
-  }
-
-  localStorage.setItem("access", data.access);
-  localStorage.setItem("refresh", data.refresh);
-  window.location.href = "/";
-};
-</script>
-{% endblock %}
+  <script>
+    function togglePassword(){
+      const el = document.getElementById('password');
+      el.type = (el.type === 'password') ? 'text' : 'password';
+    }
+  </script>
+</body>
+</html>

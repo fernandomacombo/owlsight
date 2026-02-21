@@ -4,6 +4,10 @@ from pathlib import Path
 import dj_database_url
 from dotenv import load_dotenv
 
+# ✅ Extras de segurança (instala: pip install django-axes django-csp)
+# Axes = bloqueio anti brute-force
+# CSP  = Content-Security-Policy (anti XSS)
+
 # Carrega .env local (no Railway, use Variables do painel)
 load_dotenv()
 
@@ -21,7 +25,6 @@ if not SECRET_KEY:
 DEBUG = os.getenv("DEBUG", "False").lower() in ("1", "true", "yes", "on")
 
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h.strip()]
-
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
 
 
@@ -39,9 +42,11 @@ INSTALLED_APPS = [
     # terceiros
     "rest_framework",
     "storages",
+    "axes",
+    "csp",
 
     # apps do projeto
-     "frontend",
+    "frontend",
     "books",
     "reading",
     "accounts",
@@ -63,6 +68,21 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+
+    # CSP (anti XSS)
+    "csp.middleware.CSPMiddleware",
+
+    # Axes (anti brute-force) -> deve ficar por último
+    "axes.middleware.AxesMiddleware",
+]
+
+
+# =========================
+# Auth backends
+# =========================
+AUTHENTICATION_BACKENDS = [
+    "axes.backends.AxesStandaloneBackend",
+    "django.contrib.auth.backends.ModelBackend",
 ]
 
 
@@ -148,8 +168,14 @@ REST_FRAMEWORK = {
 # =========================
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-
 STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
+
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    }
+}
+
 
 # =========================
 # Media / Storage (Backblaze B2 via S3)
@@ -173,13 +199,6 @@ USE_B2 = all([
     AWS_S3_ENDPOINT_URL,
 ])
 
-# STORAGES único e consistente
-STORAGES = {
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    }
-}
-
 if USE_B2:
     STORAGES["default"] = {"BACKEND": "storages.backends.s3boto3.S3Boto3Storage"}
     MEDIA_URL = "/media/"
@@ -196,6 +215,63 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024      # 200MB
 
 
 # =========================
+# Segurança forte (produção)
+# =========================
+# Cookies
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
+# Headers
+X_FRAME_OPTIONS = "DENY"
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
+# HTTPS/HSTS apenas em produção
+if not DEBUG:
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+    SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30  # 30 dias (depois aumente)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+# URLs de auth
+LOGIN_URL = "/login/"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/login/"
+
+
+# =========================
+# AXES (anti brute-force)
+# =========================
+AXES_ENABLED = True
+AXES_FAILURE_LIMIT = 5        # 5 falhas
+AXES_COOLOFF_TIME = 1         # 1 hora bloqueado
+AXES_RESET_ON_SUCCESS = True
+AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True
+AXES_USERNAME_FORM_FIELD = "username"
+AXES_ENABLE_ACCESS_FAILURE_LOG = True
+
+
+# =========================
+# CSP (anti XSS)
+# =========================
+CSP_DEFAULT_SRC = ("'self'",)
+CSP_IMG_SRC = ("'self'", "data:", "blob:")
+CSP_FONT_SRC = ("'self'", "data:")
+CSP_CONNECT_SRC = ("'self'",)
+
+# Tailwind CDN + inline (porque teu login tem tailwind CDN e toggle password inline)
+CSP_SCRIPT_SRC = ("'self'", "https://cdn.tailwindcss.com", "'unsafe-inline'")
+CSP_STYLE_SRC = ("'self'", "'unsafe-inline'")
+
+
+# =========================
 # Outros
 # =========================
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -207,19 +283,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "handlers": {
-        "console": {"class": "logging.StreamHandler"},
-    },
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
     "loggers": {
-        "django.request": {
-            "handlers": ["console"],
-            "level": "ERROR",
-            "propagate": True,
-        },
-        "django.security": {
-            "handlers": ["console"],
-            "level": "ERROR",
-            "propagate": True,
-        },
+        "django.request": {"handlers": ["console"], "level": "ERROR", "propagate": True},
+        "django.security": {"handlers": ["console"], "level": "ERROR", "propagate": True},
+        "axes.watch_login": {"handlers": ["console"], "level": "WARNING", "propagate": True},
     },
 }

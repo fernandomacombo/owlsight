@@ -1,7 +1,8 @@
 from django.urls import path
+from django.contrib.auth.decorators import login_required
+
 from .views import (
     home,
-    login_view,
     register_view,
     forgot_password_view,
     reset_password_view,
@@ -9,12 +10,34 @@ from .views import (
     favorites_view,
 )
 
+from .views_auth import OwlsightLoginView, owlsight_logout
+
+
 urlpatterns = [
+    # Página inicial
     path("", home, name="home"),
-    path("login/", login_view, name="login"),
+
+    # 🔐 LOGIN SEGURO (Class-Based View)
+    path("login/", OwlsightLoginView.as_view(), name="login"),
+
+    # Logout (POST only)
+    path("logout/", owlsight_logout, name="logout"),
+
+    # Registro e recuperação
     path("register/", register_view, name="register"),
-    path("forgot-password/", forgot_password_view, name="forgot-password"),
-    path("reset-password/", reset_password_view, name="reset-password"),
-    path("read/<int:book_id>/<int:page_number>/", read_view, name="read"),
-    path("favorites/", favorites_view, name="favorites"),
+    path("forgot-password/", forgot_password_view, name="forgot_password"),
+    path("reset-password/", reset_password_view, name="reset_password"),
+
+    # 🔒 PÁGINAS PROTEGIDAS (exigem login)
+    path(
+        "read/<int:book_id>/<int:page_number>/",
+        login_required(read_view),
+        name="read"
+    ),
+
+    path(
+        "favorites/",
+        login_required(favorites_view),
+        name="favorites"
+    ),
 ]
