@@ -1,223 +1,660 @@
-{% extends "frontend/base.html" %}
-{% block title %}Owlsight — Livros{% endblock %}
+{% load static %}
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="Owlsight — Biblioteca inteligente. Descubra, leia e organize livros com recomendações personalizadas." />
+  <meta name="theme-color" content="#070707" />
 
-{% block content %}
-  <section class="fade-in">
-    <div class="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-      <div>
-        <h1 class="text-2xl md:text-3xl font-black tracking-tight">
-          Catálogo
-          <span style="color: rgba(225,6,0,.95);">Owlsight</span>
-        </h1>
-        <p class="text-sm mt-1" style="color: rgba(255,255,255,.62);">
-          Preto. Vermelho. Branco. Um layout cinematográfico — rápido, limpo e profissional.
-        </p>
-      </div>
+  <link rel="icon" type="image/x-icon" href="{% static 'frontend/images/favicon.ico' %}">
+  <link rel="apple-touch-icon" href="{% static 'frontend/images/favicon.ico' %}">
+  <script src="https://cdn.tailwindcss.com"></script>
 
-      <div class="flex gap-2 mt-3 md:mt-0">
-        <input id="q" class="input px-3 py-2 rounded-xl text-sm w-full md:w-72"
-               placeholder="Pesquisar título, autor, género..." />
-        <button id="clearBtn" class="btn px-3 py-2 rounded-xl text-sm">Limpar</button>
-      </div>
-    </div>
+  <title>Owlsight — Biblioteca</title>
 
-    <div class="mt-5">
-      <div id="books" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"></div>
-      <p id="msg" class="mt-4 text-sm" style="color: rgba(255,255,255,.62);"></p>
-    </div>
-  </section>
-{% endblock %}
+  <style>
+    :root{
+      --bg:#070707;
+      --panel: rgba(18,18,18,.78);
+      --panel2: rgba(12,12,12,.92);
+      --stroke: rgba(255,255,255,.10);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.62);
+      --muted2: rgba(255,255,255,.45);
+      --red:#E10600;
+      --red2:#8A0000;
+      --green:#22c55e;
+    }
 
-{% block extra_js %}
-<script>
-function token(){ return localStorage.getItem("access"); }
+    html,body{ height:100%; background: var(--bg); color: var(--text); }
+    body{ overflow-x:hidden; }
 
-function renderStars(avg){
-  const full = Math.floor(avg);
-  let stars = "";
-  for(let i=1;i<=5;i++){ stars += (i <= full) ? "★" : "☆"; }
-  return stars;
-}
+    /* Cinematic background layers */
+    .cinema-bg{
+      background:
+        radial-gradient(1100px 560px at 15% 0%, rgba(225,6,0,.18), transparent 60%),
+        radial-gradient(980px 520px at 85% 10%, rgba(138,0,0,.14), transparent 55%),
+        radial-gradient(760px 420px at 50% 85%, rgba(255,255,255,.06), transparent 65%),
+        linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.35)),
+        var(--bg);
+    }
 
-async function loadProgress(){
-  const t = token();
-  if(!t) return {};
-  const res = await fetch("/api/progress/me/", { headers: { "Authorization": "Bearer " + t } });
-  if(!res.ok) return {};
-  const arr = await res.json().catch(()=>[]);
-  const map = {};
-  for(const item of arr){ map[item.book_id] = item; }
-  return map;
-}
+    /* Soft animated grain */
+    .grain:before{
+      content:"";
+      position:fixed; inset:-20%;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+      opacity:.07;
+      pointer-events:none;
+      transform:translateZ(0);
+      animation: grainMove 10s linear infinite;
+    }
+    @keyframes grainMove{
+      0%{ transform: translate(0,0); }
+      25%{ transform: translate(-2%, 1%); }
+      50%{ transform: translate(-1%, -2%); }
+      75%{ transform: translate(2%, 1%); }
+      100%{ transform: translate(0,0); }
+    }
 
-async function loadFavorites(){
-  const t = token();
-  if(!t) return new Set();
-  const res = await fetch("/api/favorites/me/", { headers: { "Authorization": "Bearer " + t } });
-  if(!res.ok) return new Set();
-  const arr = await res.json().catch(()=>[]);
-  return new Set(arr.map(x => x.book_id));
-}
+    /* Glass + glow */
+    .glass{
+      background: rgba(255,255,255,.05);
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .glow{
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,.06),
+        0 18px 60px rgba(0,0,0,.55),
+        0 0 80px rgba(225,6,0,.10);
+    }
 
-async function toggleFavorite(bookId){
-  const t = token();
-  if(!t){ window.location.href = "/login/"; return; }
-  const res = await fetch(`/api/favorites/toggle/${bookId}/`, {
-    method: "POST",
-    headers: { "Authorization": "Bearer " + t }
-  });
-  if(!res.ok){ alert("Erro ao favoritar."); return; }
-  loadBooks();
-}
+    /* No page scroll jitter for hero; smooth anchor */
+    html { scroll-behavior: smooth; }
 
-async function rateBook(bookId, stars){
-  const t = token();
-  if(!t){ window.location.href = "/login/"; return; }
+    /* Hide scrollbar (optional) */
+    .soft-scroll::-webkit-scrollbar{ width: 10px; }
+    .soft-scroll::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.10); border-radius: 999px; }
+    .soft-scroll::-webkit-scrollbar-track{ background: rgba(255,255,255,.03); }
 
-  const res = await fetch(`/api/ratings/${bookId}/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + t
-    },
-    body: JSON.stringify({ stars })
-  });
+    /* Tag */
+    .pill{
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+    }
 
-  const data = await res.json().catch(()=>({}));
-  if(!res.ok){
-    alert(data.error || "Erro ao avaliar.");
-    return;
-  }
-  loadBooks();
-}
+    /* Animated underline */
+    .u{
+      position:relative;
+    }
+    .u:after{
+      content:"";
+      position:absolute; left:0; bottom:-6px;
+      width:0; height:2px;
+      background: linear-gradient(90deg, var(--red), rgba(225,6,0,0));
+      transition: width .25s ease;
+    }
+    .u:hover:after{ width:100%; }
 
-function rateStarsHTML(bookId){
-  return `
-    <div class="flex gap-1 mt-2">
-      ${[1,2,3,4,5].map(s => `
-        <button onclick="rateBook(${bookId}, ${s})"
-          class="text-lg hover:scale-110 transition"
-          style="color: rgba(225,6,0,.92)"
-          title="Avaliar ${s} estrela(s)">★</button>
-      `).join("")}
-    </div>
-  `;
-}
+    /* Book cover shimmer */
+    .shimmer{
+      position:relative; overflow:hidden;
+    }
+    .shimmer:after{
+      content:"";
+      position:absolute; inset:-120% -60%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+      transform: rotate(12deg);
+      animation: shimmer 2.8s ease-in-out infinite;
+      opacity:.45;
+    }
+    @keyframes shimmer{
+      0%{ transform: translateX(-30%) rotate(12deg); }
+      100%{ transform: translateX(30%) rotate(12deg); }
+    }
 
-function cardHTML(b, p, isFav){
-  const continuePage = p?.last_page || 1;
-  const percent = p?.progress_percent || 0;
+    /* Subtle float on hero book */
+    @keyframes floaty{
+      0%,100%{ transform: translateY(0px); }
+      50%{ transform: translateY(-10px); }
+    }
+    .floaty{ animation: floaty 4.5s ease-in-out infinite; }
 
-  const readers = b.readers_count ?? 0;
-  const active = b.active_readers ?? 0;
-  const avg = Number(b.avg_rating ?? 0);
-  const rcount = b.ratings_count ?? 0;
+    /* Motion reduce */
+    @media (prefers-reduced-motion: reduce){
+      *{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }
+    }
+  </style>
+</head>
 
-  const badge = (b.book_type === "premium")
-    ? `<span class="text-[11px] px-2 py-1 rounded-full" style="background: rgba(225,6,0,.14); border:1px solid rgba(225,6,0,.30); color: rgba(255,255,255,.92)">Premium</span>`
-    : `<span class="text-[11px] px-2 py-1 rounded-full" style="background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color: rgba(255,255,255,.82)">Free</span>`;
+<body class="cinema-bg grain">
+  <!-- TOP NAV -->
+  <header class="fixed top-0 left-0 right-0 z-50">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-4">
+      <div class="glass glow rounded-2xl px-4 sm:px-5 py-3 flex items-center justify-between">
+        <!-- Logo -->
+        <a href="{% url 'frontend:index' %}" class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl glass grid place-items-center">
+            <!-- opcional: troca por img -->
+            <img src="{% static 'frontend/images/logo.png' %}" alt="Owlsight" class="w-7 h-7 object-contain"
+                 onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=&quot;color:rgba(255,255,255,.9);font-weight:900;&quot;>O</span>';">
+          </div>
+          <div class="leading-tight">
+            <div class="text-white font-black tracking-tight">Owlsight</div>
+            <div class="text-xs" style="color:var(--muted2)">See beyond • biblioteca inteligente</div>
+          </div>
+        </a>
 
-  return `
-    <div class="poster rounded-2xl overflow-hidden soft-shadow group">
-      <div class="relative aspect-[3/4] overflow-hidden">
-        ${b.cover
-          ? `<img src="${b.cover}" class="w-full h-full object-cover group-hover:scale-[1.03] transition duration-200" />`
-          : `<div class="w-full h-full grid place-items-center" style="color: rgba(255,255,255,.45)">Sem capa</div>`
-        }
+        <!-- Desktop menu -->
+        <nav class="hidden md:flex items-center gap-6 text-sm">
+          <a class="u" href="#catalogo">Catálogo</a>
+          <a class="u" href="#mais-lidos">Mais lidos</a>
+          <a class="u" href="#mais-recentes">Mais recentes</a>
+          <a class="u" href="#filtro">Filtro avançado</a>
 
-        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition"
-             style="background: linear-gradient(180deg, transparent, rgba(0,0,0,.85));"></div>
+          {% if user.is_authenticated %}
+            <a class="u" href="{% url 'frontend:favorites' %}">Favoritos</a>
+            <a class="u" href="{% url 'frontend:account' %}">Minha conta</a>
+            {% if user.is_staff or user.is_superuser %}
+              <a class="u" href="/admin/">Admin</a>
+            {% endif %}
+            <form method="post" action="{% url 'frontend:logout' %}" class="inline">
+              {% csrf_token %}
+              <button class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Sair</button>
+            </form>
+          {% else %}
+            <a class="u" href="{% url 'frontend:categories' %}">Categorias</a>
+            <a class="u" href="{% url 'frontend:login' %}">Login</a>
+            <a href="{% url 'frontend:register' %}"
+               class="px-3 py-2 rounded-xl text-sm font-semibold"
+               style="background:linear-gradient(135deg,var(--red),var(--red2));">
+              Criar conta
+            </a>
+          {% endif %}
+        </nav>
 
-        <button onclick="toggleFavorite(${b.id})"
-          class="absolute top-2 right-2 w-10 h-10 rounded-xl grid place-items-center transition
-                 ${isFav ? "" : ""}"
-          style="background: rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.14);">
-          <span style="color:${isFav ? 'rgba(225,6,0,.95)' : 'rgba(255,255,255,.35)'}; font-size: 20px;">★</span>
+        <!-- Mobile menu button -->
+        <button id="menuBtn" class="md:hidden px-3 py-2 rounded-xl pill hover:bg-white/10 transition">
+          <span class="sr-only">Abrir menu</span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+            <path fill-rule="evenodd" d="M3 6.75A.75.75 0 013.75 6h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 6.75zm0 5.25A.75.75 0 013.75 11.25h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 12zm0 5.25A.75.75 0 013.75 16.5h16.5a.75.75 0 010 1.5H3.75A.75.75 0 013 17.25z" clip-rule="evenodd"/>
+          </svg>
         </button>
+      </div>
 
-        <div class="absolute bottom-0 left-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition">
-          <div class="flex items-center justify-between gap-2">
-            ${badge}
-            <div class="text-[11px]" style="color: rgba(255,255,255,.70)">
-              👁️ <b>${readers}</b> • 🔥 <b>${active}</b>
-            </div>
-          </div>
+      <!-- Mobile dropdown -->
+      <div id="mobileMenu" class="hidden mt-3 glass glow rounded-2xl p-4 md:hidden">
+        <div class="grid gap-2 text-sm">
+          <a href="#catalogo" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Catálogo</a>
+          <a href="#mais-lidos" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Mais lidos</a>
+          <a href="#mais-recentes" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Mais recentes</a>
+          <a href="#filtro" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Filtro avançado</a>
 
-          <div class="mt-2 text-sm font-bold leading-snug">${b.title}</div>
-          <div class="text-xs" style="color: rgba(255,255,255,.70)">${b.author} • ${b.genre}</div>
-
-          <div class="mt-2 text-xs" style="color: rgba(255,255,255,.70)">
-            <span style="color: rgba(225,6,0,.92)">${renderStars(avg)}</span>
-            <b>${avg}</b>/5 (${rcount})
-          </div>
-
-          ${token() ? rateStarsHTML(b.id) : `<div class="text-xs mt-2" style="color: rgba(255,255,255,.55)">Faça login para avaliar.</div>`}
-
-          <div class="mt-3">
-            <div class="flex justify-between text-[11px]" style="color: rgba(255,255,255,.65)">
-              <span>Progresso</span>
-              <span><b>${percent}%</b> • pág. <b>${continuePage}</b></span>
-            </div>
-            <div class="w-full rounded-full h-2 overflow-hidden mt-1" style="background: rgba(255,255,255,.10)">
-              <div class="h-2" style="width:${percent}%; background: linear-gradient(90deg, rgba(225,6,0,.95), rgba(255,255,255,.18));"></div>
-            </div>
-          </div>
-
-          <div class="mt-3 flex gap-2">
-            <a class="flex-1 text-center px-3 py-2 rounded-xl text-sm font-semibold btn-red"
-               href="/read/${b.id}/${continuePage}/">${continuePage > 1 ? "Continuar" : "Ler"}</a>
-            <a class="px-3 py-2 rounded-xl text-sm btn text-center"
-               href="/read/${b.id}/1/">Recomeçar</a>
-          </div>
+          {% if user.is_authenticated %}
+            <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Favoritos</a>
+            <a href="{% url 'frontend:account' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Minha conta</a>
+            {% if user.is_staff or user.is_superuser %}
+              <a href="/admin/" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Admin</a>
+            {% endif %}
+            <form method="post" action="{% url 'frontend:logout' %}">
+              {% csrf_token %}
+              <button class="w-full text-left px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Sair</button>
+            </form>
+          {% else %}
+            <a href="{% url 'frontend:categories' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Categorias</a>
+            <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Login</a>
+            <a href="{% url 'frontend:register' %}"
+               class="px-3 py-2 rounded-xl text-sm font-semibold text-center"
+               style="background:linear-gradient(135deg,var(--red),var(--red2));">
+              Criar conta
+            </a>
+          {% endif %}
         </div>
       </div>
     </div>
-  `;
-}
+  </header>
 
-async function loadBooks(){
-  const msg = document.getElementById("msg");
-  const el = document.getElementById("books");
-  msg.textContent = "A carregar...";
-  el.innerHTML = "";
+  <!-- HERO (100vh) -->
+  <main class="pt-28">
+    <section class="min-h-[calc(100vh-7rem)] flex items-center">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
+        <!-- messages -->
+        {% if messages %}
+          <div class="mb-6 grid gap-2">
+            {% for message in messages %}
+              <div class="glass rounded-2xl px-4 py-3 border border-white/10">
+                <div class="text-sm">
+                  <span class="font-semibold">{{ message.tags|default:"info"|upper }}</span>
+                  <span class="text-white/80"> — {{ message }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
 
-  const [progressMap, favSet, res] = await Promise.all([
-    loadProgress(),
-    loadFavorites(),
-    fetch("/api/books/")
-  ]);
+        <div class="grid lg:grid-cols-2 gap-7 items-center">
+          <!-- LEFT -->
+          <div class="glass glow rounded-3xl p-6 sm:p-8">
+            <div class="flex items-center gap-2 text-xs">
+              <span class="px-3 py-1 rounded-full pill">📚 Biblioteca viva</span>
+              <span class="px-3 py-1 rounded-full pill">⚡ Recomendação inteligente</span>
+              <span class="px-3 py-1 rounded-full pill">🔒 Segurança & privacidade</span>
+            </div>
 
-  if(!res.ok){
-    msg.textContent = "Não foi possível carregar os livros.";
-    return;
-  }
+            <h1 class="mt-5 text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight">
+              Encontra o próximo livro
+              <span style="color:var(--red)">em segundos</span>.
+            </h1>
+            <p class="mt-4 text-white/70 text-base sm:text-lg">
+              Owlsight combina catálogo, tendências e (quando você entra) seu histórico de leitura
+              para sugerir livros com precisão — sem confusão, sem ruído.
+            </p>
 
-  let books = await res.json().catch(()=>[]);
-  const q = (document.getElementById("q").value || "").trim().toLowerCase();
+            <!-- Featured book mini-stats -->
+            <div class="mt-6 grid sm:grid-cols-3 gap-3">
+              <div class="rounded-2xl glass p-4">
+                <div class="text-xs" style="color:var(--muted2)">Avaliação</div>
+                <div class="mt-1 text-lg font-extrabold">
+                  ⭐ {{ featured.rating|default:"4.8" }}
+                  <span class="text-xs text-white/50">/5</span>
+                </div>
+              </div>
+              <div class="rounded-2xl glass p-4">
+                <div class="text-xs" style="color:var(--muted2)">Leitores</div>
+                <div class="mt-1 text-lg font-extrabold">
+                  👀 {{ featured.readers|default:"12.4k" }}
+                </div>
+              </div>
+              <div class="rounded-2xl glass p-4">
+                <div class="text-xs" style="color:var(--muted2)">Categoria</div>
+                <div class="mt-1 text-lg font-extrabold">
+                  🏷️ {{ featured.category|default:"Ficção" }}
+                </div>
+              </div>
+            </div>
 
-  if(q){
-    books = books.filter(b =>
-      String(b.title||"").toLowerCase().includes(q) ||
-      String(b.author||"").toLowerCase().includes(q) ||
-      String(b.genre||"").toLowerCase().includes(q)
-    );
-  }
+            <!-- Hero CTAs -->
+            <div class="mt-6 flex flex-col sm:flex-row gap-3">
+              <a href="#catalogo"
+                 class="px-5 py-3 rounded-2xl font-bold text-center"
+                 style="background:linear-gradient(135deg,var(--red),var(--red2));">
+                Ver o catálogo
+              </a>
 
-  if(!Array.isArray(books) || books.length === 0){
-    msg.textContent = q ? "Sem resultados para a pesquisa." : "Ainda não há livros cadastrados.";
-    return;
-  }
+              {% if featured and featured.read_url %}
+                <a href="{{ featured.read_url }}"
+                   class="px-5 py-3 rounded-2xl font-semibold text-center pill hover:bg-white/10 transition">
+                  Ler agora
+                </a>
+              {% else %}
+                <a href="{% url 'frontend:login' %}"
+                   class="px-5 py-3 rounded-2xl font-semibold text-center pill hover:bg-white/10 transition">
+                  Ler agora
+                </a>
+              {% endif %}
+            </div>
 
-  msg.textContent = "";
-  el.innerHTML = books.map(b => cardHTML(b, progressMap[b.id], favSet.has(b.id))).join("");
-}
+            <div class="mt-4 text-xs text-white/45">
+              Dica: você pode explorar o catálogo sem login. Para ler, favoritar e receber recomendações completas, faça login.
+            </div>
+          </div>
 
-document.getElementById("q").addEventListener("input", () => loadBooks());
-document.getElementById("clearBtn").onclick = () => {
-  document.getElementById("q").value = "";
-  loadBooks();
-};
+          <!-- RIGHT (Featured book visual) -->
+          <div class="glass glow rounded-3xl p-6 sm:p-8 overflow-hidden relative">
+            <div class="absolute -top-28 -right-28 w-72 h-72 rounded-full"
+                 style="background:radial-gradient(circle at 30% 30%, rgba(225,6,0,.35), transparent 60%); filter: blur(2px);"></div>
 
-loadBooks();
-</script>
-{% endblock %}
+            <div class="flex items-start justify-between gap-4">
+              <div>
+                <div class="text-xs" style="color:var(--muted2)">Livro em destaque</div>
+                <div class="text-2xl font-black mt-1">{{ featured.title|default:"O Voo da Coruja" }}</div>
+                <div class="text-sm text-white/60 mt-1">{{ featured.author|default:"Autor(a) Desconhecido(a)" }}</div>
+              </div>
+
+              <a href="#mais-lidos" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">
+                Ver tendências →
+              </a>
+            </div>
+
+            <div class="mt-6 grid grid-cols-12 gap-4 items-center">
+              <!-- Cover -->
+              <div class="col-span-5">
+                <div class="rounded-2xl overflow-hidden border border-white/10 shimmer floaty">
+                  {% if featured.cover %}
+                    <img src="{{ featured.cover }}" alt="{{ featured.title }}" class="w-full h-[260px] sm:h-[320px] object-cover" />
+                  {% else %}
+                    <div class="w-full h-[260px] sm:h-[320px] bg-white/5 grid place-items-center">
+                      <div class="text-center">
+                        <div class="text-5xl">📕</div>
+                        <div class="text-xs text-white/50 mt-2">Capa em breve</div>
+                      </div>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+
+              <!-- Details -->
+              <div class="col-span-7">
+                <div class="rounded-2xl glass p-4">
+                  <div class="text-xs" style="color:var(--muted2)">Resumo rápido</div>
+                  <p class="mt-2 text-sm text-white/70 leading-relaxed">
+                    {{ featured.blurb|default:"Uma história intensa, cinematográfica e inteligente. Descubra por que tantos leitores estão a comentar este título." }}
+                  </p>
+
+                  <div class="mt-4 flex flex-wrap gap-2">
+                    <span class="px-3 py-1 rounded-full pill text-xs">🔥 Em alta</span>
+                    <span class="px-3 py-1 rounded-full pill text-xs">🎧 Áudio (em breve)</span>
+                    <span class="px-3 py-1 rounded-full pill text-xs">📌 Favoritar</span>
+                  </div>
+
+                  <div class="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div class="rounded-xl pill px-3 py-2">
+                      <div class="text-xs text-white/50">Tempo médio</div>
+                      <div class="font-bold">⏱️ {{ featured.avg_time|default:"1h 20m" }}</div>
+                    </div>
+                    <div class="rounded-xl pill px-3 py-2">
+                      <div class="text-xs text-white/50">Dificuldade</div>
+                      <div class="font-bold">🧠 {{ featured.level|default:"Média" }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-4 text-xs text-white/45">
+                  Segurança: leitura e conta protegidas com autenticação e validações no servidor.
+                </div>
+              </div>
+            </div>
+
+            <!-- scroll cue -->
+            <div class="mt-6 flex justify-center">
+              <a href="#catalogo" class="text-xs text-white/60 hover:text-white transition inline-flex items-center gap-2">
+                Explorar abaixo
+                <span class="inline-block animate-bounce">↓</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CATALOG / DISCOVERY -->
+    <section id="catalogo" class="py-10">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex items-end justify-between gap-4">
+          <div>
+            <h2 class="text-2xl sm:text-3xl font-black">Descoberta rápida</h2>
+            <p class="text-white/60 mt-1 text-sm">
+              Explore livros por tendência, novidade e recomendações. Use o filtro avançado para precisão total.
+            </p>
+          </div>
+          <div class="hidden sm:flex gap-2">
+            <a href="#filtro" class="px-4 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ir ao filtro</a>
+            <a href="#todos" class="px-4 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ver todos</a>
+          </div>
+        </div>
+
+        <!-- Quick chips -->
+        <div class="mt-5 flex flex-wrap gap-2">
+          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="trending">🔥 Em alta</button>
+          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="new">🆕 Novos</button>
+          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="top">⭐ Top avaliados</button>
+          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="short">⚡ Leituras curtas</button>
+          <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="free">🎁 Gratuitos</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- MOST READ -->
+    <section id="mais-lidos" class="py-8">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xl sm:text-2xl font-black">Mais lidos</h3>
+          <a href="#todos" class="text-sm text-white/60 hover:text-white transition">Ver tudo →</a>
+        </div>
+
+        <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {% for b in most_read|default_if_none:list %}
+            <!-- se tiveres most_read no backend, usa -->
+          {% endfor %}
+
+          <!-- Fallback cards (se backend ainda não envia listas) -->
+          {% for i in "1234" %}
+          <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
+            <div class="rounded-xl overflow-hidden border border-white/10">
+              <div class="h-40 bg-white/5 grid place-items-center">📘</div>
+            </div>
+            <div class="mt-3">
+              <div class="font-bold">Livro Popular {{ forloop.counter }}</div>
+              <div class="text-xs text-white/60">⭐ 4.7 • 👀 9.3k</div>
+              <div class="mt-3 flex gap-2">
+                <a href="{% url 'frontend:login' %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
+                <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
+              </div>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <!-- MOST RECENT -->
+    <section id="mais-recentes" class="py-8">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between">
+          <h3 class="text-xl sm:text-2xl font-black">Mais recentes</h3>
+          <a href="#todos" class="text-sm text-white/60 hover:text-white transition">Ver tudo →</a>
+        </div>
+
+        <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {% for i in "1234" %}
+          <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
+            <div class="rounded-xl overflow-hidden border border-white/10">
+              <div class="h-40 bg-white/5 grid place-items-center">🆕</div>
+            </div>
+            <div class="mt-3">
+              <div class="font-bold">Novo Livro {{ forloop.counter }}</div>
+              <div class="text-xs text-white/60">⭐ 4.5 • 👀 2.1k</div>
+              <div class="mt-3 flex gap-2">
+                <a href="{% url 'frontend:login' %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
+                <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
+              </div>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <!-- PERSONALIZED (only useful when logged) -->
+    <section class="py-8">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="glass glow rounded-3xl p-6 sm:p-8">
+          {% if user.is_authenticated %}
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <h3 class="text-xl sm:text-2xl font-black">Recomendados para você</h3>
+                <p class="text-white/60 text-sm mt-1">Baseado no seu histórico de leitura e pesquisas recentes.</p>
+              </div>
+              <a href="{% url 'frontend:account' %}" class="px-4 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">
+                Ajustar preferências
+              </a>
+            </div>
+
+            <div class="mt-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {% for i in "1234" %}
+              <article class="rounded-2xl glass p-4 hover:bg-white/7 transition">
+                <div class="h-36 rounded-xl bg-white/5 grid place-items-center">🧠</div>
+                <div class="mt-3 font-bold">Sugestão {{ forloop.counter }}</div>
+                <div class="text-xs text-white/60">⭐ 4.8 • match 92%</div>
+              </article>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h3 class="text-xl sm:text-2xl font-black">Recomendações inteligentes</h3>
+                <p class="text-white/60 text-sm mt-1">
+                  Entre para receber recomendações baseadas no seu gosto e no seu histórico.
+                </p>
+              </div>
+              <a href="{% url 'frontend:login' %}"
+                 class="px-5 py-3 rounded-2xl font-bold"
+                 style="background:linear-gradient(135deg,var(--red),var(--red2));">
+                Fazer login
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <!-- ADVANCED FILTER -->
+    <section id="filtro" class="py-10">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between gap-4">
+          <div>
+            <h3 class="text-xl sm:text-2xl font-black">Filtro altamente avançado</h3>
+            <p class="text-white/60 text-sm mt-1">Refina por título, autor, categoria, avaliação, duração e ordenação.</p>
+          </div>
+          <a href="#todos" class="text-sm text-white/60 hover:text-white transition">Aplicar e ver resultados ↓</a>
+        </div>
+
+        <form method="get" action="#todos" class="mt-5 grid lg:grid-cols-12 gap-4">
+          <div class="lg:col-span-4 glass glow rounded-2xl p-4">
+            <label class="text-xs text-white/60">Pesquisar</label>
+            <input name="q" value="{{ request.GET.q|default:'' }}"
+                   placeholder="Título, autor, palavra-chave..."
+                   class="mt-2 w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 outline-none focus:border-white/25" />
+            <div class="mt-3 text-xs text-white/45">
+              Segurança: esta busca é via GET, sem expor dados sensíveis.
+            </div>
+          </div>
+
+          <div class="lg:col-span-3 glass glow rounded-2xl p-4">
+            <label class="text-xs text-white/60">Categoria</label>
+            <select name="cat" class="mt-2 w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 outline-none focus:border-white/25">
+              <option value="">Todas</option>
+              <option value="ficcao">Ficção</option>
+              <option value="negocios">Negócios</option>
+              <option value="autoajuda">Autoajuda</option>
+              <option value="historia">História</option>
+              <option value="programacao">Programação</option>
+            </select>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <span class="px-3 py-1 rounded-full pill text-xs">Categorias dinâmicas (backend)</span>
+            </div>
+          </div>
+
+          <div class="lg:col-span-2 glass glow rounded-2xl p-4">
+            <label class="text-xs text-white/60">Avaliação mínima</label>
+            <select name="min_rating" class="mt-2 w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 outline-none focus:border-white/25">
+              <option value="">Qualquer</option>
+              <option value="3">3+</option>
+              <option value="4">4+</option>
+              <option value="4.5">4.5+</option>
+            </select>
+          </div>
+
+          <div class="lg:col-span-3 glass glow rounded-2xl p-4">
+            <label class="text-xs text-white/60">Ordenar por</label>
+            <select name="sort" class="mt-2 w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10 outline-none focus:border-white/25">
+              <option value="relevancia">Relevância</option>
+              <option value="recentes">Mais recentes</option>
+              <option value="lidos">Mais lidos</option>
+              <option value="rating">Melhor avaliação</option>
+            </select>
+
+            <div class="mt-3 flex gap-2">
+              <button type="submit"
+                      class="flex-1 px-4 py-3 rounded-2xl font-bold"
+                      style="background:linear-gradient(135deg,var(--red),var(--red2));">
+                Filtrar
+              </button>
+              <a href="{% url 'frontend:index' %}#todos"
+                 class="px-4 py-3 rounded-2xl pill hover:bg-white/10 transition text-center font-semibold">
+                Limpar
+              </a>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ALL BOOKS -->
+    <section id="todos" class="py-10">
+      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex items-end justify-between gap-4">
+          <div>
+            <h3 class="text-xl sm:text-2xl font-black">Todos os livros</h3>
+            <p class="text-white/60 text-sm mt-1">Resultados do filtro e catálogo completo.</p>
+          </div>
+          <div class="text-xs text-white/45">
+            Dica: Paginação e busca real entram no backend.
+          </div>
+        </div>
+
+        <div class="mt-5 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {% for i in "12345678910" %}
+          <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
+            <div class="h-36 rounded-xl bg-white/5 grid place-items-center">📗</div>
+            <div class="mt-3">
+              <div class="font-bold text-sm">Livro {{ forloop.counter }}</div>
+              <div class="text-xs text-white/60">⭐ 4.6 • 👀 1.2k</div>
+              <div class="mt-3 flex gap-2">
+                <a href="{% url 'frontend:login' %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
+                <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
+              </div>
+            </div>
+          </article>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="py-10">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="glass glow rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="text-sm text-white/70">
+          <div class="font-semibold">Owlsight v1.0 — Todos direitos reservados</div>
+          <div class="text-xs text-white/45 mt-1">
+            Ao usar a plataforma, você concorda com os termos e condições aplicáveis.
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a href="{% url 'frontend:terms' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Termos</a>
+          <a href="{% url 'frontend:privacy' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Privacidade</a>
+          <a href="#top" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Topo ↑</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JS (mobile menu + tiny UX) -->
+  <script>
+    const menuBtn = document.getElementById("menuBtn");
+    const mobileMenu = document.getElementById("mobileMenu");
+
+    if(menuBtn && mobileMenu){
+      menuBtn.addEventListener("click", () => {
+        mobileMenu.classList.toggle("hidden");
+      });
+    }
+
+    // Optional: chip quick set (only UI; backend will interpret query params later)
+    document.querySelectorAll("[data-chip]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const chip = btn.getAttribute("data-chip");
+        const url = new URL(window.location.href);
+        url.hash = "todos";
+        url.searchParams.set("chip", chip);
+        window.location.href = url.toString();
+      });
+    });
+  </script>
+</body>
+</html>
