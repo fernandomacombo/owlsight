@@ -30,7 +30,6 @@
     html,body{ height:100%; background: var(--bg); color: var(--text); }
     body{ overflow-x:hidden; }
 
-    /* Cinematic background layers */
     .cinema-bg{
       background:
         radial-gradient(1100px 560px at 15% 0%, rgba(225,6,0,.18), transparent 60%),
@@ -40,7 +39,6 @@
         var(--bg);
     }
 
-    /* Soft animated grain */
     .grain:before{
       content:"";
       position:fixed; inset:-20%;
@@ -58,7 +56,6 @@
       100%{ transform: translate(0,0); }
     }
 
-    /* Glass + glow */
     .glass{
       background: rgba(255,255,255,.05);
       border: 1px solid var(--stroke);
@@ -72,24 +69,18 @@
         0 0 80px rgba(225,6,0,.10);
     }
 
-    /* No page scroll jitter for hero; smooth anchor */
     html { scroll-behavior: smooth; }
 
-    /* Hide scrollbar (optional) */
     .soft-scroll::-webkit-scrollbar{ width: 10px; }
     .soft-scroll::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.10); border-radius: 999px; }
     .soft-scroll::-webkit-scrollbar-track{ background: rgba(255,255,255,.03); }
 
-    /* Tag */
     .pill{
       border:1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.04);
     }
 
-    /* Animated underline */
-    .u{
-      position:relative;
-    }
+    .u{ position:relative; }
     .u:after{
       content:"";
       position:absolute; left:0; bottom:-6px;
@@ -99,10 +90,7 @@
     }
     .u:hover:after{ width:100%; }
 
-    /* Book cover shimmer */
-    .shimmer{
-      position:relative; overflow:hidden;
-    }
+    .shimmer{ position:relative; overflow:hidden; }
     .shimmer:after{
       content:"";
       position:absolute; inset:-120% -60%;
@@ -116,14 +104,12 @@
       100%{ transform: translateX(30%) rotate(12deg); }
     }
 
-    /* Subtle float on hero book */
     @keyframes floaty{
       0%,100%{ transform: translateY(0px); }
       50%{ transform: translateY(-10px); }
     }
     .floaty{ animation: floaty 4.5s ease-in-out infinite; }
 
-    /* Motion reduce */
     @media (prefers-reduced-motion: reduce){
       *{ animation:none !important; transition:none !important; scroll-behavior:auto !important; }
     }
@@ -132,15 +118,15 @@
 
 <body class="cinema-bg grain">
   <!-- TOP NAV -->
-  <header class="fixed top-0 left-0 right-0 z-50">
+  <header class="fixed top-0 left-0 right-0 z-50" id="top">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-4">
       <div class="glass glow rounded-2xl px-4 sm:px-5 py-3 flex items-center justify-between">
         <!-- Logo -->
-        <a href="{% url 'frontend:index' %}" class="flex items-center gap-3">
+        <a href="{% url 'home' %}" class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl glass grid place-items-center">
-            <!-- opcional: troca por img -->
-            <img src="{% static 'frontend/images/Owlsight-logo.png' %}" alt="Owlsight" class="w-7 h-7 object-contain"
+            <img src="{% static 'frontend/images/logo.png' %}" alt="Owlsight" class="w-7 h-7 object-contain"
                  onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=&quot;color:rgba(255,255,255,.9);font-weight:900;&quot;>O</span>';">
+
           </div>
           <div class="leading-tight">
             <div class="text-white font-black tracking-tight">Owlsight</div>
@@ -156,19 +142,20 @@
           <a class="u" href="#filtro">Filtro avançado</a>
 
           {% if user.is_authenticated %}
-            <a class="u" href="{% url 'frontend:favorites' %}">Favoritos</a>
-            <a class="u" href="{% url 'frontend:account' %}">Minha conta</a>
+            <a class="u" href="{% url 'favorites' %}">Favoritos</a>
+
             {% if user.is_staff or user.is_superuser %}
               <a class="u" href="/admin/">Admin</a>
             {% endif %}
-            <form method="post" action="{% url 'frontend:logout' %}" class="inline">
+
+            <form method="post" action="{% url 'logout' %}" class="inline">
               {% csrf_token %}
               <button class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Sair</button>
             </form>
           {% else %}
-            <a class="u" href="{% url 'frontend:categories' %}">Categorias</a>
-            <a class="u" href="{% url 'frontend:login' %}">Login</a>
-            <a href="{% url 'frontend:register' %}"
+            <a class="u" href="#catalogo">Categorias</a>
+            <a class="u" href="{% url 'login' %}">Login</a>
+            <a href="{% url 'register' %}"
                class="px-3 py-2 rounded-xl text-sm font-semibold"
                style="background:linear-gradient(135deg,var(--red),var(--red2));">
               Criar conta
@@ -194,19 +181,20 @@
           <a href="#filtro" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Filtro avançado</a>
 
           {% if user.is_authenticated %}
-            <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Favoritos</a>
-            <a href="{% url 'frontend:account' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Minha conta</a>
+            <a href="{% url 'favorites' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Favoritos</a>
+
             {% if user.is_staff or user.is_superuser %}
               <a href="/admin/" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Admin</a>
             {% endif %}
-            <form method="post" action="{% url 'frontend:logout' %}">
+
+            <form method="post" action="{% url 'logout' %}">
               {% csrf_token %}
               <button class="w-full text-left px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Sair</button>
             </form>
           {% else %}
-            <a href="{% url 'frontend:categories' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Categorias</a>
-            <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Login</a>
-            <a href="{% url 'frontend:register' %}"
+            <a href="#catalogo" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Categorias</a>
+            <a href="{% url 'login' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition">Login</a>
+            <a href="{% url 'register' %}"
                class="px-3 py-2 rounded-xl text-sm font-semibold text-center"
                style="background:linear-gradient(135deg,var(--red),var(--red2));">
               Criar conta
@@ -221,7 +209,7 @@
   <main class="pt-28">
     <section class="min-h-[calc(100vh-7rem)] flex items-center">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full">
-        <!-- messages -->
+
         {% if messages %}
           <div class="mb-6 grid gap-2">
             {% for message in messages %}
@@ -253,7 +241,6 @@
               para sugerir livros com precisão — sem confusão, sem ruído.
             </p>
 
-            <!-- Featured book mini-stats -->
             <div class="mt-6 grid sm:grid-cols-3 gap-3">
               <div class="rounded-2xl glass p-4">
                 <div class="text-xs" style="color:var(--muted2)">Avaliação</div>
@@ -276,7 +263,6 @@
               </div>
             </div>
 
-            <!-- Hero CTAs -->
             <div class="mt-6 flex flex-col sm:flex-row gap-3">
               <a href="#catalogo"
                  class="px-5 py-3 rounded-2xl font-bold text-center"
@@ -290,7 +276,7 @@
                   Ler agora
                 </a>
               {% else %}
-                <a href="{% url 'frontend:login' %}"
+                <a href="{% url 'login' %}"
                    class="px-5 py-3 rounded-2xl font-semibold text-center pill hover:bg-white/10 transition">
                   Ler agora
                 </a>
@@ -320,7 +306,6 @@
             </div>
 
             <div class="mt-6 grid grid-cols-12 gap-4 items-center">
-              <!-- Cover -->
               <div class="col-span-5">
                 <div class="rounded-2xl overflow-hidden border border-white/10 shimmer floaty">
                   {% if featured.cover %}
@@ -336,7 +321,6 @@
                 </div>
               </div>
 
-              <!-- Details -->
               <div class="col-span-7">
                 <div class="rounded-2xl glass p-4">
                   <div class="text-xs" style="color:var(--muted2)">Resumo rápido</div>
@@ -368,7 +352,6 @@
               </div>
             </div>
 
-            <!-- scroll cue -->
             <div class="mt-6 flex justify-center">
               <a href="#catalogo" class="text-xs text-white/60 hover:text-white transition inline-flex items-center gap-2">
                 Explorar abaixo
@@ -396,7 +379,6 @@
           </div>
         </div>
 
-        <!-- Quick chips -->
         <div class="mt-5 flex flex-wrap gap-2">
           <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="trending">🔥 Em alta</button>
           <button class="px-3 py-2 rounded-xl pill text-sm hover:bg-white/10 transition" data-chip="new">🆕 Novos</button>
@@ -416,26 +398,23 @@
         </div>
 
         <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {% for b in most_read|default_if_none:list %}
-            <!-- se tiveres most_read no backend, usa -->
-          {% endfor %}
-
-          <!-- Fallback cards (se backend ainda não envia listas) -->
           {% for b in most_read %}
-<article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
-  <div class="rounded-xl overflow-hidden border border-white/10">
-    <div class="h-40 bg-white/5 grid place-items-center">📘</div>
-  </div>
-  <div class="mt-3">
-    <div class="font-bold">{{ b.title }}</div>
-    <div class="text-xs text-white/60">⭐ {{ b.rating }} • 👀 {{ b.readers }}</div>
-    <div class="mt-3 flex gap-2">
-      <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
-      <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
-    </div>
-  </div>
-</article>
-{% endfor %}
+          <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
+            <div class="rounded-xl overflow-hidden border border-white/10">
+              <div class="h-40 bg-white/5 grid place-items-center">📘</div>
+            </div>
+            <div class="mt-3">
+              <div class="font-bold">{{ b.title }}</div>
+              <div class="text-xs text-white/60">⭐ {{ b.rating }} • 👀 {{ b.readers }}</div>
+              <div class="mt-3 flex gap-2">
+                <a href="{% url 'read' b.id 1 %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
+                <a href="{% url 'favorites' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
+              </div>
+            </div>
+          </article>
+          {% empty %}
+          <div class="text-white/60 text-sm">Sem dados ainda. Em breve vamos ligar ao banco.</div>
+          {% endfor %}
         </div>
       </div>
     </section>
@@ -449,64 +428,23 @@
         </div>
 
         <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {% for i in "1234" %}
+          {% for b in recent %}
           <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
             <div class="rounded-xl overflow-hidden border border-white/10">
               <div class="h-40 bg-white/5 grid place-items-center">🆕</div>
             </div>
             <div class="mt-3">
-              <div class="font-bold">Novo Livro {{ forloop.counter }}</div>
-              <div class="text-xs text-white/60">⭐ 4.5 • 👀 2.1k</div>
+              <div class="font-bold">{{ b.title }}</div>
+              <div class="text-xs text-white/60">⭐ {{ b.rating }} • 👀 {{ b.readers }}</div>
               <div class="mt-3 flex gap-2">
-                <a href="{% url 'frontend:login' %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
-                <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
+                <a href="{% url 'login' %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
+                <a href="{% url 'login' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
               </div>
             </div>
           </article>
+          {% empty %}
+          <div class="text-white/60 text-sm">Sem dados ainda. Em breve vamos ligar ao banco.</div>
           {% endfor %}
-        </div>
-      </div>
-    </section>
-
-    <!-- PERSONALIZED (only useful when logged) -->
-    <section class="py-8">
-      <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="glass glow rounded-3xl p-6 sm:p-8">
-          {% if user.is_authenticated %}
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <h3 class="text-xl sm:text-2xl font-black">Recomendados para você</h3>
-                <p class="text-white/60 text-sm mt-1">Baseado no seu histórico de leitura e pesquisas recentes.</p>
-              </div>
-              <a href="{% url 'frontend:account' %}" class="px-4 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">
-                Ajustar preferências
-              </a>
-            </div>
-
-            <div class="mt-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {% for i in "1234" %}
-              <article class="rounded-2xl glass p-4 hover:bg-white/7 transition">
-                <div class="h-36 rounded-xl bg-white/5 grid place-items-center">🧠</div>
-                <div class="mt-3 font-bold">Sugestão {{ forloop.counter }}</div>
-                <div class="text-xs text-white/60">⭐ 4.8 • match 92%</div>
-              </article>
-              {% endfor %}
-            </div>
-          {% else %}
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <h3 class="text-xl sm:text-2xl font-black">Recomendações inteligentes</h3>
-                <p class="text-white/60 text-sm mt-1">
-                  Entre para receber recomendações baseadas no seu gosto e no seu histórico.
-                </p>
-              </div>
-              <a href="{% url 'frontend:login' %}"
-                 class="px-5 py-3 rounded-2xl font-bold"
-                 style="background:linear-gradient(135deg,var(--red),var(--red2));">
-                Fazer login
-              </a>
-            </div>
-          {% endif %}
         </div>
       </div>
     </section>
@@ -573,7 +511,7 @@
                       style="background:linear-gradient(135deg,var(--red),var(--red2));">
                 Filtrar
               </button>
-              <a href="{% url 'frontend:index' %}#todos"
+              <a href="{% url 'home' %}#todos"
                  class="px-4 py-3 rounded-2xl pill hover:bg-white/10 transition text-center font-semibold">
                 Limpar
               </a>
@@ -597,18 +535,20 @@
         </div>
 
         <div class="mt-5 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {% for i in "12345678910" %}
+          {% for b in all_books %}
           <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
             <div class="h-36 rounded-xl bg-white/5 grid place-items-center">📗</div>
             <div class="mt-3">
-              <div class="font-bold text-sm">Livro {{ forloop.counter }}</div>
-              <div class="text-xs text-white/60">⭐ 4.6 • 👀 1.2k</div>
+              <div class="font-bold text-sm">{{ b.title }}</div>
+              <div class="text-xs text-white/60">⭐ {{ b.rating }} • 👀 {{ b.readers }}</div>
               <div class="mt-3 flex gap-2">
-                <a href="{% url 'frontend:login' %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
-                <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
+                <a href="{% url 'login' %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
+                <a href="{% url 'login' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
               </div>
             </div>
           </article>
+          {% empty %}
+          <div class="text-white/60 text-sm">Sem dados ainda. Em breve vamos ligar ao banco.</div>
           {% endfor %}
         </div>
       </div>
@@ -626,15 +566,14 @@
           </div>
         </div>
         <div class="flex flex-wrap gap-2">
-          <a href="{% url 'frontend:terms' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Termos</a>
-          <a href="{% url 'frontend:privacy' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Privacidade</a>
+          <a href="#" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Termos</a>
+          <a href="#" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Privacidade</a>
           <a href="#top" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Topo ↑</a>
         </div>
       </div>
     </div>
   </footer>
 
-  <!-- JS (mobile menu + tiny UX) -->
   <script>
     const menuBtn = document.getElementById("menuBtn");
     const mobileMenu = document.getElementById("mobileMenu");
@@ -645,7 +584,6 @@
       });
     }
 
-    // Optional: chip quick set (only UI; backend will interpret query params later)
     document.querySelectorAll("[data-chip]").forEach(btn => {
       btn.addEventListener("click", () => {
         const chip = btn.getAttribute("data-chip");
