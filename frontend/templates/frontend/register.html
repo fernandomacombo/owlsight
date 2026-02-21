@@ -1,0 +1,70 @@
+{% extends "frontend/base.html" %}
+{% block title %}Owlsight — Cadastro{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto fade-in">
+  <div class="glass soft-shadow rounded-3xl p-5">
+    <h1 class="text-2xl font-black">Criar conta</h1>
+    <p class="text-sm mt-1" style="color: rgba(255,255,255,.62);">
+      Preencha com atenção. Depois faz login e começa a ler.
+    </p>
+
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
+      <input id="first_name" class="input px-3 py-2 rounded-xl" placeholder="Nome" />
+      <input id="last_name" class="input px-3 py-2 rounded-xl" placeholder="Apelido" />
+      <input id="username" class="input px-3 py-2 rounded-xl md:col-span-2" placeholder="Username (ex: fernando)" />
+      <input id="email" type="email" class="input px-3 py-2 rounded-xl md:col-span-2" placeholder="Email" />
+      <input id="phone" class="input px-3 py-2 rounded-xl" placeholder="Celular" />
+      <input id="birth_year" type="number" class="input px-3 py-2 rounded-xl" placeholder="Ano de nascimento (ex: 1998)" />
+      <input id="address" class="input px-3 py-2 rounded-xl md:col-span-2" placeholder="Endereço" />
+      <input id="password" type="password" class="input px-3 py-2 rounded-xl md:col-span-2" placeholder="Senha" />
+    </div>
+
+    <button id="btn" class="btn-red mt-4 w-full px-4 py-2 rounded-xl font-semibold">
+      Criar conta
+    </button>
+
+    <p id="msg" class="mt-3 text-sm" style="color: rgba(225,6,0,.92);"></p>
+
+    <div class="mt-4 text-sm">
+      Já tem conta? <a class="underline" style="color: rgba(255,255,255,.72)" href="/login/">Entrar</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById("btn").onclick = async () => {
+  const payload = {
+    first_name: document.getElementById("first_name").value.trim(),
+    last_name: document.getElementById("last_name").value.trim(),
+    username: document.getElementById("username").value.trim(),
+    email: document.getElementById("email").value.trim(),
+    phone: document.getElementById("phone").value.trim(),
+    address: document.getElementById("address").value.trim(),
+    birth_year: Number(document.getElementById("birth_year").value),
+    password: document.getElementById("password").value,
+  };
+
+  const msg = document.getElementById("msg");
+  msg.textContent = "";
+
+  const res = await fetch("/api/auth/register/", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if(!res.ok){
+    msg.textContent = typeof data === "string" ? data : JSON.stringify(data);
+    return;
+  }
+
+  alert("Conta criada! Agora faça login.");
+  window.location.href = "/login/";
+};
+</script>
+{% endblock %}

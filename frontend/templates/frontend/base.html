@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>{% block title %}Owlsight{% endblock %}</title>
+
+  <style>
+    :root{
+      --bg0:#050506;
+      --bg1:#0b0b10;
+      --panel: rgba(18,18,22,.70);
+      --stroke: rgba(255,255,255,.10);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.62);
+      --red:#E10600;
+      --red2:#8A0000;
+    }
+
+    html,body{height:100%;}
+    body{
+      color: var(--text);
+      background:
+        radial-gradient(900px 520px at 12% 8%, rgba(225,6,0,.18), transparent 60%),
+        radial-gradient(820px 520px at 90% 10%, rgba(225,6,0,.10), transparent 55%),
+        radial-gradient(700px 520px at 55% 90%, rgba(255,255,255,.06), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+    }
+
+    .glass{
+      background: var(--panel);
+      border: 1px solid var(--stroke);
+      backdrop-filter: blur(14px);
+    }
+
+    .soft-shadow{ box-shadow: 0 18px 60px rgba(0,0,0,.55); }
+
+    .btn{
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      transition: transform .15s ease, border-color .15s ease, background .15s ease, opacity .15s ease;
+    }
+    .btn:hover{ transform: translateY(-1px); border-color: rgba(255,255,255,.22); background: rgba(255,255,255,.08); }
+    .btn:active{ transform: translateY(0px) scale(.99); }
+
+    .btn-red{
+      border: 1px solid rgba(225,6,0,.45);
+      background: linear-gradient(180deg, rgba(225,6,0,.95), rgba(138,0,0,.95));
+      box-shadow: 0 10px 30px rgba(225,6,0,.20);
+    }
+    .btn-red:hover{ opacity: .96; }
+
+    .input{
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      outline: none;
+    }
+    .input:focus{
+      border-color: rgba(225,6,0,.55);
+      box-shadow: 0 0 0 4px rgba(225,6,0,.12);
+    }
+
+    .poster{
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    .fade-in{ animation: fadeIn .20s ease-out both; }
+    @keyframes fadeIn{ from{ opacity:0; transform: translateY(6px);} to{opacity:1; transform:none;} }
+
+    .scrollbar::-webkit-scrollbar{ width: 10px; height: 10px; }
+    .scrollbar::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.12); border-radius: 999px; }
+    .scrollbar::-webkit-scrollbar-thumb:hover{ background: rgba(255,255,255,.18); }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body class="min-h-screen">
+  <!-- Top bar -->
+  <header class="sticky top-0 z-30">
+    <div class="glass soft-shadow">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+        <a href="/" class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl grid place-items-center"
+               style="background: radial-gradient(circle at 30% 20%, rgba(225,6,0,.95), rgba(138,0,0,.95)); border:1px solid rgba(255,255,255,.18);">
+            <span class="font-black text-white">O</span>
+          </div>
+          <div class="leading-tight">
+            <div class="font-extrabold tracking-wide">Owlsight</div>
+            <div class="text-xs" style="color: var(--muted);">Biblioteca • Ler além</div>
+          </div>
+        </a>
+
+        <nav class="flex items-center gap-2">
+          <a href="/favorites/" class="btn px-3 py-2 rounded-xl text-sm">Favoritos</a>
+          <a id="loginBtnTop" href="/login/" class="btn-red px-3 py-2 rounded-xl text-sm font-semibold">Entrar</a>
+          <button id="logoutBtnTop" class="btn px-3 py-2 rounded-xl text-sm hidden">Sair</button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-6xl mx-auto px-4 py-6">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="max-w-6xl mx-auto px-4 pb-8">
+    <div class="text-xs" style="color: var(--muted);">
+      © <span id="y"></span> Owlsight • Preto • Vermelho • Branco
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("y").textContent = new Date().getFullYear();
+
+    function token(){ return localStorage.getItem("access"); }
+    (function topAuth(){
+      const t = token();
+      const loginBtn = document.getElementById("loginBtnTop");
+      const logoutBtn = document.getElementById("logoutBtnTop");
+
+      if(!loginBtn || !logoutBtn) return;
+
+      if(t){
+        loginBtn.classList.add("hidden");
+        logoutBtn.classList.remove("hidden");
+        logoutBtn.onclick = () => {
+          localStorage.removeItem("access");
+          localStorage.removeItem("refresh");
+          window.location.href = "/";
+        };
+      } else {
+        loginBtn.classList.remove("hidden");
+        logoutBtn.classList.add("hidden");
+      }
+    })();
+  </script>
+
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

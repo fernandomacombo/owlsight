@@ -1,0 +1,116 @@
+{% extends "frontend/base.html" %}
+{% block title %}Owlsight — Favoritos{% endblock %}
+
+{% block content %}
+<section class="fade-in">
+  <div class="flex items-end justify-between">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-black">Meus Favoritos</h1>
+      <p class="text-sm mt-1" style="color: rgba(255,255,255,.62);">Os teus “guardados”. Continua de onde paraste.</p>
+    </div>
+  </div>
+
+  <div id="books" class="mt-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"></div>
+  <p id="msg" class="mt-4 text-sm" style="color: rgba(255,255,255,.62);"></p>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function token(){ return localStorage.getItem("access"); }
+
+async function loadProgress(){
+  const t = token();
+  if(!t) return {};
+  const res = await fetch("/api/progress/me/", { headers: { "Authorization": "Bearer " + t } });
+  if(!res.ok) return {};
+  const arr = await res.json().catch(()=>[]);
+  const map = {};
+  for(const item of arr){ map[item.book_id] = item; }
+  return map;
+}
+
+async function removeFav(bookId){
+  const t = token();
+  const res = await fetch(`/api/favorites/toggle/${bookId}/`, {
+    method: "POST",
+    headers: { "Authorization": "Bearer " + t }
+  });
+  if(res.ok) loadFavorites();
+}
+
+function cardHTML(b, p){
+  const continuePage = p?.last_page || 1;
+  const percent = p?.progress_percent || 0;
+
+  return `
+    <div class="poster rounded-2xl overflow-hidden soft-shadow">
+      <div class="aspect-[3/4] overflow-hidden">
+        ${b.cover
+          ? `<img src="${b.cover}" class="w-full h-full object-cover hover:scale-[1.03] transition duration-200" />`
+          : `<div class="w-full h-full grid place-items-center" style="color: rgba(255,255,255,.45)">Sem capa</div>`
+        }
+      </div>
+
+      <div class="p-3">
+        <div class="font-bold text-sm leading-snug">${b.title}</div>
+        <div class="text-xs mt-1" style="color: rgba(255,255,255,.65)">${b.author} • ${b.genre}</div>
+
+        <div class="mt-3">
+          <div class="flex justify-between text-[11px]" style="color: rgba(255,255,255,.65)">
+            <span>Progresso</span>
+            <span><b>${percent}%</b> • pág. <b>${continuePage}</b></span>
+          </div>
+          <div class="w-full rounded-full h-2 overflow-hidden mt-1" style="background: rgba(255,255,255,.10)">
+            <div class="h-2" style="width:${percent}%; background: linear-gradient(90deg, rgba(225,6,0,.95), rgba(255,255,255,.18));"></div>
+          </div>
+        </div>
+
+        <div class="mt-3 flex gap-2">
+          <a class="flex-1 text-center px-3 py-2 rounded-xl text-sm font-semibold btn-red"
+             href="/read/${b.id}/${continuePage}/">${continuePage > 1 ? "Continuar" : "Ler"}</a>
+          <button class="btn px-3 py-2 rounded-xl text-sm" onclick="removeFav(${b.id})">Remover</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function loadFavorites(){
+  const t = token();
+  if(!t){ window.location.href = "/login/"; return; }
+
+  const msg = document.getElementById("msg");
+  const el = document.getElementById("books");
+  msg.textContent = "A carregar...";
+  el.innerHTML = "";
+
+  const [progressMap, favRes, booksRes] = await Promise.all([
+    loadProgress(),
+    fetch("/api/favorites/me/", { headers: { "Authorization": "Bearer " + t } }),
+    fetch("/api/books/")
+  ]);
+
+  if(!favRes.ok){
+    msg.textContent = "Não foi possível carregar favoritos.";
+    return;
+  }
+
+  const favArr = await favRes.json().catch(()=>[]);
+  const favSet = new Set(favArr.map(x => x.book_id));
+
+  const books = await booksRes.json().catch(()=>[]);
+  const favorites = books.filter(b => favSet.has(b.id));
+
+  if(favorites.length === 0){
+    msg.textContent = "Você ainda não favoritou nenhum livro.";
+    return;
+  }
+
+  msg.textContent = "";
+  el.innerHTML = favorites.map(b => cardHTML(b, progressMap[b.id])).join("");
+}
+
+loadFavorites();
+</script>
+{% endblock %}

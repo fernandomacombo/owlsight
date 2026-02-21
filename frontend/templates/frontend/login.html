@@ -1,0 +1,51 @@
+{% extends "frontend/base.html" %}
+{% block title %}Owlsight — Login{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto fade-in">
+  <div class="glass soft-shadow rounded-3xl p-5">
+    <h1 class="text-2xl font-black">Entrar</h1>
+    <p class="text-sm mt-1" style="color: rgba(255,255,255,.62);">A tua conta dá acesso ao progresso, favoritos e avaliações.</p>
+
+    <div class="mt-4 grid gap-2">
+      <input id="username" class="input px-3 py-2 rounded-xl" placeholder="Username" />
+      <input id="password" type="password" class="input px-3 py-2 rounded-xl" placeholder="Senha" />
+      <button id="btn" class="btn-red px-4 py-2 rounded-xl font-semibold">Login</button>
+      <p id="msg" class="text-sm" style="color: rgba(225,6,0,.92);"></p>
+    </div>
+
+    <div class="mt-4 text-sm flex justify-between">
+      <a class="underline" style="color: rgba(255,255,255,.72)" href="/forgot-password/">Esqueceu a senha?</a>
+      <a class="underline" style="color: rgba(255,255,255,.72)" href="/register/">Criar conta</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById("btn").onclick = async () => {
+  const username = document.getElementById("username").value.trim();
+  const password = document.getElementById("password").value;
+  const msg = document.getElementById("msg");
+  msg.textContent = "";
+
+  const res = await fetch("/api/token/", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ username, password })
+  });
+
+  const data = await res.json().catch(() => ({}));
+
+  if(!res.ok){
+    msg.textContent = (data.detail || "Falha no login. Verifique os dados.");
+    return;
+  }
+
+  localStorage.setItem("access", data.access);
+  localStorage.setItem("refresh", data.refresh);
+  window.location.href = "/";
+};
+</script>
+{% endblock %}
