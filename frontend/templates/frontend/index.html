@@ -16,22 +16,19 @@
   <style>
     :root{
       --bg:#070707;
-      --panel: rgba(18,18,18,.78);
-      --panel2: rgba(12,12,12,.92);
       --stroke: rgba(255,255,255,.10);
       --text: rgba(255,255,255,.92);
       --muted: rgba(255,255,255,.62);
       --muted2: rgba(255,255,255,.45);
       --red:#E10600;
       --red2:#8A0000;
-      --green:#22c55e;
     }
 
     html,body{ height:100%; background: var(--bg); color: var(--text); }
     body{ overflow-x:hidden; }
     html { scroll-behavior: smooth; }
 
-    /* Netflix-ish cinematic background + motion */
+    /* Cinematic background */
     .cinema-bg{
       background:
         radial-gradient(1200px 600px at 15% 0%, rgba(225,6,0,.22), transparent 60%),
@@ -41,6 +38,7 @@
         var(--bg);
     }
 
+    /* Film grain */
     .grain:before{
       content:"";
       position:fixed; inset:-20%;
@@ -58,6 +56,7 @@
       100%{ transform: translate(0,0); }
     }
 
+    /* Glass */
     .glass{
       background: rgba(255,255,255,.05);
       border: 1px solid var(--stroke);
@@ -84,22 +83,56 @@
     }
     .u:hover:after{ width:100%; }
 
-    /* HERO spotlight animation */
+    /* HERO full-screen + animated spotlight */
+    .hero{
+      min-height: calc(100vh - 88px);
+      position: relative;
+      overflow: hidden;
+    }
+    @media (max-width: 767px){
+      .hero{ min-height: calc(100vh - 84px); }
+    }
+
     .spotlight{
-      position:absolute; inset:-20%;
+      position:absolute; inset:-30%;
       background:
-        radial-gradient(420px 240px at 30% 40%, rgba(225,6,0,.25), transparent 60%),
-        radial-gradient(520px 320px at 70% 30%, rgba(138,0,0,.18), transparent 62%),
-        radial-gradient(520px 340px at 55% 75%, rgba(255,255,255,.08), transparent 66%);
-      filter: blur(1px);
-      animation: drift 10s ease-in-out infinite;
-      opacity: .9;
+        radial-gradient(520px 320px at 25% 30%, rgba(225,6,0,.30), transparent 62%),
+        radial-gradient(620px 380px at 75% 20%, rgba(138,0,0,.22), transparent 60%),
+        radial-gradient(720px 420px at 55% 80%, rgba(255,255,255,.10), transparent 62%);
+      animation: drift 9.5s ease-in-out infinite;
       pointer-events:none;
+      opacity:.95;
+      filter: blur(1px);
     }
     @keyframes drift{
       0%{ transform: translate(0,0) scale(1); }
-      50%{ transform: translate(-1.5%, 1%) scale(1.02); }
+      50%{ transform: translate(-1.5%, 1.2%) scale(1.03); }
       100%{ transform: translate(0,0) scale(1); }
+    }
+
+    .hero-fade-left{
+      position:absolute; inset:0;
+      background: linear-gradient(90deg, rgba(7,7,7,.92) 0%, rgba(7,7,7,.55) 48%, rgba(7,7,7,.20) 100%);
+      pointer-events:none;
+    }
+    .hero-fade-bottom{
+      position:absolute; left:0; right:0; bottom:0; height: 160px;
+      background: linear-gradient(180deg, transparent, rgba(7,7,7,1));
+      pointer-events:none;
+    }
+
+    /* Animated “scan line” */
+    .scanline{
+      position:absolute; inset:-40% -10%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.14), transparent);
+      transform: rotate(12deg);
+      animation: scan 3.2s ease-in-out infinite;
+      opacity:.25;
+      pointer-events:none;
+    }
+    @keyframes scan{
+      0%{ transform: translateX(-25%) rotate(12deg); }
+      100%{ transform: translateX(25%) rotate(12deg); }
     }
 
     /* Row scrolling */
@@ -114,18 +147,18 @@
     .row::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.10); border-radius: 999px; }
     .row::-webkit-scrollbar-track{ background: rgba(255,255,255,.04); border-radius: 999px; }
 
-    /* Card (Netflix-ish) */
+    /* Netflix-ish card */
     .card{
       width: 170px;
       flex: 0 0 auto;
       scroll-snap-align: start;
       transform: translateZ(0);
-      transition: transform .18s ease, filter .18s ease;
+      transition: transform .18s ease;
     }
     @media (min-width: 640px){ .card{ width: 200px; } }
     @media (min-width: 1024px){ .card{ width: 220px; } }
-
     .card:hover{ transform: scale(1.06); z-index: 20; }
+
     .poster{
       border: 1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.04);
@@ -139,6 +172,7 @@
       opacity:1;
       transform: translateY(0);
     }
+
     .clamp-2{
       display:-webkit-box;
       -webkit-line-clamp:2;
@@ -152,7 +186,7 @@
       overflow:hidden;
     }
 
-    /* Modal preview */
+    /* Modal */
     .modal-backdrop{ display:none; }
     .modal-backdrop.open{ display:block; }
     .modal-panel{
@@ -172,17 +206,18 @@
 </head>
 
 <body id="top" class="cinema-bg grain">
-  <!-- TOP NAV -->
+  <!-- TOP NAV (logo livre, sem caixa) -->
   <header class="fixed top-0 left-0 right-0 z-50">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-4">
       <div class="glass glow rounded-2xl px-4 sm:px-5 py-3 flex items-center justify-between">
-        <!-- Logo -->
+        <!-- Logo (sem container) -->
         <a href="{% url 'frontend:home' %}" class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl glass grid place-items-center">
-            <img src="{% static 'frontend/images/logo.png' %}" alt="Owlsight" class="w-7 h-7 object-contain"
-                 onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=&quot;color:rgba(255,255,255,.9);font-weight:900;&quot;>O</span>';">
-          </div>
-          <div class="leading-tight">
+          <img src="{% static 'frontend/images/logo.png' %}"
+               alt="Owlsight"
+               class="w-11 h-11 object-contain drop-shadow-[0_10px_25px_rgba(0,0,0,.7)]"
+               onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=&quot;color:rgba(255,255,255,.95);font-weight:900;font-size:22px;letter-spacing:-.5px&quot;>Owlsight</span>';">
+
+          <div class="leading-tight hidden sm:block">
             <div class="text-white font-black tracking-tight">Owlsight</div>
             <div class="text-xs" style="color:var(--muted2)">See beyond • biblioteca inteligente</div>
           </div>
@@ -257,55 +292,38 @@
     </div>
   </header>
 
-  <!-- HERO (Netflix style: simples, vivo, sem quadros feios) -->
+  <!-- HERO FULL SCREEN (sempre ocupa toda tela) -->
   <main class="pt-28">
-    <section class="relative">
-      <div class="absolute inset-0 overflow-hidden">
+    <section class="hero">
+      <div class="absolute inset-0">
         <div class="spotlight"></div>
-        <!-- bottom fade like Netflix -->
-        <div class="absolute inset-0"
-             style="background:linear-gradient(90deg, rgba(7,7,7,.92) 0%, rgba(7,7,7,.55) 45%, rgba(7,7,7,.25) 100%);"></div>
-        <div class="absolute inset-x-0 bottom-0 h-40"
-             style="background:linear-gradient(180deg, transparent, rgba(7,7,7,1));"></div>
+        <div class="scanline"></div>
+        <div class="hero-fade-left"></div>
+        <div class="hero-fade-bottom"></div>
       </div>
 
-      <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        {% if messages %}
-          <div class="mb-6 grid gap-2">
-            {% for message in messages %}
-              <div class="glass rounded-2xl px-4 py-3 border border-white/10">
-                <div class="text-sm">
-                  <span class="font-semibold">{{ message.tags|default:"info"|upper }}</span>
-                  <span class="text-white/80"> — {{ message }}</span>
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
-
-        <div class="grid lg:grid-cols-12 gap-8 items-center">
-          <!-- Text -->
+      <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-full">
+        <div class="h-full grid lg:grid-cols-12 gap-10 items-center py-10">
+          <!-- TEXT -->
           <div class="lg:col-span-7">
-            <div class="inline-flex items-center gap-2 text-xs">
-              <span class="px-3 py-1 rounded-full pill">🎬 Cinematic</span>
+            <div class="inline-flex flex-wrap items-center gap-2 text-xs">
+              <span class="px-3 py-1 rounded-full pill">🎬 Netflix-style</span>
               <span class="px-3 py-1 rounded-full pill">📚 Biblioteca</span>
-              <span class="px-3 py-1 rounded-full pill">⚡ Rápido</span>
+              <span class="px-3 py-1 rounded-full pill">⚡ Scroll + hover</span>
             </div>
 
             <h1 class="mt-5 text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight">
-              Owlsight
-              <span style="color:var(--red)">Netflix-style</span>
-              para livros.
+              Biblioteca cinematográfica
+              <span style="color:var(--red)">viva</span>.
             </h1>
 
             <p class="mt-4 text-white/70 text-base sm:text-lg max-w-2xl">
-              Scroll horizontal, hover com descrição e preview — tudo puxado do banco.
+              Explore em filas horizontais, veja descrição no hover, abra preview e comece a ler.
               {% if not db_books_count %}
-                <span class="text-white/60">Adicione livros no Admin para começar.</span>
+                <span class="text-white/60">Adicione livros no Admin para o hero ficar 100% real.</span>
               {% endif %}
             </p>
 
-            <!-- Search mini bar -->
             <form method="get" action="#todos" class="mt-6 flex flex-col sm:flex-row gap-3 max-w-2xl">
               <div class="flex-1 glass rounded-2xl px-4 py-3 border border-white/10">
                 <input name="q" value="{{ request.GET.q|default:'' }}"
@@ -328,7 +346,6 @@
               </button>
             </form>
 
-            <!-- Featured actions -->
             <div class="mt-6 flex flex-wrap gap-3">
               <a href="#catalogo"
                  class="px-5 py-3 rounded-2xl font-bold"
@@ -363,22 +380,19 @@
               {% endif %}
             </div>
 
-            <div class="mt-4 text-xs text-white/45">
+            <div class="mt-5 text-xs text-white/45">
               Livros no banco: {{ db_books_count|default:"0" }}
             </div>
           </div>
 
-          <!-- Featured poster (right) -->
+          <!-- FEATURED POSTER -->
           <div class="lg:col-span-5">
             <div class="relative rounded-3xl overflow-hidden glow border border-white/10">
-              <div class="absolute inset-0"
-                   style="background:linear-gradient(135deg, rgba(225,6,0,.18), rgba(0,0,0,.0));"></div>
-
               {% if featured and featured.cover %}
                 <img src="{{ featured.cover.url }}" alt="{{ featured.title }}"
-                     class="w-full h-[420px] object-cover" />
+                     class="w-full h-[480px] sm:h-[560px] object-cover" />
               {% else %}
-                <div class="w-full h-[420px] bg-white/5 grid place-items-center">
+                <div class="w-full h-[480px] sm:h-[560px] bg-white/5 grid place-items-center">
                   <div class="text-center">
                     <div class="text-6xl">📕</div>
                     <div class="mt-2 text-sm text-white/60">Sem capa (por enquanto)</div>
@@ -386,8 +400,11 @@
                 </div>
               {% endif %}
 
+              <div class="absolute inset-0"
+                   style="background:linear-gradient(135deg, rgba(225,6,0,.18), rgba(0,0,0,.0));"></div>
+
               <div class="absolute inset-x-0 bottom-0 p-5"
-                   style="background:linear-gradient(180deg, transparent, rgba(0,0,0,.88));">
+                   style="background:linear-gradient(180deg, transparent, rgba(0,0,0,.92));">
                 {% if featured %}
                   <div class="text-sm text-white/70">Destaque</div>
                   <div class="text-2xl font-black">{{ featured.title }}</div>
@@ -400,16 +417,25 @@
                 {% else %}
                   <div class="text-sm text-white/70">Destaque</div>
                   <div class="text-2xl font-black">Adicione livros no Admin</div>
-                  <div class="text-sm text-white/60 mt-1">Para a hero ficar viva com dados reais.</div>
+                  <div class="text-sm text-white/60 mt-1">Para o hero ficar vivo com dados reais.</div>
                 {% endif %}
               </div>
+            </div>
+          </div>
+
+          <!-- Scroll hint -->
+          <div class="lg:col-span-12">
+            <div class="mt-2 flex justify-center">
+              <a href="#catalogo" class="text-xs text-white/60 hover:text-white transition inline-flex items-center gap-2">
+                Explorar abaixo <span class="inline-block animate-bounce">↓</span>
+              </a>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- CATALOG ROWS (Netflix horizontal rows) -->
+    <!-- CATALOG ROWS -->
     <section id="catalogo" class="py-10">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex items-end justify-between gap-4">
@@ -438,13 +464,13 @@
                     <div class="w-full h-[250px] bg-white/5 grid place-items-center">📘</div>
                   {% endif %}
 
-                  <!-- hover overlay -->
                   <div class="overlay absolute inset-0 p-3 flex flex-col justify-end"
                        style="background:linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.92));">
                     <div class="text-sm font-extrabold leading-tight clamp-2">{{ b.title }}</div>
                     <div class="text-xs text-white/70 mt-1">
                       {{ b.author|default:"" }}{% if b.genre %} • {{ b.genre }}{% endif %}
                     </div>
+
                     <div class="mt-2 flex flex-wrap gap-2 text-[11px]">
                       <span class="px-2 py-1 rounded-full pill">
                         {% if b.book_type == "premium" %}💎 Premium{% else %}🎁 Free{% endif %}
@@ -560,7 +586,7 @@
       </div>
     </section>
 
-    <!-- ALL RESULTS (grid) -->
+    <!-- ALL RESULTS -->
     <section id="todos" class="py-10">
       <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex items-end justify-between gap-4">
@@ -568,18 +594,6 @@
             <h3 class="text-xl sm:text-2xl font-black">Resultados</h3>
             <p class="text-white/60 text-sm mt-1">Catálogo completo (DB).</p>
           </div>
-
-          <form method="get" action="#todos" class="hidden sm:flex items-center gap-2">
-            <select name="sort" class="px-3 py-2 rounded-xl pill text-sm bg-transparent">
-              <option value="recentes" {% if request.GET.sort == "recentes" %}selected{% endif %}>Recentes</option>
-              <option value="antigos" {% if request.GET.sort == "antigos" %}selected{% endif %}>Antigos</option>
-              <option value="titulo" {% if request.GET.sort == "titulo" %}selected{% endif %}>Título</option>
-            </select>
-            <button class="px-4 py-2 rounded-xl text-sm font-semibold"
-                    style="background:linear-gradient(135deg,var(--red),var(--red2));">
-              Ordenar
-            </button>
-          </form>
         </div>
 
         <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -653,14 +667,14 @@
     </div>
   </footer>
 
-  <!-- PREVIEW MODAL (Netflix “More Info”) -->
+  <!-- PREVIEW MODAL -->
   <div id="previewModal" class="modal-backdrop fixed inset-0 z-[80]">
     <div class="absolute inset-0 bg-black/75"></div>
 
     <div class="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 py-10">
       <div class="modal-panel glass glow rounded-3xl overflow-hidden border border-white/10">
         <div class="relative">
-          <div id="pmCoverWrap" class="h-[260px] sm:h-[320px] bg-white/5">
+          <div class="h-[260px] sm:h-[320px] bg-white/5">
             <img id="pmCover" src="" alt="" class="w-full h-full object-cover hidden">
             <div id="pmNoCover" class="w-full h-full grid place-items-center text-5xl">📕</div>
           </div>
@@ -732,7 +746,6 @@
 
       pmTitle.textContent = title;
       pmMeta.textContent = [author, genre].filter(Boolean).join(" • ");
-
       pmDesc.textContent = desc || "Sem descrição.";
       pmType.textContent = (type === "premium") ? "💎 Premium" : "🎁 Free";
 
@@ -744,7 +757,6 @@
         pmPages.textContent = "";
       }
 
-      // cover
       if(cover){
         pmCover.src = cover;
         pmCover.alt = title;
@@ -756,9 +768,7 @@
         pmNoCover.classList.remove("hidden");
       }
 
-      // read link (mantém teu padrão /read/<id>/1/)
       pmRead.href = "/read/" + id + "/1/";
-
       modal.classList.add("open");
       document.body.style.overflow = "hidden";
     }
@@ -774,7 +784,6 @@
 
     pmClose.addEventListener("click", closeModal);
     modal.addEventListener("click", (e) => {
-      // click fora do painel fecha
       if(e.target === modal || e.target.classList.contains("bg-black/75")) closeModal();
     });
 
