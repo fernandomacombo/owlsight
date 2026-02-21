@@ -24,7 +24,7 @@ app_name = "frontend"
 urlpatterns = [
     # Página inicial (pública)
     path("", home, name="home"),
-    path("", home, name="index"),  # ✅ alias para usar no template
+    path("index/", home, name="index"),
 
     # 🔐 LOGIN SEGURO (Class-Based View)
     path("login/", OwlsightLoginView.as_view(), name="login"),
