@@ -421,21 +421,21 @@
           {% endfor %}
 
           <!-- Fallback cards (se backend ainda não envia listas) -->
-          {% for i in "1234" %}
-          <article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
-            <div class="rounded-xl overflow-hidden border border-white/10">
-              <div class="h-40 bg-white/5 grid place-items-center">📘</div>
-            </div>
-            <div class="mt-3">
-              <div class="font-bold">Livro Popular {{ forloop.counter }}</div>
-              <div class="text-xs text-white/60">⭐ 4.7 • 👀 9.3k</div>
-              <div class="mt-3 flex gap-2">
-                <a href="{% url 'frontend:login' %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
-                <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
-              </div>
-            </div>
-          </article>
-          {% endfor %}
+          {% for b in most_read %}
+<article class="glass glow rounded-2xl p-4 hover:bg-white/7 transition">
+  <div class="rounded-xl overflow-hidden border border-white/10">
+    <div class="h-40 bg-white/5 grid place-items-center">📘</div>
+  </div>
+  <div class="mt-3">
+    <div class="font-bold">{{ b.title }}</div>
+    <div class="text-xs text-white/60">⭐ {{ b.rating }} • 👀 {{ b.readers }}</div>
+    <div class="mt-3 flex gap-2">
+      <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 text-center px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">Ler</a>
+      <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-xl pill hover:bg-white/10 transition text-sm">♡</a>
+    </div>
+  </div>
+</article>
+{% endfor %}
         </div>
       </div>
     </section>
