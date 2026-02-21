@@ -14,10 +14,10 @@ class Book(models.Model):
         PREMIUM = "premium", "Premium"
 
     title = models.CharField(max_length=200)
-    author = models.CharField(max_length=120, blank=True)
-    genre = models.CharField(max_length=80, blank=True)
+    author = models.CharField(max_length=120, blank=True, default="")
+    genre = models.CharField(max_length=80, blank=True, default="")
     release_year = models.PositiveIntegerField(null=True, blank=True)
-    description = models.TextField(blank=True)
+    description = models.TextField(blank=True, default="")
 
     book_type = models.CharField(
         max_length=10,
@@ -26,7 +26,7 @@ class Book(models.Model):
     )
     total_pages = models.PositiveIntegerField(null=True, blank=True)
 
-    # ✅ NÃO coloque "media/" aqui
+    # ✅ upload_to não leva "media/"
     cover = models.ImageField(upload_to="covers/", blank=True, null=True)
     pdf_file = models.FileField(upload_to="pdfs/", blank=True, null=True)
 
