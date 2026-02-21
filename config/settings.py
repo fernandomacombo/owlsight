@@ -231,7 +231,6 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
-    # Só redireciona para https se estiver atrás de proxy que seta X_FORWARDED_PROTO
     SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() in ("1", "true", "yes", "on")
 
     SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30
@@ -253,7 +252,6 @@ AXES_FAILURE_LIMIT = 5
 AXES_COOLOFF_TIME = 1  # horas
 AXES_RESET_ON_SUCCESS = True
 
-# Bloqueia por username + ip
 AXES_LOCKOUT_PARAMETERS = ["username", "ip_address"]
 AXES_USERNAME_FORM_FIELD = "username"
 AXES_ENABLE_ACCESS_FAILURE_LOG = True
@@ -268,20 +266,10 @@ CONTENT_SECURITY_POLICY = {
         "connect-src": ("'self'",),
         "img-src": ("'self'", "data:", "blob:"),
         "font-src": ("'self'", "data:"),
-        # Tailwind CDN + inline (por causa do tailwind CDN e pequenos scripts)
         "script-src": ("'self'", "https://cdn.tailwindcss.com", "'unsafe-inline'"),
         "style-src": ("'self'", "'unsafe-inline'"),
     }
 }
-
-# ✅ Fallback (caso a tua versão do django-csp ainda seja antiga)
-# Se estiveres no django-csp 4, isto é ignorado sem problema.
-CSP_DEFAULT_SRC = ("'self'",)
-CSP_CONNECT_SRC = ("'self'",)
-CSP_IMG_SRC = ("'self'", "data:", "blob:")
-CSP_FONT_SRC = ("'self'", "data:")
-CSP_SCRIPT_SRC = ("'self'", "https://cdn.tailwindcss.com", "'unsafe-inline'")
-CSP_STYLE_SRC = ("'self'", "'unsafe-inline'")
 
 
 # =========================
