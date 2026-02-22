@@ -17,12 +17,14 @@
 
 {% block extra_js %}
 <script>
-function token(){ return localStorage.getItem("access"); }
+async function fetchMe(){
+  const res = await apiFetch("/api/auth/me/");
+  if(!res.ok) return null;
+  return res.json();
+}
 
 async function loadProgress(){
-  const t = token();
-  if(!t) return {};
-  const res = await fetch("/api/progress/me/", { headers: { "Authorization": "Bearer " + t } });
+  const res = await apiFetch("/api/progress/me/");
   if(!res.ok) return {};
   const arr = await res.json().catch(()=>[]);
   const map = {};
@@ -31,11 +33,8 @@ async function loadProgress(){
 }
 
 async function removeFav(bookId){
-  const t = token();
-  const res = await fetch(`/api/favorites/toggle/${bookId}/`, {
-    method: "POST",
-    headers: { "Authorization": "Bearer " + t }
-  });
+  await ensureCsrf();
+  const res = await apiFetch(`/api/favorites/toggle/${bookId}/`, { method: "POST" });
   if(res.ok) loadFavorites();
 }
 
@@ -77,8 +76,8 @@ function cardHTML(b, p){
 }
 
 async function loadFavorites(){
-  const t = token();
-  if(!t){ window.location.href = "/login/"; return; }
+  const me = await fetchMe();
+  if(!me){ window.location.href = "/login/?next=/favorites/"; return; }
 
   const msg = document.getElementById("msg");
   const el = document.getElementById("books");
@@ -87,8 +86,8 @@ async function loadFavorites(){
 
   const [progressMap, favRes, booksRes] = await Promise.all([
     loadProgress(),
-    fetch("/api/favorites/me/", { headers: { "Authorization": "Bearer " + t } }),
-    fetch("/api/books/")
+    apiFetch("/api/favorites/me/"),
+    apiFetch("/api/books/")
   ]);
 
   if(!favRes.ok){
@@ -111,6 +110,6 @@ async function loadFavorites(){
   el.innerHTML = favorites.map(b => cardHTML(b, progressMap[b.id])).join("");
 }
 
-loadFavorites();
+ensureCsrf().then(loadFavorites);
 </script>
 {% endblock %}
