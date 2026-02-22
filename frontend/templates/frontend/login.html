@@ -6,228 +6,764 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <title>Owlsight — Login</title>
-  <link rel="icon" type="image/x-icon" href="{% static 'frontend/images/favicon.ico' %}">
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+  <title>BeOnline — Login</title>
 
   <style>
-    html, body { height: 100%; overflow: hidden; }
-
     :root{
-      --bg:#060606;
-      --panel: rgba(15,15,15,.82);
+      --bg:#070707;
+      --panel: rgba(18,18,18,.72);
+      --panel2: rgba(12,12,12,.92);
       --stroke: rgba(255,255,255,.10);
       --text: rgba(255,255,255,.92);
       --muted: rgba(255,255,255,.65);
-      --red:#8A0000;
-      --red2:#E10600;
+      --red:#E10600;
+      --red2:#8A0000;
+      --shadow: rgba(0,0,0,.65);
     }
 
+    html,body{ height:100%; }
     body{
-      background:
-        radial-gradient(900px 520px at 18% 10%, rgba(138,0,0,.28), transparent 60%),
-        radial-gradient(800px 500px at 85% 20%, rgba(225,6,0,.10), transparent 55%),
-        linear-gradient(180deg, #050505, #090909 60%, #050505);
+      margin:0;
+      background: var(--bg);
       color: var(--text);
+      overflow: hidden;
     }
 
+    /* Cinematic background layers */
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      z-index:-3;
+      background:
+        radial-gradient(900px 520px at 18% 10%, rgba(225,6,0,.18), transparent 60%),
+        radial-gradient(800px 520px at 85% 12%, rgba(225,6,0,.10), transparent 58%),
+        radial-gradient(950px 640px at 50% 110%, rgba(255,255,255,.06), transparent 62%),
+        linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.60));
+      filter: saturate(1.06);
+      transform: translateZ(0);
+    }
+
+    /* Soft grid / film texture */
+    body::after{
+      content:"";
+      position:fixed; inset:0;
+      z-index:-2;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(255,255,255,.03) 0px,
+          rgba(255,255,255,.03) 1px,
+          transparent 1px,
+          transparent 14px
+        );
+      opacity:.10;
+      pointer-events:none;
+      mask-image: radial-gradient(70% 55% at 50% 20%, black 0%, transparent 72%);
+    }
+
+    /* Moving glow (alive) */
+    .glow{
+      position:fixed;
+      inset:-40%;
+      z-index:-1;
+      background:
+        radial-gradient(closest-side at 30% 20%, rgba(225,6,0,.35), transparent 65%),
+        radial-gradient(closest-side at 75% 25%, rgba(225,6,0,.20), transparent 62%),
+        radial-gradient(closest-side at 55% 90%, rgba(255,255,255,.10), transparent 68%);
+      filter: blur(18px);
+      opacity:.90;
+      animation: glowMove 10s ease-in-out infinite;
+      transform: translateZ(0);
+    }
+    @keyframes glowMove{
+      0%   { transform: translate3d(-1.5%,-1.2%,0) scale(1.02); opacity:.85; }
+      50%  { transform: translate3d( 1.5%, 1.3%,0) scale(1.06); opacity:1; }
+      100% { transform: translate3d(-1.5%,-1.2%,0) scale(1.02); opacity:.85; }
+    }
+
+    /* tiny sparks */
+    .spark{
+      position:fixed;
+      width:6px; height:6px;
+      border-radius:999px;
+      background: rgba(225,6,0,.65);
+      opacity:0;
+      filter: blur(.2px);
+      animation: spark 6s linear infinite;
+      pointer-events:none;
+      z-index:-1;
+    }
+    @keyframes spark{
+      0%{ transform: translateY(40px) translateX(0) scale(.8); opacity:0; }
+      15%{ opacity:.55; }
+      70%{ opacity:.22; }
+      100%{ transform: translateY(-420px) translateX(48px) scale(1.1); opacity:0; }
+    }
+
+    /* Glass card */
     .glass{
-      background: var(--panel);
-      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 30px 100px rgba(0,0,0,.55);
       backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
     }
 
-    .input{
-      background: rgba(255,255,255,.04);
+    /* subtle border glow */
+    .ring{
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,.06) inset,
+        0 0 0 1px rgba(225,6,0,.14),
+        0 30px 100px rgba(0,0,0,.55);
+    }
+
+    /* Hero badge */
+    .badge{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding: 8px 12px;
+      border-radius:999px;
+      background: rgba(255,255,255,.05);
       border: 1px solid rgba(255,255,255,.10);
+      color: rgba(255,255,255,.70);
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      font-weight: 800;
+      width: fit-content;
+    }
+    .dot{
+      width:8px;height:8px;border-radius:999px;
+      background: rgba(225,6,0,.90);
+      box-shadow: 0 0 0 8px rgba(225,6,0,.14);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse{
+      0%,100%{ transform: scale(.9); box-shadow: 0 0 0 8px rgba(225,6,0,.12); }
+      50%{ transform: scale(1.1); box-shadow: 0 0 0 12px rgba(225,6,0,.16); }
+    }
+
+    /* Floating cover */
+    .floaty{ animation: floaty 4.8s ease-in-out infinite; }
+    @keyframes floaty{
+      0%,100%{ transform: rotate(1.5deg) translateY(0px); }
+      50%{ transform: rotate(.6deg) translateY(-10px); }
+    }
+
+    /* Inputs focus */
+    .inpt:focus{
+      outline:none;
+      box-shadow: 0 0 0 4px rgba(225,6,0,.14);
+      border-color: rgba(225,6,0,.30);
+    }
+
+    /* Button premium */
+    .btn-red{
+      background: linear-gradient(180deg, var(--red), var(--red2));
+      box-shadow: 0 18px 40px rgba(225,6,0,.18);
+      border: 1px solid rgba(225,6,0,.40);
+    }
+    .btn-red:hover{ filter: brightness(1.08); }
+
+    /* Mobile safe height */
+    .screen{ height: 100svh; }
+
+    /* =========================
+       SOCIAL (Premium) - FIXED
+    ========================= */
+    .social-grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .social-card{
+      position: relative;
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 18px 55px rgba(0,0,0,.35);
+      overflow:hidden;
+      transition: transform .14s ease, border-color .14s ease, background .14s ease, filter .14s ease;
+    }
+
+    .social-card::before{
+      content:"";
+      position:absolute;
+      inset:-45%;
+      background:
+        radial-gradient(closest-side at 25% 25%, rgba(225,6,0,.22), transparent 62%),
+        radial-gradient(closest-side at 70% 25%, rgba(255,255,255,.10), transparent 60%);
+      filter: blur(18px);
+      opacity:.55;
+      pointer-events:none;
+      transform: translateZ(0);
+    }
+
+    .social-card:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.07);
+      border-color: rgba(225,6,0,.22);
+    }
+    .social-card:active{
+      transform: translateY(0) scale(.99);
+      filter: brightness(1.02);
+    }
+
+    .social-top{
+      position: relative;
+      z-index: 1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom: 10px;
+    }
+
+    .social-label{
+      font-size: 12px;
+      color: rgba(255,255,255,.60);
+      font-weight: 800;
+      letter-spacing: .10em;
+      text-transform: uppercase;
+    }
+
+    .social-pill{
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      color: rgba(255,255,255,.70);
+    }
+
+    /* IMPORTANT: Google button lives in an iframe.
+       So we style the stage (shell), not the inside. */
+    .google-shell{
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      border-radius: 14px;
+      padding: 10px;
+      background: rgba(0,0,0,.22);
+      border: 1px solid rgba(255,255,255,.10);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      min-height: 52px;
+    }
+
+    .google-shell > div{
+      width: 100% !important;
+      display:flex !important;
+      align-items:center !important;
+      justify-content:center !important;
+    }
+
+    .google-shell iframe{
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    /* Apple button */
+    .apple-btn{
+      width: 100%;
+      text-align:left;
+      cursor:pointer;
+      display:flex;
+      flex-direction:column;
+      gap: 10px;
+      background: transparent;
+      border: 0;
+      padding: 0;
       outline: none;
     }
-    .input:focus{
-      border-color: rgba(225,6,0,.45);
-      box-shadow: 0 0 0 4px rgba(225,6,0,.10);
+
+    .apple-main{
+      position: relative;
+      z-index: 1;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(0,0,0,.22);
+      border: 1px solid rgba(255,255,255,.10);
+      min-height: 52px;
     }
 
-    .btn-primary{
-      background: linear-gradient(90deg, rgba(138,0,0,1), rgba(225,6,0,.85));
-      border: 1px solid rgba(255,255,255,.10);
+    .apple-left{
+      display:flex;
+      align-items:center;
+      gap: 10px;
     }
-    .btn-primary:hover{ filter: brightness(1.08); }
 
-    .btn-ghost{
-      background: rgba(255,255,255,.04);
+    .apple-icon{
+      width: 36px; height: 36px;
+      border-radius: 12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: rgba(255,255,255,.06);
       border: 1px solid rgba(255,255,255,.10);
+      font-size: 18px;
     }
-    .btn-ghost:hover{ background: rgba(255,255,255,.06); }
+
+    .apple-title{
+      font-weight: 900;
+      color: rgba(255,255,255,.90);
+      font-size: 14px;
+      line-height: 1.1;
+    }
+
+    .apple-sub{
+      margin-top: 2px;
+      color: rgba(255,255,255,.55);
+      font-size: 12px;
+      line-height: 1.1;
+    }
+
+    .apple-arrow{
+      color: rgba(255,255,255,.40);
+      font-size: 18px;
+    }
+
+    @media (max-width: 520px){
+      .social-grid{ grid-template-columns: 1fr; }
+    }
+
+    .enter{
+      animation: enter .45s ease-out both;
+    }
+    @keyframes enter{
+      from{ opacity: 0; transform: translateY(8px); }
+      to{ opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 
-<body class="h-full">
-  <div class="h-full w-full">
-    <div class="h-full max-w-6xl mx-auto px-4">
-      <div class="h-full grid grid-cols-1 lg:grid-cols-2 gap-5 items-center">
+<body class="text-white">
+  <div class="glow"></div>
 
-        <!-- LEFT -->
-        <section class="glass rounded-3xl p-6 lg:p-8 h-[86vh] lg:h-[78vh] flex flex-col justify-between">
-          <header class="flex items-center gap-3">
-            <div class="w-11 h-11 rounded-2xl grid place-items-center"
-                 style="background: rgba(138,0,0,.18); border:1px solid rgba(255,255,255,.10);">
-              <img src="{% static 'frontend/images/logo.png' %}" alt="Owlsight"
-                   class="w-7 h-7 object-contain"
-                   onerror="this.style.display='none'; this.parentElement.innerHTML='<span style=&quot;color:#fff; font-weight:800;&quot;>O</span>';">
-            </div>
+  <!-- sparks -->
+  <span class="spark" style="left:10%; top:90%; animation-delay:0s;"></span>
+  <span class="spark" style="left:18%; top:92%; animation-delay:1.1s;"></span>
+  <span class="spark" style="left:44%; top:95%; animation-delay:2.2s;"></span>
+  <span class="spark" style="left:72%; top:91%; animation-delay:1.6s;"></span>
+  <span class="spark" style="left:88%; top:94%; animation-delay:2.8s;"></span>
 
-            <div class="leading-tight">
-              <div class="text-lg font-extrabold tracking-tight">Owlsight</div>
-              <div class="text-xs text-white/60">See beyond</div>
-            </div>
-          </header>
+  <div class="screen grid grid-rows-[auto,1fr]">
 
-          <div class="mt-6 lg:mt-0">
-            <h1 class="text-2xl lg:text-3xl font-extrabold tracking-tight">
-              Bem-vindo de volta.
-            </h1>
-            <p class="mt-2 text-sm text-white/65 max-w-md">
-              Entra para continuar na tua biblioteca digital.
-            </p>
+    <!-- Top bar -->
+    <header class="max-w-6xl mx-auto w-full px-4 py-3 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-3">
+        <img src="{% static 'frontend/images/BeOnline_logo.png' %}" alt="BeOnline" class="h-9 object-contain">
+      </a>
 
-            <div class="mt-6 grid grid-cols-2 gap-3">
-              <div class="rounded-2xl p-4"
-                   style="background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);">
-                <div class="text-xs text-white/60">Segurança</div>
-                <div class="mt-1 text-sm font-semibold">Proteção anti brute-force</div>
-              </div>
-              <div class="rounded-2xl p-4"
-                   style="background: rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.08);">
-                <div class="text-xs text-white/60">Acesso</div>
-                <div class="mt-1 text-sm font-semibold">Desktop • Tablet • Mobile</div>
-              </div>
-            </div>
+      <a href="/"
+         class="hidden sm:inline-flex px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-sm">
+        Voltar
+      </a>
+    </header>
+
+    <!-- Content -->
+    <main class="max-w-6xl mx-auto w-full px-4 pb-4 grid lg:grid-cols-2 gap-8 items-center">
+
+      <!-- Left -->
+      <section class="order-2 lg:order-1">
+        <div class="badge">
+          <span class="dot"></span> Biblioteca premium
+        </div>
+
+        <h1 class="mt-4 text-3xl sm:text-4xl lg:text-5xl font-extrabold leading-tight">
+          Bem-vindo ao <span style="color: rgba(225,6,0,.95);">BeOnline</span>
+        </h1>
+
+        <p class="mt-3 text-white/70 text-base leading-relaxed max-w-xl">
+          Continua de onde paraste, guarda favoritos, avalia livros e acede a conteúdos premium
+          com uma experiência estilo streaming.
+        </p>
+
+        <div class="mt-6 grid grid-cols-2 gap-4 max-w-xl">
+          <div class="rounded-2xl bg-white/5 border border-white/10 p-4">
+            <div class="text-sm font-semibold">📚 Livros</div>
+            <div class="text-xs text-white/60 mt-1">Explora por capas, estilo Netflix.</div>
           </div>
-
-          <footer class="flex items-center justify-between text-xs text-white/55">
-            <span>Owlsight v1.0 — todos direitos reservados</span>
-            <span class="hidden sm:inline">© {% now "Y" %}</span>
-          </footer>
-        </section>
-
-        <!-- RIGHT -->
-        <section class="glass rounded-3xl p-6 lg:p-8 h-[86vh] lg:h-[78vh] flex flex-col">
-          <div class="flex items-start justify-between">
-            <div>
-              <div class="text-sm text-white/60">Acesso</div>
-              <div class="text-2xl font-extrabold mt-1">Entrar</div>
-            </div>
-
-            <!-- ✅ corrigido -->
-            <a href="{% url 'frontend:register' %}" class="text-sm font-semibold" style="color: rgba(225,6,0,.95);">
-              Criar conta →
-            </a>
+          <div class="rounded-2xl bg-white/5 border border-white/10 p-4">
+            <div class="text-sm font-semibold">⭐ Avaliações</div>
+            <div class="text-xs text-white/60 mt-1">Vê ratings e deixa opinião.</div>
           </div>
-
-          <!-- mensagens -->
-          <div class="mt-4 space-y-2">
-            {% if messages %}
-              {% for message in messages %}
-                <div class="rounded-2xl px-4 py-3 text-sm"
-                     style="background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.10);">
-                  {{ message }}
-                </div>
-              {% endfor %}
-            {% endif %}
+          <div class="rounded-2xl bg-white/5 border border-white/10 p-4">
+            <div class="text-sm font-semibold">🔖 Favoritos</div>
+            <div class="text-xs text-white/60 mt-1">Guarda e volta depois.</div>
           </div>
+          <div class="rounded-2xl bg-white/5 border border-white/10 p-4">
+            <div class="text-sm font-semibold">🚀 Progresso</div>
+            <div class="text-xs text-white/60 mt-1">Continua na página certa.</div>
+          </div>
+        </div>
 
-          <!-- ✅ corrigido action -->
-          <form method="post" action="{% url 'frontend:login' %}" class="mt-5 flex-1 flex flex-col">
+        <div class="mt-6 hidden lg:flex items-center gap-4">
+          <div class="w-28 aspect-[3/4] rounded-2xl overflow-hidden border border-white/10 bg-white/5 ring floaty">
+            <div class="w-full h-full bg-gradient-to-b from-white/10 to-black/40"></div>
+          </div>
+          <div class="text-sm text-white/60 max-w-sm">
+            <div class="font-semibold text-white/85">Um login rápido. Um catálogo gigante.</div>
+            <div class="mt-1">Entra e volta direto para onde paraste.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right -->
+      <section class="order-1 lg:order-2 w-full">
+        <div class="max-w-md mx-auto rounded-2xl glass ring p-6 sm:p-7">
+          <h2 class="text-2xl font-extrabold">Entrar</h2>
+          <p class="text-sm text-white/60 mt-1">Acessa a tua conta para continuar.</p>
+
+          <!-- Mensagem dinâmica -->
+          <div id="loginAlert" class="hidden mt-4 text-sm px-4 py-3 rounded-xl border border-white/10 bg-white/5"></div>
+
+          <!-- Form -->
+          <form id="loginForm" class="mt-5 space-y-4">
             {% csrf_token %}
 
-            <div class="space-y-4">
-              <div>
-                <label class="text-sm text-white/70">User name ou email</label>
-                <input
-                  name="username"
-                  value="{{ form.username.value|default_if_none:'' }}"
-                  autocomplete="username"
-                  required
-                  class="input mt-2 w-full rounded-2xl px-4 py-3 text-sm text-white placeholder-white/40"
-                  placeholder="ex: fernando ou fernando@email.com"
-                />
-              </div>
+            <div>
+              <label class="text-sm text-white/70">Email ou Utilizador</label>
+              <input id="username"
+                     name="username"
+                     autocomplete="username"
+                     required
+                     class="inpt mt-2 w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 focus:ring-2 focus:ring-red-500/40"
+                     placeholder="ex: fernando@beonline.com" />
+            </div>
 
-              <div>
-                <label class="text-sm text-white/70">Password</label>
-                <div class="relative mt-2">
-                  <input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autocomplete="current-password"
-                    required
-                    class="input w-full rounded-2xl px-4 py-3 text-sm text-white placeholder-white/40 pr-12"
-                    placeholder="••••••••"
-                  />
-                  <button type="button"
-                          onclick="togglePassword()"
-                          class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-2 rounded-xl btn-ghost text-xs">
-                    Ver
-                  </button>
+            <div>
+              <label class="text-sm text-white/70">Senha</label>
+              <div class="mt-2 relative">
+                <input id="password"
+                       name="password"
+                       type="password"
+                       autocomplete="current-password"
+                       required
+                       class="inpt w-full px-4 py-3 pr-12 rounded-xl bg-black/30 border border-white/10 focus:ring-2 focus:ring-red-500/40"
+                       placeholder="••••••••" />
+                <button type="button"
+                        onclick="togglePwd()"
+                        class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-xs">
+                  Ver
+                </button>
+              </div>
+              <p class="text-xs text-white/45 mt-2">Mínimo 8 caracteres.</p>
+            </div>
+
+            <div class="flex items-center justify-between text-sm">
+              <label class="flex items-center gap-2 text-white/70">
+                <input id="rememberChk" type="checkbox" name="remember" class="accent-red-500">
+                Lembrar-me
+              </label>
+
+              <a href="/forgot-password/" class="text-white/70 hover:text-white underline underline-offset-4 decoration-white/20">
+                Esqueceu a senha?
+              </a>
+            </div>
+
+            <button id="loginBtn"
+                    type="submit"
+                    class="w-full mt-1 px-4 py-3 rounded-xl btn-red font-semibold flex items-center justify-center gap-2">
+              <span id="loginBtnText">Entrar</span>
+              <span id="loginSpinner" class="hidden w-4 h-4 rounded-full border-2 border-white/60 border-t-transparent animate-spin"></span>
+            </button>
+
+            <div class="text-center text-sm text-white/60 mt-3">
+              Ainda não tens conta?
+              <a href="/register/" class="text-white font-semibold underline underline-offset-4 decoration-white/20 hover:decoration-white/40">
+                Criar conta
+              </a>
+            </div>
+          </form>
+
+          <!-- Divider -->
+          <div class="mt-6 flex items-center gap-3">
+            <div class="h-px bg-white/10 flex-1"></div>
+            <div class="text-xs text-white/50">ou</div>
+            <div class="h-px bg-white/10 flex-1"></div>
+          </div>
+
+          <!-- Social (Premium - FIXED) -->
+          <div class="social-grid enter">
+            <!-- Google -->
+            <div class="social-card">
+              <div class="social-top">
+                <div class="social-label">Entrar com</div>
+                <div class="social-pill">Recomendado</div>
+              </div>
+              <div id="googleBtn" class="google-shell">
+                <span class="text-white/70 text-sm">Google</span>
+              </div>
+            </div>
+
+            <!-- Apple -->
+            <div class="social-card">
+              <button id="appleBtn" type="button" class="apple-btn">
+                <div class="social-top">
+                  <div class="social-label">Entrar com</div>
+                  <div class="social-pill">Em breve</div>
                 </div>
-              </div>
 
-              <div class="flex items-center justify-between">
-                <label class="flex items-center gap-2 text-sm text-white/70 select-none">
-                  <input type="checkbox" name="remember" class="accent-red-600" />
-                  Lembrar-me
-                </label>
-
-                <!-- ✅ corrigido -->
-                <a href="{% url 'frontend:forgot_password' %}" class="text-sm text-white/70 hover:text-white">
-                  Recuperar senha
-                </a>
-              </div>
-
-              <button type="submit" class="btn-primary w-full rounded-2xl py-3 font-extrabold">
-                Entrar
+                <div class="apple-main">
+                  <div class="apple-left">
+                    <div class="apple-icon"></div>
+                    <div>
+                      <div class="apple-title">Apple</div>
+                      <div class="apple-sub">Login disponível em breve</div>
+                    </div>
+                  </div>
+                  <div class="apple-arrow">›</div>
+                </div>
               </button>
             </div>
+          </div>
+        </div>
 
-            <div class="mt-6">
-              <div class="flex items-center gap-3">
-                <div class="h-px flex-1 bg-white/10"></div>
-                <div class="text-xs text-white/55">Social</div>
-                <div class="h-px flex-1 bg-white/10"></div>
-              </div>
-
-              <!-- botões social (UI pronta; liga depois) -->
-              <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button type="button" class="btn-ghost rounded-2xl py-3 text-sm font-semibold text-center w-full"
-                        onclick="alert('Google login ainda não está ativo nesta versão.');">
-                  Continuar com Google
-                </button>
-
-                <button type="button" class="btn-ghost rounded-2xl py-3 text-sm font-semibold text-center w-full"
-                        onclick="alert('Apple login ainda não está ativo nesta versão.');">
-                  Continuar com Apple
-                </button>
-              </div>
-
-              <p class="mt-4 text-xs text-white/55">
-                Ao continuar, confirmas que és o dono da conta.
-              </p>
-            </div>
-
-            <input type="hidden" name="next" value="{{ next|default:'/' }}">
-          </form>
-        </section>
-
-      </div>
-    </div>
+        <p class="text-center text-xs text-white/40 mt-4">
+          © {% now "Y" %} BeOnline — Todos os direitos reservados.
+        </p>
+      </section>
+    </main>
   </div>
 
   <script>
-    function togglePassword(){
-      const el = document.getElementById('password');
-      el.type = (el.type === 'password') ? 'text' : 'password';
+    /* ========= UX ========= */
+    function togglePwd(){
+      const input = document.getElementById("password");
+      input.type = (input.type === "password") ? "text" : "password";
     }
+
+    function showAlert(text, type="error") {
+      const box = document.getElementById("loginAlert");
+      box.classList.remove("hidden");
+
+      if (type === "success") {
+        box.className = "mt-4 text-sm px-4 py-3 rounded-xl border border-green-500/20 bg-green-500/10 text-green-100";
+      } else {
+        box.className = "mt-4 text-sm px-4 py-3 rounded-xl border border-red-500/20 bg-red-500/10 text-red-100";
+      }
+      box.textContent = text;
+    }
+
+    function setLoading(on) {
+      const btn = document.getElementById("loginBtn");
+      const t = document.getElementById("loginBtnText");
+      const sp = document.getElementById("loginSpinner");
+
+      btn.disabled = on;
+      if (on) {
+        t.textContent = "Entrando...";
+        sp.classList.remove("hidden");
+        btn.classList.add("opacity-80", "cursor-not-allowed");
+      } else {
+        t.textContent = "Entrar";
+        sp.classList.add("hidden");
+        btn.classList.remove("opacity-80", "cursor-not-allowed");
+      }
+    }
+
+    /* ========= Cookies/Fetch ========= */
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+      return m ? decodeURIComponent(m[2]) : null;
+    }
+
+    function isUnsafe(method) {
+      return ["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase());
+    }
+
+    async function apiFetch(url, options = {}) {
+      const opts = { ...options };
+      opts.credentials = "include";
+      opts.headers = opts.headers || {};
+      opts.headers["Accept"] = "application/json";
+
+      const method = (opts.method || "GET").toUpperCase();
+      if (isUnsafe(method)) {
+        const csrf = getCookie("csrftoken");
+        if (csrf) opts.headers["X-CSRFToken"] = csrf;
+      }
+      return fetch(url, opts);
+    }
+
+    /* ✅ Garante CSRF cookie antes de qualquer POST */
+    let CSRF_READY = false;
+    async function ensureCsrf(){
+      if (CSRF_READY) return;
+      const res = await apiFetch("/api/csrf/");
+      if (res.ok) CSRF_READY = true;
+    }
+
+    /* ========= Remember me (cliente) ========= */
+    (function initRemember(){
+      const saved = localStorage.getItem("beonline_remember_username");
+      if (saved) {
+        document.getElementById("username").value = saved;
+        const chk = document.getElementById("rememberChk");
+        if (chk) chk.checked = true;
+      }
+    })();
+
+    function applyRemember(username){
+      const remember = document.getElementById("rememberChk").checked;
+      if (remember) localStorage.setItem("beonline_remember_username", username);
+      else localStorage.removeItem("beonline_remember_username");
+      return remember;
+    }
+
+    /* ========= Login normal ========= */
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!username || !password) {
+        showAlert("Preencha todos os campos.");
+        return;
+      }
+      if (password.length < 8) {
+        showAlert("A senha deve ter pelo menos 8 caracteres.");
+        return;
+      }
+
+      const remember = applyRemember(username);
+      setLoading(true);
+
+      try{
+        await ensureCsrf();
+
+        const res = await apiFetch("/api/auth/login/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password, remember })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          setLoading(false);
+          showAlert(data.error || data.detail || "Usuário ou senha inválidos.");
+          return;
+        }
+
+        showAlert("Login efetuado com sucesso!", "success");
+
+        const params = new URLSearchParams(window.location.search);
+        const next = params.get("next");
+        window.location.href = next || "/";
+
+      } catch (err){
+        setLoading(false);
+        showAlert("Falha de rede/servidor ao entrar.");
+      }
+    });
+
+    /* ========= Google Login (renderButton) ========= */
+    const GOOGLE_CLIENT_ID = "{{ GOOGLE_CLIENT_ID|default:''|escapejs }}";
+
+    function initGoogleLoginSafe() {
+      const holder = document.getElementById("googleBtn");
+      if (!holder) return;
+
+      if (!GOOGLE_CLIENT_ID) {
+        console.warn("GOOGLE_CLIENT_ID vazio. Configure no Railway (Variables).");
+        holder.innerHTML = "<span class='text-white/70'>Google (indisponível)</span>";
+        return;
+      }
+
+      if (!(window.google && google.accounts && google.accounts.id)) {
+        setTimeout(initGoogleLoginSafe, 250);
+        return;
+      }
+
+      try{
+        google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: onGoogleCredential,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          use_fedcm_for_prompt: false,
+        });
+
+        // width based on the shell box (after layout)
+        const w = holder.getBoundingClientRect().width || 260;
+
+        google.accounts.id.renderButton(holder, {
+          type: "standard",
+          theme: "outline",
+          size: "large",
+          text: "signin_with",
+          shape: "pill",
+          width: Math.floor(w),
+        });
+
+      } catch (e){
+        console.error("Erro ao iniciar Google Login:", e);
+        holder.innerHTML = "<span class='text-white/70'>Google (erro)</span>";
+      }
+    }
+
+    async function onGoogleCredential(resp) {
+      try {
+        setLoading(true);
+        await ensureCsrf();
+
+        const res = await apiFetch("/api/auth/google/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ credential: resp.credential }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          setLoading(false);
+          showAlert(data.error || data.detail || "Falha no login Google.");
+          return;
+        }
+
+        showAlert("Login Google efetuado com sucesso!", "success");
+
+        const params = new URLSearchParams(window.location.search);
+        const next = params.get("next");
+        window.location.href = next || "/";
+
+      } catch (e) {
+        setLoading(false);
+        showAlert("Erro inesperado no Google login.");
+      }
+    }
+
+    window.addEventListener("load", () => {
+      initGoogleLoginSafe();
+
+      // re-render if resized (helps when fonts/viewport change)
+      window.addEventListener("resize", () => {
+        const holder = document.getElementById("googleBtn");
+        if (!holder) return;
+        holder.innerHTML = "";
+        initGoogleLoginSafe();
+      }, { passive: true });
+    });
+
+    /* ========= Apple (por enquanto) ========= */
+    document.getElementById("appleBtn").addEventListener("click", () => {
+      showAlert("Login com Apple (em breve).", "error");
+    });
   </script>
 </body>
 </html>
