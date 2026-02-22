@@ -431,7 +431,6 @@
             <div class="social-card">
               <div class="social-top">
                 <div class="social-label">Entrar com</div>
-                <div class="social-pill">Recomendado</div>
               </div>
               <div id="googleBtn" class="google-shell">
                 <span class="text-white/70 text-sm">Google</span>
@@ -443,7 +442,6 @@
               <button id="appleBtn" type="button" class="apple-btn">
                 <div class="social-top">
                   <div class="social-label">Entrar com</div>
-                  <div class="social-pill">Em breve</div>
                 </div>
 
                 <div class="apple-main">
@@ -451,7 +449,6 @@
                     <div class="apple-icon"></div>
                     <div>
                       <div class="apple-title">Apple</div>
-                      <div class="apple-sub">Login disponível em breve</div>
                     </div>
                   </div>
                   <div class="apple-arrow">›</div>
@@ -666,7 +663,7 @@
 
       if (!GOOGLE_CLIENT_ID) {
         console.warn("GOOGLE_CLIENT_ID vazio. Configure no Railway (Variables).");
-        holder.innerHTML = "<span class='text-white/70'>Google (indisponível)</span>";
+        holder.innerHTML = "<span class='text-white/70'>Google</span>";
         return;
       }
 
