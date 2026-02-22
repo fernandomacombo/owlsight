@@ -158,26 +158,6 @@
     }
     .pill option{ background-color: var(--panel2); }
 
-    .btn{
-      padding: 9px 14px;
-      border-radius: 12px;
-      font-size: 12.5px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      color: rgba(255,255,255,.9);
-      transition: transform .12s ease, background .12s ease, border-color .12s ease, filter .12s ease;
-      white-space: nowrap;
-      cursor: pointer;
-      user-select:none;
-      line-height: 1;
-      text-decoration:none;
-      display:inline-flex;
-      align-items:center;
-      gap: 8px;
-      justify-content:center;
-    }
-    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); border-color: rgba(225,6,0,.25); }
-
     .btn-primary{
       background: linear-gradient(180deg, var(--red), var(--red2));
       border-color: rgba(225,6,0,.45);
@@ -657,26 +637,24 @@
           <div class="tag">Biblioteca premium • estilo streaming</div>
         </div>
 
-        <!-- links desktop -->
+        <!-- DESKTOP LINKS (JS controla visibilidade) -->
         <div class="nav-links flex gap-2 items-center">
-          <a class="pill" href="/">Início</a>
+          <!-- sempre aparece (logado ou não) -->
+          <a id="navCat" class="pill" href="/categories/">Categoria</a>
+          <a id="navFav" class="pill" href="/favorites/">Favoritos</a>
 
-          <!-- Sempre visíveis -->
-          <a class="pill" href="/categories/">Categoria</a>
-          <a class="pill" href="/favorites/">Favoritos</a>
+          <!-- só logado -->
+          <a id="navAccount" class="pill hidden" href="/profile/">Minha Conta</a>
+          <button id="navLogout" class="pill hidden" type="button">Sair</button>
 
-          <!-- Apenas logado -->
-          <a id="navMyAccount" class="pill hidden" href="/profile/">Minha Conta</a>
-
-          <!-- Apenas admin -->
+          <!-- só admin -->
           {% url 'dashboard:home' as dash_url %}
           {% if dash_url %}
-            <a id="navAdmin" class="pill btn-primary hidden" href="{{ dash_url }}">Admin</a>
+            <a id="navAdmin" href="{{ dash_url }}" class="pill btn-primary hidden">Admin</a>
           {% endif %}
 
-          <!-- Auth -->
-          <button id="navLogout" class="pill hidden" type="button">Sair</button>
-          <a id="navLogin" class="pill" href="/login/">Login</a>
+          <!-- só não logado -->
+          <a id="navLogin" href="/login/" class="pill hidden">Login</a>
         </div>
 
         <!-- hamburger mobile -->
@@ -699,8 +677,8 @@
           </div>
 
           <div class="hero-actions">
-            <a id="heroRead" class="btn btn-primary" href="#">Ler agora</a>
-            <button class="btn" type="button" onclick="scrollToCatalog()">Explorar catálogo ↓</button>
+            <a id="heroRead" class="pill btn-primary" href="#">Ler agora</a>
+            <button class="pill" type="button" onclick="scrollToCatalog()">Explorar catálogo ↓</button>
           </div>
         </div>
 
@@ -791,23 +769,22 @@
           <button class="x" type="button" onclick="closeDrawer(event)">✕</button>
         </div>
 
-        <a href="/">Início <span>›</span></a>
+        <!-- sempre -->
+        <a id="mCat" href="/categories/">Categoria <span>›</span></a>
+        <a id="mFav" href="/favorites/">Favoritos <span>›</span></a>
 
-        <!-- Sempre visíveis -->
-        <a href="/categories/">Categoria <span>›</span></a>
-        <a href="/favorites/">Favoritos <span>›</span></a>
+        <!-- só logado -->
+        <a id="mAccount" class="hidden" href="/profile/">Minha Conta <span>›</span></a>
+        <button id="mLogout" class="hidden" type="button">Sair <span>›</span></button>
 
-        <!-- Apenas logado -->
-        <a id="drawerMyAccount" class="hidden" href="/profile/">Minha Conta <span>›</span></a>
-
-        <!-- Apenas admin -->
-        {% if dash_url %}
-          <a id="drawerAdmin" class="hidden" href="{{ dash_url }}">Admin <span>›</span></a>
+        <!-- só admin -->
+        {% url 'dashboard:home' as dash_url2 %}
+        {% if dash_url2 %}
+          <a id="mAdmin" class="hidden" href="{{ dash_url2 }}">Admin <span>›</span></a>
         {% endif %}
 
-        <!-- Auth -->
-        <button id="drawerLogout" class="hidden" type="button">Sair <span>›</span></button>
-        <a id="drawerLogin" href="/login/">Login <span>›</span></a>
+        <!-- só não logado -->
+        <a id="mLogin" class="hidden" href="/login/">Login <span>›</span></a>
       </div>
     </div>
 
@@ -833,8 +810,8 @@
           <p id="mDesc" class="mt-5 text-white/75 text-sm leading-relaxed"></p>
 
           <div class="mt-6 flex gap-2 flex-wrap">
-            <a id="mRead" class="btn btn-primary">Ler</a>
-            <button class="btn" type="button" onclick="closeBookModal(event)">Fechar</button>
+            <a id="mRead" class="pill btn-primary">Ler</a>
+            <button class="pill" type="button" onclick="closeBookModal(event)">Fechar</button>
           </div>
         </div>
 
@@ -881,12 +858,41 @@
       if(e) e.stopPropagation();
       document.getElementById("drawerBackdrop").classList.remove("open");
     }
-    document.addEventListener("keydown", (e) => {
-      if(e.key === "Escape") closeDrawer();
-    });
+    document.addEventListener("keydown", (e) => { if(e.key === "Escape") closeDrawer(); });
+    document.addEventListener("click", (e) => { const a = e.target.closest("#drawerBackdrop a"); if(a) closeDrawer(); });
 
     function scrollToCatalog(){
       document.getElementById("catalog").scrollIntoView({behavior:"smooth", block:"start"});
+    }
+
+    /** ========= Navbar states ========= **/
+    function show(el, on){ if(el) el.classList.toggle("hidden", !on); }
+
+    function setNavState(me){
+      const logged = !!(me && (me.is_authenticated || me.username));
+      const isAdmin = !!(me && (me.is_staff || me.is_superuser));
+
+      // desktop
+      const navAccount = document.getElementById("navAccount");
+      const navLogout  = document.getElementById("navLogout");
+      const navAdmin   = document.getElementById("navAdmin");
+      const navLogin   = document.getElementById("navLogin");
+
+      show(navAccount, logged);
+      show(navLogout,  logged);
+      show(navAdmin,   logged && isAdmin);
+      show(navLogin,   !logged);
+
+      // mobile drawer
+      const mAccount = document.getElementById("mAccount");
+      const mLogout  = document.getElementById("mLogout");
+      const mAdmin   = document.getElementById("mAdmin");
+      const mLogin   = document.getElementById("mLogin");
+
+      show(mAccount, logged);
+      show(mLogout,  logged);
+      show(mAdmin,   logged && isAdmin);
+      show(mLogin,   !logged);
     }
 
     /** ========= Auth ========= **/
@@ -898,37 +904,17 @@
       return res.json();
     }
 
-    function show(el, yes=true){
-      if(!el) return;
-      el.classList.toggle("hidden", !yes);
+    async function doLogout(){
+      await ensureCsrf();
+      await apiFetch("/api/auth/logout/", { method:"POST" });
+      window.location.reload();
     }
 
-    function applyAuthNavbar(me){
-      const logged = !!me;
-      const isAdmin = !!(me && (me.is_staff || me.is_superuser));
-
-      // Desktop
-      show(document.getElementById("navLogin"), !logged);
-      show(document.getElementById("navLogout"), logged);
-      show(document.getElementById("navMyAccount"), logged);
-      show(document.getElementById("navAdmin"), logged && isAdmin);
-
-      // Drawer
-      show(document.getElementById("drawerLogin"), !logged);
-      show(document.getElementById("drawerLogout"), logged);
-      show(document.getElementById("drawerMyAccount"), logged);
-      show(document.getElementById("drawerAdmin"), logged && isAdmin);
-
-      const doLogout = async () => {
-        await ensureCsrf();
-        await apiFetch("/api/auth/logout/", { method:"POST" });
-        window.location.reload();
-      };
-
+    function bindLogoutButtons(){
       const navLogout = document.getElementById("navLogout");
-      const drawerLogout = document.getElementById("drawerLogout");
+      const mLogout = document.getElementById("mLogout");
       if(navLogout) navLogout.onclick = doLogout;
-      if(drawerLogout) drawerLogout.onclick = doLogout;
+      if(mLogout) mLogout.onclick = doLogout;
     }
 
     /** ========= Util ========= **/
@@ -1195,9 +1181,9 @@
               <div class="hp-desc">${shortDesc(b.description, 220)}</div>
 
               <div class="hp-actions">
-                <a class="btn btn-primary" href="/read/${b.id}/${continuePage}/">Ler</a>
-                <a class="btn" href="/read/${b.id}/1/">Recomeçar</a>
-                <button class="btn" type="button"
+                <a class="pill btn-primary" href="/read/${b.id}/${continuePage}/">Ler</a>
+                <a class="pill" href="/read/${b.id}/1/">Recomeçar</a>
+                <button class="pill" type="button"
                         onclick="openBookModalById(${b.id}, ${continuePage}); event.stopPropagation();">
                   Descrição
                 </button>
@@ -1294,7 +1280,8 @@
       await ensureCsrf();
 
       ME = await fetchMe();
-      applyAuthNavbar(ME);
+      setNavState(ME);
+      bindLogoutButtons();
 
       const res = await apiFetch("/api/books/");
       if(!res.ok){
