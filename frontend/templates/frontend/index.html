@@ -15,43 +15,128 @@
   <style>
     :root{
       --bg:#070707;
+      --panel: rgba(18,18,18,.72);
+      --panel2: rgba(12,12,12,.92);
+      --stroke: rgba(255,255,255,.10);
       --text: rgba(255,255,255,.92);
       --muted: rgba(255,255,255,.65);
       --muted2: rgba(255,255,255,.45);
-      --stroke: rgba(255,255,255,.10);
       --red:#E10600;
       --red2:#8A0000;
-      --panel: rgba(0,0,0,.55);
+      --shadow: rgba(0,0,0,.65);
       --gold: #f5c15b;
     }
 
-    html,body{ height:100%; background:var(--bg); color:var(--text); }
-    body{ overflow-x:hidden; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x:hidden;
+    }
 
-    .nav{
-      position:fixed; top:0; left:0; right:0; z-index:50;
-      background: linear-gradient(180deg, rgba(0,0,0,.86), rgba(0,0,0,.25));
-      border-bottom: 1px solid rgba(255,255,255,.06);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+    /* =========================
+       Cinematic background (match login)
+    ========================= */
+    body::before{
+      content:"";
+      position:fixed; inset:0;
+      z-index:-3;
+      background:
+        radial-gradient(900px 520px at 18% 10%, rgba(225,6,0,.18), transparent 60%),
+        radial-gradient(800px 520px at 85% 12%, rgba(225,6,0,.10), transparent 58%),
+        radial-gradient(950px 640px at 50% 110%, rgba(255,255,255,.06), transparent 62%),
+        linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.60));
+      filter: saturate(1.06);
+      transform: translateZ(0);
     }
-    .nav-link{
-      color: rgba(255,255,255,.74);
-      transition: color .15s ease, transform .15s ease;
+
+    body::after{
+      content:"";
+      position:fixed; inset:0;
+      z-index:-2;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(255,255,255,.03) 0px,
+          rgba(255,255,255,.03) 1px,
+          transparent 1px,
+          transparent 14px
+        );
+      opacity:.10;
+      pointer-events:none;
+      mask-image: radial-gradient(70% 55% at 50% 20%, black 0%, transparent 72%);
     }
-    .nav-link:hover{ color: rgba(255,255,255,.95); transform: translateY(-1px); }
+
+    .glow{
+      position:fixed;
+      inset:-40%;
+      z-index:-1;
+      background:
+        radial-gradient(closest-side at 30% 20%, rgba(225,6,0,.35), transparent 65%),
+        radial-gradient(closest-side at 75% 25%, rgba(225,6,0,.20), transparent 62%),
+        radial-gradient(closest-side at 55% 90%, rgba(255,255,255,.10), transparent 68%);
+      filter: blur(18px);
+      opacity:.90;
+      animation: glowMove 10s ease-in-out infinite;
+      transform: translateZ(0);
+    }
+    @keyframes glowMove{
+      0%   { transform: translate3d(-1.5%,-1.2%,0) scale(1.02); opacity:.85; }
+      50%  { transform: translate3d( 1.5%, 1.3%,0) scale(1.06); opacity:1; }
+      100% { transform: translate3d(-1.5%,-1.2%,0) scale(1.02); opacity:.85; }
+    }
+
+    .spark{
+      position:fixed;
+      width:6px; height:6px;
+      border-radius:999px;
+      background: rgba(225,6,0,.65);
+      opacity:0;
+      filter: blur(.2px);
+      animation: spark 6s linear infinite;
+      pointer-events:none;
+      z-index:-1;
+    }
+    @keyframes spark{
+      0%{ transform: translateY(40px) translateX(0) scale(.8); opacity:0; }
+      15%{ opacity:.55; }
+      70%{ opacity:.22; }
+      100%{ transform: translateY(-420px) translateX(48px) scale(1.1); opacity:0; }
+    }
+
+    /* =========================
+       Shared UI tokens
+    ========================= */
+    .glass{
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 30px 100px rgba(0,0,0,.55);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .ring{
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,.06) inset,
+        0 0 0 1px rgba(225,6,0,.14),
+        0 30px 100px rgba(0,0,0,.55);
+    }
 
     .btn-red{
-      background: linear-gradient(135deg,var(--red),var(--red2));
-      border: 1px solid rgba(255,255,255,.12);
-      box-shadow: 0 18px 50px rgba(0,0,0,.55);
+      background: linear-gradient(180deg, var(--red), var(--red2));
+      box-shadow: 0 18px 40px rgba(225,6,0,.18);
+      border: 1px solid rgba(225,6,0,.40);
     }
+    .btn-red:hover{ filter: brightness(1.08); }
+
     .btn-ghost{
-      background: rgba(255,255,255,.10);
-      border: 1px solid rgba(255,255,255,.14);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
     }
+    .btn-ghost:hover{ background: rgba(255,255,255,.10); }
+
     .chip{
       border: 1px solid rgba(255,255,255,.12);
       background: rgba(255,255,255,.06);
@@ -59,6 +144,28 @@
       padding: 6px 12px;
     }
 
+    .nav{
+      position:fixed; top:0; left:0; right:0; z-index:50;
+      background: linear-gradient(180deg, rgba(0,0,0,.88), rgba(0,0,0,.35));
+      border-bottom: 1px solid rgba(255,255,255,.06);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .nav-link{
+      color: rgba(255,255,255,.74);
+      transition: color .15s ease, transform .15s ease;
+    }
+    .nav-link:hover{ color: rgba(255,255,255,.95); transform: translateY(-1px); }
+
+    .fade-up{ animation: fadeUp .55s ease both; }
+    @keyframes fadeUp{
+      from{ opacity:0; transform: translateY(10px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+
+    /* =========================
+       Hero (clean + aligned)
+    ========================= */
     .hero{
       min-height: 100vh;
       position: relative;
@@ -77,7 +184,7 @@
       width:104%; height:104%;
       object-fit: cover;
       filter: blur(10px) saturate(1.15) contrast(1.05);
-      opacity:.36;
+      opacity:.34;
       transform: scale(1.12);
       animation: slowMove 10s ease-in-out infinite alternate;
     }
@@ -91,14 +198,8 @@
       background:
         radial-gradient(900px 520px at 78% 35%, rgba(225,6,0,.20), transparent 60%),
         radial-gradient(700px 420px at 18% 18%, rgba(138,0,0,.18), transparent 60%),
-        linear-gradient(90deg, rgba(7,7,7,.96) 0%, rgba(7,7,7,.70) 48%, rgba(7,7,7,.12) 100%),
-        linear-gradient(180deg, rgba(7,7,7,.20) 0%, rgba(7,7,7,.96) 88%, rgba(7,7,7,1) 100%);
-    }
-
-    .fade-up{ animation: fadeUp .55s ease both; }
-    @keyframes fadeUp{
-      from{ opacity:0; transform: translateY(10px); }
-      to{ opacity:1; transform: translateY(0); }
+        linear-gradient(90deg, rgba(7,7,7,.96) 0%, rgba(7,7,7,.72) 48%, rgba(7,7,7,.18) 100%),
+        linear-gradient(180deg, rgba(7,7,7,.12) 0%, rgba(7,7,7,.96) 88%, rgba(7,7,7,1) 100%);
     }
 
     .stat{
@@ -110,7 +211,7 @@
 
     .book-wrap{
       position: relative;
-      width: min(430px, 82vw);
+      width: min(420px, 82vw);
       aspect-ratio: 3/4;
       transform: translateZ(0);
       filter: drop-shadow(0 30px 70px rgba(0,0,0,.75));
@@ -137,13 +238,16 @@
       transform: rotate(12deg);
       animation: shine 2.8s ease-in-out infinite;
       pointer-events:none;
-      opacity:.25;
+      opacity:.22;
     }
     @keyframes shine{
       from{ transform: translateX(-28%) rotate(12deg); }
       to  { transform: translateX(28%) rotate(12deg); }
     }
 
+    /* =========================
+       Rows / tiles (premium hover)
+    ========================= */
     .row{
       display:flex;
       gap: 14px;
@@ -161,7 +265,7 @@
       scroll-snap-align: start;
       position: relative;
       transform: translateZ(0);
-      transition: transform .18s ease;
+      transition: transform .18s ease, filter .18s ease;
     }
     @media (min-width:640px){ .tile{ width: 210px; } }
     @media (min-width:1024px){ .tile{ width: 230px; } }
@@ -187,7 +291,7 @@
       -webkit-backdrop-filter: blur(10px);
     }
 
-    .tile:hover{ transform: scale(1.10); z-index: 30; }
+    .tile:hover{ transform: scale(1.08); z-index: 30; filter: brightness(1.02); }
     .tile-info{
       position:absolute; left:0; right:0; bottom:-8px;
       transform: translateY(16px);
@@ -231,13 +335,24 @@
       overflow:hidden;
     }
 
+    /* Mobile safe height */
+    .screen{ min-height: 100svh; }
+
     @media (prefers-reduced-motion: reduce){
       *{ animation:none !important; transition:none !important; }
     }
   </style>
 </head>
 
-<body>
+<body class="text-white">
+  <div class="glow"></div>
+
+  <!-- sparks (match login vibe) -->
+  <span class="spark" style="left:10%; top:90%; animation-delay:0s;"></span>
+  <span class="spark" style="left:18%; top:92%; animation-delay:1.1s;"></span>
+  <span class="spark" style="left:44%; top:95%; animation-delay:2.2s;"></span>
+  <span class="spark" style="left:72%; top:91%; animation-delay:1.6s;"></span>
+  <span class="spark" style="left:88%; top:94%; animation-delay:2.8s;"></span>
 
   <header class="nav">
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-[72px] flex items-center justify-between">
@@ -263,20 +378,20 @@
       </nav>
 
       <div class="hidden md:flex items-center gap-3">
-        <a href="#premium" class="px-4 py-2 rounded-lg btn-red font-semibold">Upgrade</a>
+        <a href="#premium" class="px-4 py-2 rounded-xl btn-red font-semibold">Upgrade</a>
 
         {% if user.is_authenticated %}
-          <a href="{% url 'frontend:account' %}" class="flex items-center gap-2 px-2 py-2 rounded-lg bg-white/5 border border-white/10">
+          <a href="{% url 'frontend:account' %}" class="flex items-center gap-2 px-2 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
             <div class="w-8 h-8 rounded-full bg-white/10 grid place-items-center text-xs">👤</div>
             <span class="text-sm text-white/80 hidden lg:inline">{{ user.username|default:"Conta" }}</span>
             <span class="text-white/60">▾</span>
           </a>
         {% else %}
-          <a href="{% url 'frontend:login' %}" class="px-4 py-2 rounded-lg bg-white/10 border border-white/10">Login</a>
+          <a href="{% url 'frontend:login' %}" class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 transition">Login</a>
         {% endif %}
       </div>
 
-      <button id="menuBtn" class="md:hidden px-3 py-2 rounded-lg bg-white/10 border border-white/10">☰</button>
+      <button id="menuBtn" class="md:hidden px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 transition">☰</button>
     </div>
 
     <div id="mobileMenu" class="hidden md:hidden border-t border-white/10 bg-black/80">
@@ -298,7 +413,7 @@
     </div>
   </header>
 
-  <section class="hero">
+  <section class="hero screen">
     <div class="hero-bg">
       {% if featured and featured.cover %}
         <img class="bg-img" src="{{ featured.cover.url }}" alt="{{ featured.title }}">
@@ -367,24 +482,24 @@
 
           <div class="mt-6 flex flex-col sm:flex-row gap-3">
             {% if featured %}
-              <a href="{% url 'frontend:read' featured.id 1 %}" class="px-6 py-3 rounded-lg btn-red font-bold text-center">
+              <a href="{% url 'frontend:read' featured.id 1 %}" class="px-6 py-3 rounded-xl btn-red font-bold text-center">
                 ▶ Ler Agora
               </a>
-              <a href="#explorar" class="px-6 py-3 rounded-lg btn-ghost font-semibold text-center">
+              <a href="#explorar" class="px-6 py-3 rounded-xl btn-ghost font-semibold text-center">
                 ⓘ Explorar catálogo
               </a>
               {% if user.is_authenticated %}
-                <a href="{% url 'frontend:favorites' %}" class="px-6 py-3 rounded-lg bg-white/10 border border-white/10 font-semibold text-center">
+                <a href="{% url 'frontend:favorites' %}" class="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 transition font-semibold text-center">
                   ♡ Favoritar
                 </a>
               {% else %}
-                <a href="{% url 'frontend:login' %}" class="px-6 py-3 rounded-lg bg-white/10 border border-white/10 font-semibold text-center">
+                <a href="{% url 'frontend:login' %}" class="px-6 py-3 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 transition font-semibold text-center">
                   ♡ Favoritar
                 </a>
               {% endif %}
             {% else %}
-              <a href="/admin/" class="px-6 py-3 rounded-lg btn-red font-bold text-center">Adicionar Livros</a>
-              <a href="#explorar" class="px-6 py-3 rounded-lg btn-ghost font-semibold text-center">Explorar</a>
+              <a href="/admin/" class="px-6 py-3 rounded-xl btn-red font-bold text-center">Adicionar Livros</a>
+              <a href="#explorar" class="px-6 py-3 rounded-xl btn-ghost font-semibold text-center">Explorar</a>
             {% endif %}
           </div>
 
@@ -439,8 +554,8 @@
                 </div>
 
                 <div class="mt-3 flex gap-2">
-                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 px-3 py-2 rounded-lg btn-red text-center text-sm font-semibold">Continuar</a>
-                  <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">♡</a>
+                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 px-3 py-2 rounded-xl btn-red text-center text-sm font-semibold">Continuar</a>
+                  <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 transition text-sm">♡</a>
                 </div>
               </div>
             </article>
@@ -487,11 +602,11 @@
                 </div>
 
                 <div class="mt-3 flex gap-2">
-                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 px-3 py-2 rounded-lg btn-red text-center text-sm font-semibold">Ler</a>
+                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 px-3 py-2 rounded-xl btn-red text-center text-sm font-semibold">Ler</a>
                   {% if user.is_authenticated %}
-                    <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">♡</a>
+                    <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 transition text-sm">♡</a>
                   {% else %}
-                    <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">♡</a>
+                    <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 transition text-sm">♡</a>
                   {% endif %}
                 </div>
               </div>
@@ -503,7 +618,7 @@
       </section>
 
       <section id="premium" class="pt-12">
-        <div class="premium-strip p-6 sm:p-8 grid lg:grid-cols-2 gap-6 items-center">
+        <div class="premium-strip p-6 sm:p-8 grid lg:grid-cols-2 gap-6 items-center glass ring">
           <div>
             <h3 class="text-2xl sm:text-3xl font-black">Seja Premium</h3>
             <p class="text-white/70 mt-2">
@@ -511,8 +626,8 @@
             </p>
           </div>
           <div class="flex flex-col sm:flex-row gap-3 lg:justify-end">
-            <a href="#" class="px-6 py-3 rounded-lg btn-red font-bold text-center">Assinar Agora</a>
-            <a href="#todos" class="px-6 py-3 rounded-lg btn-ghost font-semibold text-center">Ver catálogo</a>
+            <a href="#" class="px-6 py-3 rounded-xl btn-red font-bold text-center">Assinar Agora</a>
+            <a href="#todos" class="px-6 py-3 rounded-xl btn-ghost font-semibold text-center">Ver catálogo</a>
           </div>
         </div>
       </section>
@@ -527,7 +642,7 @@
 
         <div class="mt-6 grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {% for b in books %}
-            <article class="rounded-2xl overflow-hidden border border-white/10 bg-white/5 hover:scale-[1.02] transition">
+            <article class="rounded-2xl overflow-hidden border border-white/10 bg-white/5 hover:scale-[1.02] hover:bg-white/7 transition">
               <div class="h-44 bg-black/40 relative">
                 {% if b.cover %}
                   <img src="{{ b.cover.url }}" alt="{{ b.title }}" class="w-full h-full object-cover">
@@ -551,11 +666,11 @@
                 </div>
 
                 <div class="mt-3 flex gap-2">
-                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 px-3 py-2 rounded-lg btn-red text-center text-sm font-semibold">Ler</a>
+                  <a href="{% url 'frontend:read' b.id 1 %}" class="flex-1 px-3 py-2 rounded-xl btn-red text-center text-sm font-semibold">Ler</a>
                   {% if user.is_authenticated %}
-                    <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">♡</a>
+                    <a href="{% url 'frontend:favorites' %}" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 transition text-sm">♡</a>
                   {% else %}
-                    <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-lg bg-white/10 border border-white/10 text-sm">♡</a>
+                    <a href="{% url 'frontend:login' %}" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 transition text-sm">♡</a>
                   {% endif %}
                 </div>
               </div>
