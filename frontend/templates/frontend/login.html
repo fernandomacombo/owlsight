@@ -29,7 +29,10 @@
       margin:0;
       background: var(--bg);
       color: var(--text);
-      overflow: hidden;
+
+      /* ✅ deixa a página respirar em telas pequenas/teclado mobile */
+      overflow-x: hidden;
+      overflow-y: auto;
     }
 
     /* Cinematic background layers */
@@ -146,13 +149,6 @@
       50%{ transform: scale(1.1); box-shadow: 0 0 0 12px rgba(225,6,0,.16); }
     }
 
-    /* Floating cover */
-    .floaty{ animation: floaty 4.8s ease-in-out infinite; }
-    @keyframes floaty{
-      0%,100%{ transform: rotate(1.5deg) translateY(0px); }
-      50%{ transform: rotate(.6deg) translateY(-10px); }
-    }
-
     /* Inputs focus */
     .inpt:focus{
       outline:none;
@@ -169,10 +165,10 @@
     .btn-red:hover{ filter: brightness(1.08); }
 
     /* Mobile safe height */
-    .screen{ height: 100svh; }
+    .screen{ min-height: 100svh; }
 
     /* =========================
-       SOCIAL (Premium) - FIXED
+       SOCIAL (Premium)
     ========================= */
     .social-grid{
       display:grid;
@@ -180,7 +176,6 @@
       gap: 12px;
       margin-top: 14px;
     }
-
     .social-card{
       position: relative;
       border-radius: 16px;
@@ -192,7 +187,6 @@
       overflow:hidden;
       transition: transform .14s ease, border-color .14s ease, background .14s ease, filter .14s ease;
     }
-
     .social-card::before{
       content:"";
       position:absolute;
@@ -205,15 +199,10 @@
       pointer-events:none;
       transform: translateZ(0);
     }
-
     .social-card:hover{
       transform: translateY(-1px);
       background: rgba(255,255,255,.07);
       border-color: rgba(225,6,0,.22);
-    }
-    .social-card:active{
-      transform: translateY(0) scale(.99);
-      filter: brightness(1.02);
     }
 
     .social-top{
@@ -225,7 +214,6 @@
       gap:10px;
       margin-bottom: 10px;
     }
-
     .social-label{
       font-size: 12px;
       color: rgba(255,255,255,.60);
@@ -233,7 +221,6 @@
       letter-spacing: .10em;
       text-transform: uppercase;
     }
-
     .social-pill{
       font-size: 11px;
       padding: 4px 10px;
@@ -243,8 +230,7 @@
       color: rgba(255,255,255,.70);
     }
 
-    /* IMPORTANT: Google button lives in an iframe.
-       So we style the stage (shell), not the inside. */
+    /* Google button stage (iframe inside) */
     .google-shell{
       position: relative;
       z-index: 1;
@@ -258,14 +244,12 @@
       justify-content:center;
       min-height: 52px;
     }
-
     .google-shell > div{
       width: 100% !important;
       display:flex !important;
       align-items:center !important;
       justify-content:center !important;
     }
-
     .google-shell iframe{
       width: 100% !important;
       max-width: 100% !important;
@@ -284,7 +268,6 @@
       padding: 0;
       outline: none;
     }
-
     .apple-main{
       position: relative;
       z-index: 1;
@@ -298,50 +281,24 @@
       border: 1px solid rgba(255,255,255,.10);
       min-height: 52px;
     }
-
-    .apple-left{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-    }
-
+    .apple-left{ display:flex; align-items:center; gap: 10px; }
     .apple-icon{
       width: 36px; height: 36px;
       border-radius: 12px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
+      display:flex; align-items:center; justify-content:center;
       background: rgba(255,255,255,.06);
       border: 1px solid rgba(255,255,255,.10);
       font-size: 18px;
     }
-
-    .apple-title{
-      font-weight: 900;
-      color: rgba(255,255,255,.90);
-      font-size: 14px;
-      line-height: 1.1;
-    }
-
-    .apple-sub{
-      margin-top: 2px;
-      color: rgba(255,255,255,.55);
-      font-size: 12px;
-      line-height: 1.1;
-    }
-
-    .apple-arrow{
-      color: rgba(255,255,255,.40);
-      font-size: 18px;
-    }
+    .apple-title{ font-weight: 900; color: rgba(255,255,255,.90); font-size: 14px; line-height: 1.1; }
+    .apple-sub{ margin-top: 2px; color: rgba(255,255,255,.55); font-size: 12px; line-height: 1.1; }
+    .apple-arrow{ color: rgba(255,255,255,.40); font-size: 18px; }
 
     @media (max-width: 520px){
       .social-grid{ grid-template-columns: 1fr; }
     }
 
-    .enter{
-      animation: enter .45s ease-out both;
-    }
+    .enter{ animation: enter .45s ease-out both; }
     @keyframes enter{
       from{ opacity: 0; transform: translateY(8px); }
       to{ opacity: 1; transform: translateY(0); }
@@ -364,7 +321,7 @@
     <!-- Top bar -->
     <header class="max-w-6xl mx-auto w-full px-4 py-3 flex items-center justify-between">
       <a href="/" class="flex items-center gap-3">
-        <img src="{% static 'frontend/images/logo.png' %}" alt="BeOnline" class="h-9 object-contain">
+        <img src="{% static 'frontend/images/logo.png' %}" alt="Owlsight" class="h-9 object-contain">
       </a>
 
       <a href="/"
@@ -374,7 +331,7 @@
     </header>
 
     <!-- Content -->
-    <main class="max-w-6xl mx-auto w-full px-4 pb-4 grid lg:grid-cols-2 gap-8 items-center">
+    <main class="max-w-6xl mx-auto w-full px-4 pb-6 grid lg:grid-cols-2 gap-8 items-center">
 
       <!-- Left -->
       <section class="order-2 lg:order-1">
@@ -409,16 +366,6 @@
             <div class="text-xs text-white/60 mt-1">Continua na página certa.</div>
           </div>
         </div>
-
-        <div class="mt-6 hidden lg:flex items-center gap-4">
-          <div class="w-28 aspect-[3/4] rounded-2xl overflow-hidden border border-white/10 bg-white/5 ring floaty">
-            <div class="w-full h-full bg-gradient-to-b from-white/10 to-black/40"></div>
-          </div>
-          <div class="text-sm text-white/60 max-w-sm">
-            <div class="font-semibold text-white/85">Um login rápido. Um catálogo gigante.</div>
-            <div class="mt-1">Entra e volta direto para onde paraste.</div>
-          </div>
-        </div>
       </section>
 
       <!-- Right -->
@@ -441,7 +388,7 @@
                      autocomplete="username"
                      required
                      class="inpt mt-2 w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 focus:ring-2 focus:ring-red-500/40"
-                     placeholder="ex: fernando@beonline.com" />
+                     placeholder="ex: fernando@owlsight.com" />
             </div>
 
             <div>
@@ -496,7 +443,7 @@
             <div class="h-px bg-white/10 flex-1"></div>
           </div>
 
-          <!-- Social (Premium - FIXED) -->
+          <!-- Social -->
           <div class="social-grid enter">
             <!-- Google -->
             <div class="social-card">
@@ -533,7 +480,7 @@
         </div>
 
         <p class="text-center text-xs text-white/40 mt-4">
-          © {% now "Y" %} BeOnline — Todos os direitos reservados.
+          © {% now "Y" %} Owlsight — Todos os direitos reservados.
         </p>
       </section>
     </main>
@@ -607,9 +554,16 @@
       if (res.ok) CSRF_READY = true;
     }
 
+    /* ✅ Confirma que a sessão realmente ficou ativa */
+    async function assertLoggedIn(){
+      const r = await apiFetch("/api/auth/me/");
+      if (!r.ok) return null;
+      return r.json();
+    }
+
     /* ========= Remember me (cliente) ========= */
     (function initRemember(){
-      const saved = localStorage.getItem("beonline_remember_username");
+      const saved = localStorage.getItem("owlsight_remember_username");
       if (saved) {
         document.getElementById("username").value = saved;
         const chk = document.getElementById("rememberChk");
@@ -619,8 +573,8 @@
 
     function applyRemember(username){
       const remember = document.getElementById("rememberChk").checked;
-      if (remember) localStorage.setItem("beonline_remember_username", username);
-      else localStorage.removeItem("beonline_remember_username");
+      if (remember) localStorage.setItem("owlsight_remember_username", username);
+      else localStorage.removeItem("owlsight_remember_username");
       return remember;
     }
 
@@ -656,7 +610,21 @@
 
         if (!res.ok) {
           setLoading(false);
+
+          if (res.status === 403) {
+            showAlert(data.detail || data.error || "403 (Forbidden). Verifica CSRF/Cookies/SameSite no backend.");
+            return;
+          }
+
           showAlert(data.error || data.detail || "Usuário ou senha inválidos.");
+          return;
+        }
+
+        // ✅ valida sessão antes de redirecionar
+        const me = await assertLoggedIn();
+        if (!me) {
+          setLoading(false);
+          showAlert("Login respondeu OK, mas a sessão não ficou ativa (cookie bloqueado/domínio/SameSite).");
           return;
         }
 
@@ -699,7 +667,6 @@
           use_fedcm_for_prompt: false,
         });
 
-        // width based on the shell box (after layout)
         const w = holder.getBoundingClientRect().width || 260;
 
         google.accounts.id.renderButton(holder, {
@@ -736,6 +703,13 @@
           return;
         }
 
+        const me = await assertLoggedIn();
+        if (!me) {
+          setLoading(false);
+          showAlert("Google OK, mas a sessão não ficou ativa (cookie bloqueado/domínio/SameSite).");
+          return;
+        }
+
         showAlert("Login Google efetuado com sucesso!", "success");
 
         const params = new URLSearchParams(window.location.search);
@@ -751,7 +725,6 @@
     window.addEventListener("load", () => {
       initGoogleLoginSafe();
 
-      // re-render if resized (helps when fonts/viewport change)
       window.addEventListener("resize", () => {
         const holder = document.getElementById("googleBtn");
         if (!holder) return;
