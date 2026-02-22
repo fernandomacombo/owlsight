@@ -4,8 +4,19 @@
 {% block content %}
 <section class="fade-in">
   <div class="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4">
+
+    <!-- LEFT -->
     <aside class="glass soft-shadow rounded-3xl p-4">
-      <div id="header" class="flex gap-3"></div>
+      <div class="flex items-start justify-between gap-3">
+        <div id="header" class="flex gap-3 flex-1"></div>
+
+        <!-- ✅ Logout que NÃO abre {"ok": true} -->
+        <button id="logoutBtn"
+                class="btn px-3 py-2 rounded-xl text-sm"
+                title="Sair da conta">
+          Sair
+        </button>
+      </div>
 
       <div class="mt-4 grid gap-2">
         <div class="flex gap-2">
@@ -32,11 +43,46 @@
       </div>
     </aside>
 
+    <!-- RIGHT -->
     <section class="glass soft-shadow rounded-3xl p-4">
-      <div id="contentBox" class="rounded-2xl overflow-hidden"></div>
+      <!-- ✅ Container relative para overlay de marca d'água -->
+      <div id="contentShell" class="relative rounded-2xl overflow-hidden">
+        <div id="contentBox" class="rounded-2xl overflow-hidden"></div>
+
+        <!-- ✅ Watermark overlay (dificulta prints/cópias) -->
+        <div id="wmOverlay"
+             class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200">
+        </div>
+
+        <!-- ✅ Blur overlay quando trocar de aba (anti-captura rápida) -->
+        <div id="privacyBlur"
+             class="hidden absolute inset-0 backdrop-blur-2xl"
+             style="background: rgba(0,0,0,.35);">
+          <div class="h-full w-full grid place-items-center">
+            <div class="text-center">
+              <div class="text-xl font-black">Conteúdo protegido</div>
+              <div class="text-sm mt-1" style="color: rgba(255,255,255,.70)">
+                Volte para a aba para continuar a leitura.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </section>
+
   </div>
 </section>
+
+<style>
+  /* ✅ Anti seleção/cópia básica */
+  #contentShell, #contentShell *{
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  /* ✅ Evita arrastar imagens */
+  img { -webkit-user-drag: none; user-drag: none; }
+</style>
 {% endblock %}
 
 {% block extra_js %}
@@ -45,15 +91,125 @@ const bookId = Number("{{ book_id }}");
 let page = Number("{{ page_number }}");
 let maxPages = 1;
 
+/** Guardamos dados do utilizador para marca d'água */
+let ME = null;
+
+/** ---------------------------
+ * Helpers
+ * --------------------------*/
 async function fetchMe(){
   const res = await apiFetch("/api/auth/me/");
   if(!res.ok) return null;
   return res.json();
 }
 
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, (m) => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"
+  }[m]));
+}
+
+/** Cria uma marca d’água repetida (SVG) como background */
+function setWatermarkOverlay({ bookTitle, pageNum, userLabel }){
+  const overlay = document.getElementById("wmOverlay");
+
+  const text = `${bookTitle} • ${userLabel} • p.${pageNum} • Owlsight`;
+  const safe = escapeHtml(text);
+
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="640" height="420">
+    <defs>
+      <style>
+        .t{
+          font-family: Arial, sans-serif;
+          font-size: 18px;
+          fill: rgba(255,255,255,0.12);
+        }
+      </style>
+    </defs>
+    <g transform="translate(40,250) rotate(-24)">
+      <text x="0" y="0" class="t">${safe}</text>
+      <text x="0" y="42" class="t">${safe}</text>
+      <text x="0" y="84" class="t">${safe}</text>
+    </g>
+  </svg>`.trim();
+
+  const dataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+
+  overlay.style.backgroundImage = `url("${dataUrl}")`;
+  overlay.style.backgroundRepeat = "repeat";
+  overlay.style.backgroundSize = "640px 420px";
+  overlay.style.opacity = "1";
+}
+
+/** ---------------------------
+ * Logout (corrige {"ok": true})
+ * --------------------------*/
+async function doLogout(){
+  try{
+    await ensureCsrf();
+    const res = await apiFetch("/api/auth/logout/", { method:"POST" });
+    // mesmo se der erro, forçamos saída para home
+  }catch(e){}
+  window.location.href = "/";
+}
+
+document.getElementById("logoutBtn").onclick = doLogout;
+
+/** ---------------------------
+ * Proteções “anti-cópia”
+ * (não é 100% impossível capturar,
+ * mas dificulta muito)
+ * --------------------------*/
+(function hardenClient(){
+  // 1) Bloqueia clique direito
+  document.addEventListener("contextmenu", (e) => {
+    // bloqueia especialmente no conteúdo
+    if (e.target.closest("#contentShell")) e.preventDefault();
+  });
+
+  // 2) Bloqueia arrastar
+  document.addEventListener("dragstart", (e) => {
+    if (e.target.closest("#contentShell")) e.preventDefault();
+  });
+
+  // 3) Bloqueia atalhos comuns (Ctrl+S, Ctrl+P, Ctrl+C, Ctrl+U, Ctrl+Shift+I/J/C, PrintScreen etc.)
+  document.addEventListener("keydown", (e) => {
+    const key = (e.key || "").toLowerCase();
+    const ctrl = e.ctrlKey || e.metaKey;
+
+    // PrintScreen (nem sempre dispara em todos os browsers, mas tentamos)
+    if (key === "printscreen") e.preventDefault();
+
+    if (!ctrl) return;
+
+    const blocked = [
+      "s", // salvar
+      "p", // print
+      "c", // copiar
+      "u", // view source
+    ];
+
+    if (blocked.includes(key)) e.preventDefault();
+
+    // DevTools combos
+    if (e.shiftKey && ["i","j","c"].includes(key)) e.preventDefault();
+  });
+
+  // 4) “Privacy blur” ao trocar de aba
+  const blur = document.getElementById("privacyBlur");
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) blur.classList.remove("hidden");
+    else blur.classList.add("hidden");
+  });
+})();
+
+/** ---------------------------
+ * Load page
+ * --------------------------*/
 async function loadPage(){
-  const me = await fetchMe();
-  if(!me){
+  ME = ME || await fetchMe();
+  if(!ME){
     window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
     return;
   }
@@ -63,15 +219,16 @@ async function loadPage(){
 
   if(data.total_pages) maxPages = data.total_pages;
 
+  // Header
   document.getElementById("header").innerHTML = `
     <div class="w-24 aspect-[3/4] rounded-2xl overflow-hidden poster">
-      ${data.cover ? `<img src="${data.cover}" class="w-full h-full object-cover" />`
+      ${data.cover ? `<img src="${data.cover}" class="w-full h-full object-cover" draggable="false" />`
                    : `<div class="w-full h-full grid place-items-center text-xs" style="color: rgba(255,255,255,.45)">Sem capa</div>`}
     </div>
     <div class="flex-1">
-      <div class="font-black text-lg leading-tight">${data.book || "Livro"}</div>
+      <div class="font-black text-lg leading-tight">${escapeHtml(data.book || "Livro")}</div>
       <div class="text-xs mt-1" style="color: rgba(255,255,255,.65)">
-        Tipo: <b>${(data.book_type || "").toUpperCase()}</b>
+        Tipo: <b>${escapeHtml((data.book_type || "").toUpperCase())}</b>
       </div>
       <div class="text-xs mt-2" style="color: rgba(255,255,255,.60)">
         Página <b>${page}</b> • Limite: <b>${data.allowed_until_page ?? data.limit_until_page ?? "-"}</b> • Total: <b>${data.total_pages ?? "-"}</b>
@@ -83,11 +240,12 @@ async function loadPage(){
   const contentBox = document.getElementById("contentBox");
   const blocker = document.getElementById("blocker");
 
+  // BLOQUEIO (FREE 10% / PREMIUM 5% -> backend decide e devolve 403)
   if(res.status === 403 && data.blocked){
     contentBox.innerHTML = `
       <div class="p-10 text-center">
         <div class="text-xl font-black">Conteúdo bloqueado</div>
-        <div class="text-sm mt-2" style="color: rgba(255,255,255,.62)">${data.message || "Acesso limitado."}</div>
+        <div class="text-sm mt-2" style="color: rgba(255,255,255,.62)">${escapeHtml(data.message || "Acesso limitado.")}</div>
       </div>
     `;
     msg.textContent = "";
@@ -110,27 +268,44 @@ async function loadPage(){
 
     blocker.innerHTML = `
       <div class="font-bold">Para continuar:</div>
-      <div class="text-sm mt-1" style="color: rgba(255,255,255,.72)">${data.message || ""}</div>
+      <div class="text-sm mt-1" style="color: rgba(255,255,255,.72)">${escapeHtml(data.message || "")}</div>
       ${actions}
     `;
     blocker.classList.remove("hidden");
+
+    // mesmo bloqueado, mantém overlay suave
+    setWatermarkOverlay({
+      bookTitle: data.book || "Livro",
+      pageNum: page,
+      userLabel: (ME && (ME.email || ME.username || ME.user || ME.name)) ? (ME.email || ME.username || ME.user || ME.name) : "user"
+    });
     return;
   }
 
   blocker.classList.add("hidden");
   msg.textContent = "";
 
+  // Mostra imagem da página
   contentBox.innerHTML = data.page_image
-    ? `<img src="${data.page_image}" class="w-full rounded-2xl" />`
+    ? `<img src="${data.page_image}" class="w-full rounded-2xl" draggable="false" />`
     : `<div class="p-10 text-center" style="color: rgba(255,255,255,.62)">Página não encontrada.</div>`;
+
+  // ✅ Watermark overlay sempre por cima do conteúdo
+  setWatermarkOverlay({
+    bookTitle: data.book || "Livro",
+    pageNum: page,
+    userLabel: (ME && (ME.email || ME.username || ME.user || ME.name)) ? (ME.email || ME.username || ME.user || ME.name) : "user"
+  });
 }
 
+// Navegação
 document.getElementById("prevBtn").onclick = () => { if(page > 1){ page--; loadPage(); } };
 document.getElementById("nextBtn").onclick = () => {
   if(page < maxPages){ page++; loadPage(); }
   else alert("Você chegou ao final do livro.");
 };
 
+// Pagamento
 async function payPlan(plan){
   const me = await fetchMe();
   if(!me){ window.location.href = "/login/"; return; }
@@ -147,9 +322,15 @@ async function payPlan(plan){
   loadPage();
 }
 
+// Partilha (desbloqueio)
 async function share(){
-  const url = window.location.origin;
-  await navigator.clipboard.writeText(url);
+  const url = window.location.href; // ✅ partilha o link do livro/página
+  try{
+    await navigator.clipboard.writeText(url);
+  }catch(e){
+    // fallback simples
+    prompt("Copie o link:", url);
+  }
 
   await ensureCsrf();
   const res = await apiFetch(`/api/unlock/share/${bookId}/`, { method: "POST" });
@@ -158,6 +339,7 @@ async function share(){
   loadPage();
 }
 
+// Comentários
 async function loadComments(){
   const me = await fetchMe();
   if(!me) return;
@@ -174,10 +356,10 @@ async function loadComments(){
   box.innerHTML = arr.map(c => `
     <div class="rounded-2xl p-3" style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.05)">
       <div class="flex items-center justify-between">
-        <div class="font-semibold text-sm">${c.user}</div>
+        <div class="font-semibold text-sm">${escapeHtml(c.user)}</div>
         ${c.is_mine ? `<button class="text-xs" style="color: rgba(225,6,0,.90)" onclick="deleteComment(${c.id})">Apagar</button>` : ``}
       </div>
-      <div class="text-sm mt-1 whitespace-pre-wrap" style="color: rgba(255,255,255,.82)">${c.text}</div>
+      <div class="text-sm mt-1 whitespace-pre-wrap" style="color: rgba(255,255,255,.82)">${escapeHtml(c.text)}</div>
     </div>
   `).join("");
 }
@@ -217,6 +399,7 @@ async function deleteComment(id){
 
 document.getElementById("sendCommentBtn").onclick = sendComment;
 
+// Start
 ensureCsrf().then(() => {
   loadPage();
   loadComments();
