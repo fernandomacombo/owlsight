@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="pt">
 <head>
@@ -26,6 +27,7 @@
         radial-gradient(820px 520px at 90% 10%, rgba(225,6,0,.10), transparent 55%),
         radial-gradient(700px 520px at 55% 90%, rgba(255,255,255,.06), transparent 60%),
         linear-gradient(180deg, var(--bg0), var(--bg1));
+      overflow-x:hidden;
     }
 
     .glass{
@@ -72,6 +74,67 @@
     .scrollbar::-webkit-scrollbar{ width: 10px; height: 10px; }
     .scrollbar::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.12); border-radius: 999px; }
     .scrollbar::-webkit-scrollbar-thumb:hover{ background: rgba(255,255,255,.18); }
+
+    /* Drawer */
+    .drawer-backdrop{
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0,0,0,.62);
+      backdrop-filter: blur(10px);
+      display:none;
+    }
+    .drawer-backdrop.open{ display:block; }
+
+    .drawer{
+      position:absolute;
+      top:0; right:0;
+      width: min(360px, 92vw);
+      height:100%;
+      background: rgba(12,12,12,.96);
+      border-left: 1px solid rgba(255,255,255,.10);
+      box-shadow: -20px 0 80px rgba(0,0,0,.65);
+      padding: 14px;
+      transform: translateX(100%);
+      transition: transform .18s ease;
+    }
+    .drawer-backdrop.open .drawer{ transform: translateX(0); }
+
+    .drawer a, .drawer button{
+      width: 100%;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      color: rgba(255,255,255,.90);
+      margin-top: 10px;
+      cursor:pointer;
+      user-select:none;
+      text-decoration:none;
+    }
+    .drawer a:hover, .drawer button:hover{
+      border-color: rgba(225,6,0,.25);
+      background: rgba(255,255,255,.08);
+    }
+    .drawer .head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+    }
+    .drawer .x{
+      width: 42px; height: 42px;
+      border-radius: 999px;
+      display:flex; align-items:center; justify-content:center;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: #fff;
+    }
   </style>
 
   {% block extra_head %}{% endblock %}
@@ -81,26 +144,77 @@
   <!-- Top bar -->
   <header class="sticky top-0 z-30">
     <div class="glass soft-shadow">
-      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <a href="/" class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-xl grid place-items-center"
-               style="background: radial-gradient(circle at 30% 20%, rgba(225,6,0,.95), rgba(138,0,0,.95)); border:1px solid rgba(255,255,255,.18);">
-            <span class="font-black text-white">O</span>
-          </div>
-          <div class="leading-tight">
-            <div class="font-extrabold tracking-wide">Owlsight</div>
-            <div class="text-xs" style="color: var(--muted);">Biblioteca • Ler além</div>
+      <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <a href="/" class="flex items-center gap-3 min-w-0">
+          <img src="{% static 'frontend/images/logo.png' %}" alt="Owlsight" class="h-9 w-auto object-contain" />
+          <div class="leading-tight min-w-0">
+            <div class="font-extrabold tracking-wide truncate">Owlsight</div>
+            <div class="text-xs truncate" style="color: var(--muted);">Biblioteca • Ler além</div>
           </div>
         </a>
 
-        <nav class="flex items-center gap-2">
+        {% url 'dashboard:home' as dash_url %}
+
+        <!-- Desktop nav (>= sm) -->
+        <nav class="hidden sm:flex items-center gap-2">
+          <a href="/categories/" class="btn px-3 py-2 rounded-xl text-sm">Categoria</a>
           <a href="/favorites/" class="btn px-3 py-2 rounded-xl text-sm">Favoritos</a>
-          <a id="loginBtnTop" href="/login/" class="btn-red px-3 py-2 rounded-xl text-sm font-semibold">Entrar</a>
-          <button id="logoutBtnTop" class="btn px-3 py-2 rounded-xl text-sm hidden">Sair</button>
+
+          {% if request.user.is_authenticated %}
+            <a href="/profile/" class="btn px-3 py-2 rounded-xl text-sm">Minha Conta</a>
+
+            {% if request.user.is_staff or request.user.is_superuser %}
+              {% if dash_url %}
+                <a href="{{ dash_url }}" class="btn-red px-3 py-2 rounded-xl text-sm font-semibold">Admin</a>
+              {% endif %}
+            {% endif %}
+
+            <form action="/api/auth/logout/" method="post" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="btn px-3 py-2 rounded-xl text-sm">Sair</button>
+            </form>
+          {% else %}
+            <a href="/login/" class="btn-red px-3 py-2 rounded-xl text-sm font-semibold">Login</a>
+          {% endif %}
         </nav>
+
+        <!-- Mobile hamburger (< sm) -->
+        <button class="sm:hidden btn px-3 py-2 rounded-xl text-sm" type="button" onclick="openDrawer()" aria-label="Menu">
+          ☰
+        </button>
       </div>
     </div>
   </header>
+
+  <!-- Drawer (mobile) -->
+  <div id="drawerBackdrop" class="drawer-backdrop" onclick="closeDrawer(event)">
+    <div class="drawer" onclick="event.stopPropagation()">
+      <div class="head">
+        <div class="text-white/90 font-extrabold">Menu</div>
+        <button class="x" type="button" onclick="closeDrawer(event)">✕</button>
+      </div>
+
+      <a href="/categories/">Categoria <span>›</span></a>
+      <a href="/favorites/">Favoritos <span>›</span></a>
+
+      {% if request.user.is_authenticated %}
+        <a href="/profile/">Minha Conta <span>›</span></a>
+
+        {% if request.user.is_staff or request.user.is_superuser %}
+          {% if dash_url %}
+            <a href="{{ dash_url }}">Admin <span>›</span></a>
+          {% endif %}
+        {% endif %}
+
+        <form action="/api/auth/logout/" method="post">
+          {% csrf_token %}
+          <button type="submit">Sair <span>›</span></button>
+        </form>
+      {% else %}
+        <a href="/login/">Login <span>›</span></a>
+      {% endif %}
+    </div>
+  </div>
 
   <main class="max-w-6xl mx-auto px-4 py-6">
     {% block content %}{% endblock %}
@@ -115,27 +229,44 @@
   <script>
     document.getElementById("y").textContent = new Date().getFullYear();
 
-    function token(){ return localStorage.getItem("access"); }
-    (function topAuth(){
-      const t = token();
-      const loginBtn = document.getElementById("loginBtnTop");
-      const logoutBtn = document.getElementById("logoutBtnTop");
+    function openDrawer(){ document.getElementById("drawerBackdrop").classList.add("open"); }
+    function closeDrawer(e){
+      if(e) e.stopPropagation();
+      document.getElementById("drawerBackdrop").classList.remove("open");
+    }
+    document.addEventListener("click", (e) => {
+      const a = e.target.closest("#drawerBackdrop a");
+      if(a) closeDrawer();
+    });
+    document.addEventListener("keydown", (e) => {
+      if(e.key === "Escape") closeDrawer();
+    });
 
-      if(!loginBtn || !logoutBtn) return;
-
-      if(t){
-        loginBtn.classList.add("hidden");
-        logoutBtn.classList.remove("hidden");
-        logoutBtn.onclick = () => {
-          localStorage.removeItem("access");
-          localStorage.removeItem("refresh");
-          window.location.href = "/";
-        };
-      } else {
-        loginBtn.classList.remove("hidden");
-        logoutBtn.classList.add("hidden");
+    // ===== Cookies + CSRF + fetch (reutilizável em todas páginas) =====
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+      return m ? decodeURIComponent(m[2]) : null;
+    }
+    function isUnsafe(method) {
+      return ["POST","PUT","PATCH","DELETE"].includes((method || "GET").toUpperCase());
+    }
+    async function apiFetch(url, options = {}) {
+      const opts = { ...options };
+      opts.credentials = "include";
+      opts.headers = opts.headers || {};
+      opts.headers["Accept"] = "application/json";
+      if (isUnsafe(opts.method)) {
+        const csrf = getCookie("csrftoken");
+        if (csrf) opts.headers["X-CSRFToken"] = csrf;
       }
-    })();
+      return fetch(url, opts);
+    }
+    let CSRF_READY = false;
+    async function ensureCsrf(){
+      if (CSRF_READY) return;
+      const res = await apiFetch("/api/csrf/");
+      if (res.ok) CSRF_READY = true;
+    }
   </script>
 
   {% block extra_js %}{% endblock %}
