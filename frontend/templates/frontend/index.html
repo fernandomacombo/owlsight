@@ -34,6 +34,7 @@
       overflow-x: hidden;
     }
 
+    /* Background */
     body::before{
       content:"";
       position: fixed;
@@ -67,6 +68,7 @@
 
     .wrap{ width: 100%; padding: 0; }
 
+    /* Hero */
     .hero{
       position: relative;
       min-height: 100svh;
@@ -110,6 +112,7 @@
       100%{ transform: translateY(-380px) translateX(40px) scale(1.1); opacity:0; }
     }
 
+    /* Nav */
     .nav{
       position: sticky;
       top: 0;
@@ -153,27 +156,6 @@
       border-color: rgba(225,6,0,.25);
       transform: translateY(-1px);
     }
-    .pill option{ background-color: var(--panel2); }
-
-    .btn{
-      padding: 9px 14px;
-      border-radius: 12px;
-      font-size: 12.5px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.06);
-      color: rgba(255,255,255,.9);
-      transition: transform .12s ease, background .12s ease, border-color .12s ease, filter .12s ease;
-      white-space: nowrap;
-      cursor: pointer;
-      user-select:none;
-      line-height: 1;
-      text-decoration:none;
-      display:inline-flex;
-      align-items:center;
-      gap: 8px;
-      justify-content:center;
-    }
-    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); border-color: rgba(225,6,0,.25); }
 
     .btn-primary{
       background: linear-gradient(180deg, var(--red), var(--red2));
@@ -182,6 +164,7 @@
     }
     .btn-primary:hover{ filter: brightness(1.08); }
 
+    /* Hero content */
     .hero-inner{
       position: relative;
       z-index: 2;
@@ -195,7 +178,6 @@
       margin: 0 auto;
       width: 100%;
     }
-
     .hero-left .kicker{
       display:inline-flex;
       align-items:center;
@@ -288,6 +270,7 @@
     }
     .hero-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
 
+    /* Drawer */
     .hamburger{ display:none; }
     .drawer-backdrop{
       position: fixed;
@@ -349,6 +332,7 @@
       color: #fff;
     }
 
+    /* Content */
     .content{
       max-width: 1400px;
       margin: 0 auto;
@@ -551,6 +535,7 @@
       flex-wrap: wrap;
     }
 
+    /* Modal */
     .modal-backdrop{
       position: fixed;
       inset: 0;
@@ -612,6 +597,7 @@
     }
     .modal-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
 
+    /* Responsive */
     @media (max-width: 900px){
       .hero-inner{ grid-template-columns: 1fr; padding-top: 18px; }
       .hero-cover{ justify-self: start; width: min(260px, 72vw); }
@@ -623,7 +609,7 @@
     @media (max-width: 640px){
       .brand .tag{ display:none; }
       .hamburger{ display:inline-flex; }
-      .nav-links{ display:none !important; }
+      .nav-links{ display:none; }
       :root{ --hover-w: 330px; --hover-h: 270px; }
       .hover-panel{ grid-template-columns: 120px 1fr; }
       .tile-row .book-tile{ width: 140px; }
@@ -650,19 +636,25 @@
           <div class="tag">Biblioteca premium • estilo streaming</div>
         </div>
 
-        <!-- Desktop -->
+        <!-- links desktop -->
         <div class="nav-links flex gap-2 items-center">
+          <!-- sempre visíveis -->
           <a class="pill" href="/categories/">Categoria</a>
           <a class="pill" href="/favorites/">Favoritos</a>
 
-          <a id="navLogin" class="pill hidden" href="/login/">Login</a>
+          <!-- só logado -->
+          <a id="myAccountBtn" class="pill hidden" href="/profile/">Minha Conta</a>
 
-          <a id="navAccount" class="pill hidden" href="/profile/">Minha Conta</a>
-          <a id="navAdmin" class="pill btn-primary hidden" href="/admin/">Admin</a>
-          <button id="navLogout" class="pill hidden" type="button">Sair</button>
+          {% url 'dashboard:home' as dash_url %}
+          {% if dash_url %}
+            <a id="adminBtn" href="{{ dash_url }}" class="pill btn-primary hidden">Admin</a>
+          {% endif %}
+
+          <button id="logoutBtn" class="pill hidden" type="button">Sair</button>
+          <a id="loginBtn" href="/login/" class="pill hidden">Login</a>
         </div>
 
-        <!-- Mobile -->
+        <!-- hamburger mobile -->
         <button class="pill hamburger" type="button" onclick="openDrawer()" aria-label="Menu">☰</button>
       </div>
 
@@ -680,8 +672,8 @@
           </div>
 
           <div class="hero-actions">
-            <a id="heroRead" class="btn btn-primary" href="#">Ler agora</a>
-            <button class="btn" type="button" onclick="scrollToCatalog()">Explorar catálogo ↓</button>
+            <a id="heroRead" class="pill btn-primary" href="#">Ler agora</a>
+            <button class="pill" type="button" onclick="scrollToCatalog()">Explorar catálogo ↓</button>
           </div>
         </div>
 
@@ -694,7 +686,6 @@
     <!-- CONTENT -->
     <div class="content" id="catalog">
       <div class="panel">
-
         <div class="filters">
           <input id="searchInput" class="pill w-72 max-w-full" placeholder="Pesquisar título ou autor..." style="outline:none;">
           <select id="genreSelect" class="pill" style="outline:none;">
@@ -764,7 +755,7 @@
       </div>
     </div>
 
-    <!-- Drawer -->
+    <!-- Drawer (mobile menu) -->
     <div id="drawerBackdrop" class="drawer-backdrop" onclick="closeDrawer(event)">
       <div class="drawer" onclick="event.stopPropagation()">
         <div class="head">
@@ -772,14 +763,20 @@
           <button class="x" type="button" onclick="closeDrawer(event)">✕</button>
         </div>
 
+        <!-- sempre visíveis -->
         <a href="/categories/">Categoria <span>›</span></a>
         <a href="/favorites/">Favoritos <span>›</span></a>
 
-        <a id="drawerLogin" href="/login/" class="hidden">Login <span>›</span></a>
+        <!-- só logado -->
+        <a id="myAccountBtn2" class="hidden" href="/profile/">Minha Conta <span>›</span></a>
 
-        <a id="drawerAccount" href="/profile/" class="hidden">Minha Conta <span>›</span></a>
-        <a id="drawerAdmin" href="/admin/" class="hidden">Admin <span>›</span></a>
-        <button id="drawerLogout" class="hidden" type="button">Sair <span>›</span></button>
+        {% url 'dashboard:home' as dash_url %}
+        {% if dash_url %}
+          <a id="adminBtn2" href="{{ dash_url }}" class="hidden">Admin <span>›</span></a>
+        {% endif %}
+
+        <button id="logoutBtn2" class="hidden" type="button">Sair <span>›</span></button>
+        <a id="loginBtn2" href="/login/" class="hidden">Login <span>›</span></a>
       </div>
     </div>
 
@@ -805,8 +802,8 @@
           <p id="mDesc" class="mt-5 text-white/75 text-sm leading-relaxed"></p>
 
           <div class="mt-6 flex gap-2 flex-wrap">
-            <a id="mRead" class="btn btn-primary">Ler</a>
-            <button class="btn" type="button" onclick="closeBookModal(event)">Fechar</button>
+            <a id="mRead" class="pill btn-primary">Ler</a>
+            <button class="pill" type="button" onclick="closeBookModal(event)">Fechar</button>
           </div>
         </div>
 
@@ -853,13 +850,19 @@
       if(e) e.stopPropagation();
       document.getElementById("drawerBackdrop").classList.remove("open");
     }
-    document.addEventListener("keydown", (e) => { if(e.key === "Escape") closeDrawer(); });
+    document.addEventListener("click", (e) => {
+      const a = e.target.closest("#drawerBackdrop a");
+      if(a) closeDrawer();
+    });
+    document.addEventListener("keydown", (e) => {
+      if(e.key === "Escape") closeDrawer();
+    });
 
     function scrollToCatalog(){
       document.getElementById("catalog").scrollIntoView({behavior:"smooth", block:"start"});
     }
 
-    /** ========= Auth + NAV ========= **/
+    /** ========= Auth ========= **/
     let ME = null;
 
     async function fetchMe(){
@@ -872,45 +875,40 @@
       const isLogged = !!me;
       const isAdmin = !!(me && (me.is_staff || me.is_superuser));
 
-      const navLogin = document.getElementById("navLogin");
-      const navAccount = document.getElementById("navAccount");
-      const navAdmin = document.getElementById("navAdmin");
-      const navLogout = document.getElementById("navLogout");
+      // desktop
+      const loginBtn = document.getElementById("loginBtn");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const myAccountBtn = document.getElementById("myAccountBtn");
+      const adminBtn = document.getElementById("adminBtn");
 
-      const drawerLogin = document.getElementById("drawerLogin");
-      const drawerAccount = document.getElementById("drawerAccount");
-      const drawerAdmin = document.getElementById("drawerAdmin");
-      const drawerLogout = document.getElementById("drawerLogout");
+      // drawer
+      const loginBtn2 = document.getElementById("loginBtn2");
+      const logoutBtn2 = document.getElementById("logoutBtn2");
+      const myAccountBtn2 = document.getElementById("myAccountBtn2");
+      const adminBtn2 = document.getElementById("adminBtn2");
 
-      if(!isLogged){
-        navLogin.classList.remove("hidden");
-        navAccount.classList.add("hidden");
-        navAdmin.classList.add("hidden");
-        navLogout.classList.add("hidden");
+      // regra: não logado => categoria, favoritos, login
+      // logado normal => categoria, favoritos, minha conta, sair
+      // logado admin => categoria, favoritos, minha conta, admin, sair
 
-        drawerLogin.classList.remove("hidden");
-        drawerAccount.classList.add("hidden");
-        drawerAdmin.classList.add("hidden");
-        drawerLogout.classList.add("hidden");
-      } else {
-        navLogin.classList.add("hidden");
-        navAccount.classList.remove("hidden");
-        navLogout.classList.remove("hidden");
-        navAdmin.classList.toggle("hidden", !isAdmin);
+      if (loginBtn)  loginBtn.classList.toggle("hidden", isLogged);
+      if (logoutBtn) logoutBtn.classList.toggle("hidden", !isLogged);
+      if (myAccountBtn) myAccountBtn.classList.toggle("hidden", !isLogged);
+      if (adminBtn) adminBtn.classList.toggle("hidden", !isAdmin);
 
-        drawerLogin.classList.add("hidden");
-        drawerAccount.classList.remove("hidden");
-        drawerLogout.classList.remove("hidden");
-        drawerAdmin.classList.toggle("hidden", !isAdmin);
-      }
+      if (loginBtn2)  loginBtn2.classList.toggle("hidden", isLogged);
+      if (logoutBtn2) logoutBtn2.classList.toggle("hidden", !isLogged);
+      if (myAccountBtn2) myAccountBtn2.classList.toggle("hidden", !isLogged);
+      if (adminBtn2) adminBtn2.classList.toggle("hidden", !isAdmin);
 
       const doLogout = async () => {
         await ensureCsrf();
         await apiFetch("/api/auth/logout/", { method:"POST" });
         window.location.reload();
       };
-      navLogout.onclick = doLogout;
-      drawerLogout.onclick = doLogout;
+
+      if (logoutBtn) logoutBtn.onclick = doLogout;
+      if (logoutBtn2) logoutBtn2.onclick = doLogout;
     }
 
     /** ========= Util ========= **/
@@ -1025,7 +1023,6 @@
         </div>
       `;
     }
-
     async function rateBook(bookId, stars){
       if(!ME){
         window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
@@ -1177,9 +1174,9 @@
               <div class="hp-desc">${shortDesc(b.description, 220)}</div>
 
               <div class="hp-actions">
-                <a class="btn btn-primary" href="/read/${b.id}/${continuePage}/">Ler</a>
-                <a class="btn" href="/read/${b.id}/1/">Recomeçar</a>
-                <button class="btn" type="button"
+                <a class="pill btn-primary" href="/read/${b.id}/${continuePage}/">Ler</a>
+                <a class="pill" href="/read/${b.id}/1/">Recomeçar</a>
+                <button class="pill" type="button"
                         onclick="openBookModalById(${b.id}, ${continuePage}); event.stopPropagation();">
                   Descrição
                 </button>
@@ -1263,6 +1260,7 @@
       document.getElementById("countInfo").textContent = `${filtered.length} / ${ALL_BOOKS.length}`;
     }
 
+    /** ========= Carregar + hidratar ========= **/
     async function hydrateAndRender(){
       const [progressMap, favSet] = await Promise.all([ loadProgress(), loadFavorites() ]);
       PROGRESS_MAP = progressMap;
@@ -1274,7 +1272,7 @@
       await ensureCsrf();
 
       ME = await fetchMe();
-      setNavByAuth(ME);
+      setNavByAuth(ME);           // ✅ navbar + drawer conforme regras
 
       const res = await apiFetch("/api/books/");
       if(!res.ok){
@@ -1296,6 +1294,7 @@
       await hydrateAndRender();
     }
 
+    /** ========= Eventos ========= **/
     document.getElementById("searchInput").addEventListener("input", renderAll);
     document.getElementById("genreSelect").addEventListener("change", renderAll);
     document.getElementById("typeSelect").addEventListener("change", renderAll);
