@@ -292,3 +292,25 @@ LOGGING = {
         "axes.watch_login": {"handlers": ["console"], "level": "WARNING", "propagate": True},
     },
 }
+
+
+
+import os
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+
+# Sessões e cookies (importante para fetch + login)
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_HTTPONLY = False  # precisa ser lido pelo JS (csrftoken cookie)
+CSRF_COOKIE_SAMESITE = "Lax"
+SESSION_COOKIE_SAMESITE = "Lax"
+
+# Em produção HTTPS (Railway normalmente é https)
+CSRF_COOKIE_SECURE = (os.getenv("DEBUG", "False").lower() not in ("1","true","yes","on"))
+SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE
+
+# Se tiver erro de CSRF no Railway, adiciona o domínio aqui:
+# Ex: https://teu-app.up.railway.app
+csrf_trusted = os.getenv("CSRF_TRUSTED_ORIGINS", "")
+if csrf_trusted:
+    CSRF_TRUSTED_ORIGINS = [x.strip() for x in csrf_trusted.split(",") if x.strip()]

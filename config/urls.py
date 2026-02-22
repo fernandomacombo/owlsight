@@ -19,4 +19,6 @@ urlpatterns = [
 
     # ✅ health check (opcional)
     path("health/", health),
+
+     path("api/", include("frontend.api_urls")),
 ]
