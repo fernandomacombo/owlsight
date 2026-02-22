@@ -10,6 +10,7 @@
       <div class="flex items-start justify-between gap-3">
         <div id="header" class="flex gap-3 flex-1"></div>
 
+        <a href="/logout/" class="btn px-3 py-2 rounded-xl text-sm">Sair</a>
       </div>
 
       <div class="mt-4 grid gap-2">
@@ -22,33 +23,26 @@
 
         <div id="blocker" class="hidden rounded-2xl p-3"
              style="background: rgba(225,6,0,.10); border:1px solid rgba(225,6,0,.26);"></div>
-      </div>
 
-      <div class="mt-5">
-        <h2 class="font-black text-lg">Comentários</h2>
-
-        <div class="mt-3 flex gap-2">
-          <input id="commentInput" class="input flex-1 px-3 py-2 rounded-xl" placeholder="Escreva um comentário..." />
-          <button id="sendCommentBtn" class="btn-red px-4 py-2 rounded-xl font-semibold">Enviar</button>
-        </div>
-
-        <p id="commentMsg" class="mt-2 text-sm" style="color: rgba(255,255,255,.70);"></p>
-        <div id="commentsList" class="mt-4 space-y-3 max-h-[44vh] overflow-auto scrollbar pr-1"></div>
+        <!-- ✅ Debug (para você ver o que o backend está mandando) -->
+        <details class="mt-2 rounded-2xl p-3"
+                 style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
+          <summary class="text-sm" style="color: rgba(255,255,255,.75)">Debug (resposta do servidor)</summary>
+          <pre id="debugBox" class="mt-2 text-xs whitespace-pre-wrap" style="color: rgba(255,255,255,.65)"></pre>
+        </details>
       </div>
     </aside>
 
     <!-- RIGHT -->
     <section class="glass soft-shadow rounded-3xl p-4">
-      <!-- ✅ Container relative para overlay de marca d'água -->
       <div id="contentShell" class="relative rounded-2xl overflow-hidden">
         <div id="contentBox" class="rounded-2xl overflow-hidden"></div>
 
-        <!-- ✅ Watermark overlay (dificulta prints/cópias) -->
+        <!-- Watermark overlay -->
         <div id="wmOverlay"
-             class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200">
-        </div>
+             class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200"></div>
 
-        <!-- ✅ Blur overlay quando trocar de aba (anti-captura rápida) -->
+        <!-- Blur ao trocar de aba -->
         <div id="privacyBlur"
              class="hidden absolute inset-0 backdrop-blur-2xl"
              style="background: rgba(0,0,0,.35);">
@@ -69,58 +63,76 @@
 </section>
 
 <style>
-  /* ✅ Anti seleção/cópia básica */
-  #contentShell, #contentShell *{
-    -webkit-user-select: none;
-    user-select: none;
-  }
-  /* ✅ Evita arrastar imagens */
-  img { -webkit-user-drag: none; user-drag: none; }
+  #contentShell, #contentShell *{ -webkit-user-select:none; user-select:none; }
+  img{ -webkit-user-drag:none; user-drag:none; }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-const bookId = Number("{{ book_id }}");
-let page = Number("{{ page_number }}");
-let maxPages = 1;
-
-/** Guardamos dados do utilizador para marca d'água */
-let ME = null;
-
-/** ---------------------------
- * Helpers
- * --------------------------*/
-async function fetchMe(){
-  const res = await apiFetch("/api/auth/me/");
-  if(!res.ok) return null;
-  return res.json();
+/* =========================
+   CSRF + fetch (independente do base.html)
+   ========================= */
+function getCookie(name){
+  const v = document.cookie.split(";").map(s=>s.trim());
+  for(const c of v){
+    if(c.startsWith(name+"=")) return decodeURIComponent(c.slice(name.length+1));
+  }
+  return null;
+}
+async function apiFetch(url, opts={}){
+  const headers = new Headers(opts.headers || {});
+  // envia cookies (session)
+  opts.credentials = "same-origin";
+  // CSRF só em métodos que alteram estado
+  const method = (opts.method || "GET").toUpperCase();
+  if(["POST","PUT","PATCH","DELETE"].includes(method)){
+    const csrf = getCookie("csrftoken");
+    if(csrf) headers.set("X-CSRFToken", csrf);
+  }
+  opts.headers = headers;
+  return fetch(url, opts);
 }
 
+/* =========================
+   Anti-cópia (dificulta)
+   ========================= */
+(function harden(){
+  document.addEventListener("contextmenu", (e)=>{ if(e.target.closest("#contentShell")) e.preventDefault(); });
+  document.addEventListener("dragstart", (e)=>{ if(e.target.closest("#contentShell")) e.preventDefault(); });
+  document.addEventListener("keydown", (e)=>{
+    const key = (e.key||"").toLowerCase();
+    const ctrl = e.ctrlKey || e.metaKey;
+    if(key === "printscreen") e.preventDefault();
+    if(!ctrl) return;
+    if(["s","p","c","u"].includes(key)) e.preventDefault();
+    if(e.shiftKey && ["i","j","c"].includes(key)) e.preventDefault();
+  });
+  const blur = document.getElementById("privacyBlur");
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.hidden) blur.classList.remove("hidden");
+    else blur.classList.add("hidden");
+  });
+})();
+
+/* =========================
+   Watermark
+   ========================= */
 function escapeHtml(s){
   return String(s ?? "").replace(/[&<>"']/g, (m) => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
   }[m]));
 }
-
-/** Cria uma marca d’água repetida (SVG) como background */
 function setWatermarkOverlay({ bookTitle, pageNum, userLabel }){
   const overlay = document.getElementById("wmOverlay");
-
   const text = `${bookTitle} • ${userLabel} • p.${pageNum} • Owlsight`;
   const safe = escapeHtml(text);
 
   const svg = `
   <svg xmlns="http://www.w3.org/2000/svg" width="640" height="420">
-    <defs>
-      <style>
-        .t{
-          font-family: Arial, sans-serif;
-          font-size: 18px;
-          fill: rgba(255,255,255,0.12);
-        }
-      </style>
-    </defs>
+    <defs><style>
+      .t{font-family: Arial, sans-serif; font-size: 18px; fill: rgba(255,255,255,0.12);}
+    </style></defs>
     <g transform="translate(40,250) rotate(-24)">
       <text x="0" y="0" class="t">${safe}</text>
       <text x="0" y="42" class="t">${safe}</text>
@@ -129,81 +141,44 @@ function setWatermarkOverlay({ bookTitle, pageNum, userLabel }){
   </svg>`.trim();
 
   const dataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-
   overlay.style.backgroundImage = `url("${dataUrl}")`;
   overlay.style.backgroundRepeat = "repeat";
   overlay.style.backgroundSize = "640px 420px";
   overlay.style.opacity = "1";
 }
 
-/** ---------------------------
- * Logout (corrige {"ok": true})
- * --------------------------*/
-async function doLogout(){
-  try{
-    await ensureCsrf();
-    const res = await apiFetch("/api/auth/logout/", { method:"POST" });
-    // mesmo se der erro, forçamos saída para home
-  }catch(e){}
-  window.location.href = "/";
+/* =========================
+   Leitura
+   ========================= */
+const bookId = Number("{{ book_id }}");
+let page = Number("{{ page_number }}");
+let maxPages = 1;
+
+async function fetchMe(){
+  const res = await apiFetch("/api/auth/me/");
+  if(!res.ok) return null;
+  return res.json().catch(()=>null);
 }
 
-document.getElementById("logoutBtn").onclick = doLogout;
+function pick(data, keys, fallback=null){
+  for(const k of keys){
+    if(data && data[k] !== undefined && data[k] !== null && data[k] !== "") return data[k];
+  }
+  return fallback;
+}
 
-/** ---------------------------
- * Proteções “anti-cópia”
- * (não é 100% impossível capturar,
- * mas dificulta muito)
- * --------------------------*/
-(function hardenClient(){
-  // 1) Bloqueia clique direito
-  document.addEventListener("contextmenu", (e) => {
-    // bloqueia especialmente no conteúdo
-    if (e.target.closest("#contentShell")) e.preventDefault();
-  });
-
-  // 2) Bloqueia arrastar
-  document.addEventListener("dragstart", (e) => {
-    if (e.target.closest("#contentShell")) e.preventDefault();
-  });
-
-  // 3) Bloqueia atalhos comuns (Ctrl+S, Ctrl+P, Ctrl+C, Ctrl+U, Ctrl+Shift+I/J/C, PrintScreen etc.)
-  document.addEventListener("keydown", (e) => {
-    const key = (e.key || "").toLowerCase();
-    const ctrl = e.ctrlKey || e.metaKey;
-
-    // PrintScreen (nem sempre dispara em todos os browsers, mas tentamos)
-    if (key === "printscreen") e.preventDefault();
-
-    if (!ctrl) return;
-
-    const blocked = [
-      "s", // salvar
-      "p", // print
-      "c", // copiar
-      "u", // view source
-    ];
-
-    if (blocked.includes(key)) e.preventDefault();
-
-    // DevTools combos
-    if (e.shiftKey && ["i","j","c"].includes(key)) e.preventDefault();
-  });
-
-  // 4) “Privacy blur” ao trocar de aba
-  const blur = document.getElementById("privacyBlur");
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden) blur.classList.remove("hidden");
-    else blur.classList.add("hidden");
-  });
-})();
-
-/** ---------------------------
- * Load page
- * --------------------------*/
 async function loadPage(){
-  ME = ME || await fetchMe();
-  if(!ME){
+  const debugBox = document.getElementById("debugBox");
+  const msg = document.getElementById("msg");
+  const contentBox = document.getElementById("contentBox");
+  const blocker = document.getElementById("blocker");
+
+  msg.textContent = "";
+  blocker.classList.add("hidden");
+  contentBox.innerHTML = `<div class="p-10 text-center" style="color: rgba(255,255,255,.65)">Carregando...</div>`;
+
+  const me = await fetchMe();
+  if(!me){
     window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
     return;
   }
@@ -211,84 +186,91 @@ async function loadPage(){
   const res = await apiFetch(`/api/read/${bookId}/${page}/`);
   const data = await res.json().catch(()=>({}));
 
-  if(data.total_pages) maxPages = data.total_pages;
+  // ✅ mostra sempre o JSON no debug
+  debugBox.textContent = JSON.stringify({ status: res.status, data }, null, 2);
+
+  // 🔁 Aceita vários nomes possíveis que o backend pode estar mandando
+  const totalPages = Number(pick(data, ["total_pages","totalPages","pages_total","pages","total"], 0)) || 0;
+  const limitPage  = Number(pick(data, ["allowed_until_page","limit_until_page","allowedUntilPage","limitPage","allowed_until","limit_until"], 0)) || 0;
+
+  const bookTitle = pick(data, ["book","title","book_title","name"], "Livro");
+  const bookType  = pick(data, ["book_type","type","tier"], "");
+
+  const coverUrl  = pick(data, ["cover","cover_url","book_cover","coverImage","cover_image"], "");
+  const pageImg   = pick(data, ["page_image","pageImage","image","image_url","img","url","page_url"], "");
+
+  if(totalPages > 0) maxPages = totalPages;
 
   // Header
   document.getElementById("header").innerHTML = `
-    <div class="w-24 aspect-[3/4] rounded-2xl overflow-hidden poster">
-      ${data.cover ? `<img src="${data.cover}" class="w-full h-full object-cover" draggable="false" />`
-                   : `<div class="w-full h-full grid place-items-center text-xs" style="color: rgba(255,255,255,.45)">Sem capa</div>`}
+    <div class="w-24 aspect-[3/4] rounded-2xl overflow-hidden poster" style="border:1px solid rgba(255,255,255,.10)">
+      ${coverUrl ? `<img src="${coverUrl}" class="w-full h-full object-cover" draggable="false" />`
+                 : `<div class="w-full h-full grid place-items-center text-xs" style="color: rgba(255,255,255,.45)">Sem capa</div>`}
     </div>
     <div class="flex-1">
-      <div class="font-black text-lg leading-tight">${escapeHtml(data.book || "Livro")}</div>
+      <div class="font-black text-lg leading-tight">${escapeHtml(bookTitle)}</div>
       <div class="text-xs mt-1" style="color: rgba(255,255,255,.65)">
-        Tipo: <b>${escapeHtml((data.book_type || "").toUpperCase())}</b>
+        Tipo: <b>${escapeHtml(String(bookType).toUpperCase())}</b>
       </div>
       <div class="text-xs mt-2" style="color: rgba(255,255,255,.60)">
-        Página <b>${page}</b> • Limite: <b>${data.allowed_until_page ?? data.limit_until_page ?? "-"}</b> • Total: <b>${data.total_pages ?? "-"}</b>
+        Folha <b>${page}</b>
+        • Limite: <b>${limitPage || "-"}</b>
+        • Total: <b>${totalPages || "-"}</b>
       </div>
     </div>
   `;
 
-  const msg = document.getElementById("msg");
-  const contentBox = document.getElementById("contentBox");
-  const blocker = document.getElementById("blocker");
-
-  // BLOQUEIO (FREE 10% / PREMIUM 5% -> backend decide e devolve 403)
+  // Bloqueio (o backend decide)
   if(res.status === 403 && data.blocked){
     contentBox.innerHTML = `
       <div class="p-10 text-center">
         <div class="text-xl font-black">Conteúdo bloqueado</div>
-        <div class="text-sm mt-2" style="color: rgba(255,255,255,.62)">${escapeHtml(data.message || "Acesso limitado.")}</div>
+        <div class="text-sm mt-2" style="color: rgba(255,255,255,.62)">
+          ${escapeHtml(data.message || "Acesso limitado.")}
+        </div>
       </div>
     `;
-    msg.textContent = "";
-
-    let actions = "";
-    if(data.cta === "pay"){
-      actions = `
-        <button onclick="payPlan('yearly')" class="btn-red mt-3 w-full px-4 py-2 rounded-xl font-semibold">
-          Pagar com Mpesa / e-Mola
-        </button>
-      `;
-    } else {
-      actions = `
-        <div class="flex gap-2 mt-3">
-          <button onclick="share()" class="btn-red flex-1 px-4 py-2 rounded-xl font-semibold">Partilhar Owlsight</button>
-          <a href="/register/" class="btn flex-1 px-4 py-2 rounded-xl text-center">Criar conta</a>
-        </div>
-      `;
-    }
-
+    const cta = data.cta || "share";
     blocker.innerHTML = `
       <div class="font-bold">Para continuar:</div>
       <div class="text-sm mt-1" style="color: rgba(255,255,255,.72)">${escapeHtml(data.message || "")}</div>
-      ${actions}
+      ${
+        cta === "pay"
+        ? `<button class="btn-red mt-3 w-full px-4 py-2 rounded-xl font-semibold" onclick="payPlan('yearly')">Pagar</button>`
+        : `<button class="btn-red mt-3 w-full px-4 py-2 rounded-xl font-semibold" onclick="share()">Partilhar link</button>`
+      }
     `;
     blocker.classList.remove("hidden");
 
-    // mesmo bloqueado, mantém overlay suave
     setWatermarkOverlay({
-      bookTitle: data.book || "Livro",
+      bookTitle,
       pageNum: page,
-      userLabel: (ME && (ME.email || ME.username || ME.user || ME.name)) ? (ME.email || ME.username || ME.user || ME.name) : "user"
+      userLabel: (me.email || me.username || me.user || me.name || "user")
     });
     return;
   }
 
-  blocker.classList.add("hidden");
-  msg.textContent = "";
+  // Se não veio imagem, avisa claramente (e o debug vai mostrar o motivo)
+  if(!pageImg){
+    contentBox.innerHTML = `
+      <div class="p-10 text-center">
+        <div class="text-lg font-black">Não veio a imagem da página</div>
+        <div class="text-sm mt-2" style="color: rgba(255,255,255,.65)">
+          O backend precisa enviar <b>page_image</b> (ou outro nome equivalente).
+          Veja no Debug acima quais campos estão vindo.
+        </div>
+      </div>
+    `;
+    return;
+  }
 
-  // Mostra imagem da página
-  contentBox.innerHTML = data.page_image
-    ? `<img src="${data.page_image}" class="w-full rounded-2xl" draggable="false" />`
-    : `<div class="p-10 text-center" style="color: rgba(255,255,255,.62)">Página não encontrada.</div>`;
+  // Render da página
+  contentBox.innerHTML = `<img src="${pageImg}" class="w-full rounded-2xl" draggable="false" />`;
 
-  // ✅ Watermark overlay sempre por cima do conteúdo
   setWatermarkOverlay({
-    bookTitle: data.book || "Livro",
+    bookTitle,
     pageNum: page,
-    userLabel: (ME && (ME.email || ME.username || ME.user || ME.name)) ? (ME.email || ME.username || ME.user || ME.name) : "user"
+    userLabel: (me.email || me.username || me.user || me.name || "user")
   });
 }
 
@@ -299,104 +281,27 @@ document.getElementById("nextBtn").onclick = () => {
   else alert("Você chegou ao final do livro.");
 };
 
-// Pagamento
+// Ações (mantém, mas só funciona se teus endpoints existirem)
 async function payPlan(plan){
-  const me = await fetchMe();
-  if(!me){ window.location.href = "/login/"; return; }
-
-  await ensureCsrf();
   const res = await apiFetch("/api/pay/", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ plan, provider: "mpesa" })
+    body: JSON.stringify({ plan })
   });
-
   const data = await res.json().catch(()=>({}));
   if(!res.ok){ alert(data.error || "Erro ao pagar"); return; }
   loadPage();
 }
-
-// Partilha (desbloqueio)
 async function share(){
-  const url = window.location.href; // ✅ partilha o link do livro/página
-  try{
-    await navigator.clipboard.writeText(url);
-  }catch(e){
-    // fallback simples
-    prompt("Copie o link:", url);
-  }
-
-  await ensureCsrf();
-  const res = await apiFetch(`/api/unlock/share/${bookId}/`, { method: "POST" });
+  const url = window.location.href;
+  try{ await navigator.clipboard.writeText(url); }catch(e){ prompt("Copie o link:", url); }
+  const res = await apiFetch(`/api/unlock/share/${bookId}/`, { method:"POST" });
   const data = await res.json().catch(()=>({}));
   alert(data.message || "Partilha registrada!");
   loadPage();
 }
 
-// Comentários
-async function loadComments(){
-  const me = await fetchMe();
-  if(!me) return;
-
-  const res = await apiFetch(`/api/comments/${bookId}/`);
-  const arr = await res.json().catch(() => []);
-
-  const box = document.getElementById("commentsList");
-  if(!Array.isArray(arr) || arr.length === 0){
-    box.innerHTML = `<div class="text-sm" style="color: rgba(255,255,255,.60)">Sem comentários ainda.</div>`;
-    return;
-  }
-
-  box.innerHTML = arr.map(c => `
-    <div class="rounded-2xl p-3" style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.05)">
-      <div class="flex items-center justify-between">
-        <div class="font-semibold text-sm">${escapeHtml(c.user)}</div>
-        ${c.is_mine ? `<button class="text-xs" style="color: rgba(225,6,0,.90)" onclick="deleteComment(${c.id})">Apagar</button>` : ``}
-      </div>
-      <div class="text-sm mt-1 whitespace-pre-wrap" style="color: rgba(255,255,255,.82)">${escapeHtml(c.text)}</div>
-    </div>
-  `).join("");
-}
-
-async function sendComment(){
-  const me = await fetchMe();
-  if(!me){ window.location.href = "/login/"; return; }
-
-  const input = document.getElementById("commentInput");
-  const text = input.value.trim();
-  if(!text) return;
-
-  await ensureCsrf();
-  const res = await apiFetch(`/api/comments/${bookId}/`, {
-    method: "POST",
-    headers: { "Content-Type":"application/json" },
-    body: JSON.stringify({ text })
-  });
-  const data = await res.json().catch(() => ({}));
-
-  const msg = document.getElementById("commentMsg");
-  if(!res.ok){
-    msg.textContent = data.error || "Erro ao comentar.";
-    return;
-  }
-
-  msg.textContent = "Comentário enviado!";
-  input.value = "";
-  loadComments();
-}
-
-async function deleteComment(id){
-  await ensureCsrf();
-  const res = await apiFetch(`/api/comments/delete/${id}/`, { method: "POST" });
-  if(res.ok) loadComments();
-}
-
-document.getElementById("sendCommentBtn").onclick = sendComment;
-
 // Start
-ensureCsrf().then(() => {
-  loadPage();
-  loadComments();
-});
+loadPage();
 </script>
 {% endblock %}
