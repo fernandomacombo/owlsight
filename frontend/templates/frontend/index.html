@@ -1,856 +1,1315 @@
-{% extends "frontend/base.html" %}
 {% load static %}
-{% block title %}Owlsight — Livros{% endblock %}
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Owlsight — Livros</title>
 
-{% block extra_head %}
-<style>
-  :root{
-    --bg:#070707;
-    --panel: rgba(18,18,18,.82);
-    --panel2: rgba(14,14,14,.94);
-    --stroke: rgba(255,255,255,.10);
-    --text: rgba(255,255,255,.92);
-    --muted: rgba(255,255,255,.68);
-    --muted2: rgba(255,255,255,.52);
-    --red: #E10600;
-    --red2:#8A0000;
+  <style>
+    :root{
+      --bg:#070707;
+      --panel: rgba(18,18,18,.82);
+      --panel2: rgba(14,14,14,.94);
+      --stroke: rgba(255,255,255,.10);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --muted2: rgba(255,255,255,.52);
+      --red: #E10600;
+      --red2:#8A0000;
 
-    --hover-w: 460px;
-    --hover-h: 280px;
-  }
+      --hover-w: 460px;
+      --hover-h: 280px;
 
-  .hero{
-    position: relative;
-    min-height: calc(100svh - 84px); /* header sticky */
-    display: grid;
-    grid-template-rows: 1fr;
-    overflow:hidden;
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 22px;
-  }
-  .hero-bg{
-    position:absolute;
-    inset:-40%;
-    background:
-      radial-gradient(closest-side at 30% 20%, rgba(225,6,0,.35), transparent 65%),
-      radial-gradient(closest-side at 75% 25%, rgba(225,6,0,.18), transparent 60%),
-      radial-gradient(closest-side at 55% 90%, rgba(255,255,255,.10), transparent 65%);
-    filter: blur(18px);
-    opacity: .9;
-    animation: heroGlow 10s ease-in-out infinite;
-    transform: translateZ(0);
-  }
-  @keyframes heroGlow{
-    0%   { transform: translate3d(-1.5%, -1.2%, 0) scale(1.02); opacity:.85; }
-    50%  { transform: translate3d(1.5%,  1.3%, 0) scale(1.06); opacity:1; }
-    100% { transform: translate3d(-1.5%, -1.2%, 0) scale(1.02); opacity:.85; }
-  }
-
-  .spark{
-    position:absolute;
-    width: 6px; height: 6px;
-    border-radius: 999px;
-    background: rgba(225,6,0,.65);
-    filter: blur(.2px);
-    opacity: .0;
-    animation: spark 6s linear infinite;
-    pointer-events:none;
-  }
-  @keyframes spark{
-    0%{ transform: translateY(30px) translateX(0) scale(.8); opacity:0; }
-    15%{ opacity:.55; }
-    70%{ opacity:.20; }
-    100%{ transform: translateY(-380px) translateX(40px) scale(1.1); opacity:0; }
-  }
-
-  .hero-inner{
-    position: relative;
-    z-index: 2;
-    display:grid;
-    grid-template-columns: 1.15fr .85fr;
-    gap: 18px;
-    padding: 22px 16px 18px;
-    align-items:center;
-    height: 100%;
-    max-width: 1400px;
-    margin: 0 auto;
-    width: 100%;
-  }
-
-  .kicker{
-    display:inline-flex;
-    align-items:center;
-    gap: 10px;
-    color: rgba(255,255,255,.65);
-    font-weight: 700;
-    font-size: 12px;
-    letter-spacing: .16em;
-  }
-  .dot{
-    width: 8px; height: 8px;
-    border-radius: 999px;
-    background: rgba(225,6,0,.9);
-    box-shadow: 0 0 0 6px rgba(225,6,0,.15);
-    animation: pulse 2s ease-in-out infinite;
-  }
-  @keyframes pulse{
-    0%,100%{ transform: scale(.9); box-shadow: 0 0 0 6px rgba(225,6,0,.12); }
-    50%{ transform: scale(1.1); box-shadow: 0 0 0 10px rgba(225,6,0,.16); }
-  }
-
-  .hero-title{
-    margin-top: 10px;
-    font-weight: 950;
-    line-height: 1.03;
-    font-size: clamp(30px, 4vw, 56px);
-    letter-spacing: -.02em;
-  }
-  .hero-sub{
-    margin-top: 10px;
-    color: rgba(255,255,255,.72);
-    font-size: clamp(14px, 1.6vw, 18px);
-    max-width: 62ch;
-    line-height: 1.45;
-  }
-
-  .chip{
-    display:inline-flex;
-    gap: 8px;
-    align-items:center;
-    padding: 8px 12px;
-    border-radius: 999px;
-    background: rgba(255,255,255,.05);
-    border: 1px solid rgba(255,255,255,.10);
-  }
-  .chip b{ color: rgba(255,255,255,.92); }
-
-  .hero-actions{ margin-top: 16px; display:flex; gap: 10px; flex-wrap: wrap; align-items:center; }
-
-  .hero-cover{
-    justify-self:end;
-    width: min(320px, 52vw);
-    aspect-ratio: 3/4;
-    border-radius: 18px;
-    overflow:hidden;
-    border: 1px solid rgba(255,255,255,.10);
-    box-shadow: 0 28px 90px rgba(0,0,0,.65);
-    background: rgba(255,255,255,.04);
-    transform: rotate(1.5deg);
-    position: relative;
-    animation: floaty 4.8s ease-in-out infinite;
-  }
-  @keyframes floaty{
-    0%,100%{ transform: rotate(1.5deg) translateY(0px); }
-    50%{ transform: rotate(.6deg) translateY(-10px); }
-  }
-  .hero-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
-
-  .panel{
-    background: rgba(255,255,255,.03);
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 18px;
-    overflow:hidden;
-    box-shadow: 0 18px 70px rgba(0,0,0,.45);
-  }
-  .filters{
-    display:flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items:center;
-    padding: 14px;
-    border-bottom: 1px solid rgba(255,255,255,.10);
-    background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.18));
-  }
-  .pill{
-    padding: 8px 12px;
-    border-radius: 12px;
-    background: rgba(255,255,255,.05);
-    border: 1px solid rgba(255,255,255,.10);
-    color: rgba(255,255,255,.86);
-    font-size: 14px;
-    line-height: 1;
-    outline:none;
-  }
-  .filters .right{ margin-left: auto; color: rgba(255,255,255,.60); font-size: 13px; }
-
-  .row-scroll{
-    display:flex;
-    gap: 12px;
-    overflow-x:auto;
-    padding: 4px 6px 10px;
-    scroll-snap-type: x mandatory;
-  }
-  .row-scroll::-webkit-scrollbar{ height: 10px; }
-  .row-scroll::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.12); border-radius: 999px; }
-  .row-scroll::-webkit-scrollbar-track{ background: rgba(255,255,255,.06); border-radius: 999px; }
-
-  .tile-grid{
-    display:grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-    padding: 10px;
-  }
-  @media (min-width: 640px){ .tile-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-  @media (min-width: 1024px){ .tile-grid{ grid-template-columns: repeat(6, minmax(0, 1fr)); } }
-
-  .book-tile{
-    position: relative;
-    background: rgba(255,255,255,.04);
-    border: 1px solid rgba(255,255,255,.08);
-    transition: transform .2s ease, filter .2s ease, opacity .2s ease, border-color .2s ease;
-    border-radius: 14px;
-    overflow: visible;
-  }
-  .book-tile:hover{
-    transform: scale(1.03);
-    z-index: 30;
-    border-color: rgba(225,6,0,.35);
-    box-shadow: 0 20px 70px rgba(0,0,0,.45);
-  }
-  .tile-row .book-tile{ width: 160px; flex: 0 0 auto; scroll-snap-align: start; }
-
-  .coverbox{ aspect-ratio: 3/4; overflow:hidden; border-radius: 14px; }
-  .coverbox img{ width:100%; height:100%; object-fit: cover; display:block; }
-
-  /* Hover panel */
-  #books.is-hovering .book-tile { filter: blur(2px); opacity: .45; }
-  #books.is-hovering .book-tile.is-active { filter: none; opacity: 1; }
-
-  .hover-panel{
-    position:absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: var(--hover-w);
-    height: var(--hover-h);
-    overflow: hidden;
-    background: rgba(18,18,18,.82);
-    border: 1px solid rgba(225,6,0,.25);
-    box-shadow: 0 26px 80px rgba(0,0,0,.55);
-    backdrop-filter: blur(12px);
-    display: grid;
-    grid-template-columns: 170px 1fr;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .18s ease;
-    z-index: 40;
-    border-radius: 16px;
-  }
-  .book-tile:hover .hover-panel,
-  .book-tile:focus-within .hover-panel{
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .hp-cover{ height: 100%; width: 100%; object-fit: cover; background: rgba(255,255,255,.04); }
-  .hp-right{
-    padding: 14px 14px 12px;
-    display:flex;
-    flex-direction:column;
-    gap: 3px;
-    min-width: 0;
-    height: 100%;
-  }
-  .hp-title{
-    font-weight: 900;
-    font-size: 18px;
-    line-height: 1.1;
-    color: #fff;
-    display: -webkit-box;
-    -webkit-line-clamp: 1;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-  .hp-author{
-    font-size: 13px;
-    color: rgba(255,255,255,.68);
-    margin-top: -2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .badge{
-    font-size: 11px;
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,.12);
-    background: rgba(255,255,255,.06);
-    color: rgba(255,255,255,.86);
-  }
-  .badge-premium{ background: rgba(225,6,0,.14); color: rgba(255,255,255,.95); border-color: rgba(225,6,0,.35); }
-  .badge-free{ background: rgba(34,197,94,.12); color: rgb(34,197,94); }
-
-  .hp-stats{
-    font-size: 12px;
-    color: rgba(255,255,255,.68);
-    display:flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    align-items:center;
-  }
-  .stars{ color: rgb(250,204,21); letter-spacing: .5px; font-size: 13px; }
-
-  .progressbar{
-    height: 7px;
-    background: rgba(255,255,255,.12);
-    border-radius: 999px;
-    overflow:hidden;
-  }
-  .progressbar > div{
-    height: 100%;
-    background: linear-gradient(90deg, var(--red), var(--red2));
-    width: 0%;
-  }
-
-  @media (max-width: 900px){
-    .hero-inner{ grid-template-columns: 1fr; padding-top: 18px; }
-    .hero-cover{ justify-self: start; width: min(260px, 72vw); }
-    .hover-panel{ grid-template-columns: 150px 1fr; }
-  }
-  @media (max-width: 640px){
-    :root{ --hover-w: 330px; --hover-h: 270px; }
-    .hover-panel{ grid-template-columns: 120px 1fr; }
-    .tile-row .book-tile{ width: 140px; }
-  }
-</style>
-{% endblock %}
-
-{% block content %}
-<section class="hero fade-in">
-  <div class="hero-bg"></div>
-
-  <span class="spark" style="left:8%; top:88%; animation-delay:0s;"></span>
-  <span class="spark" style="left:16%; top:92%; animation-delay:1.1s;"></span>
-  <span class="spark" style="left:42%; top:95%; animation-delay:2.2s;"></span>
-  <span class="spark" style="left:72%; top:90%; animation-delay:1.6s;"></span>
-  <span class="spark" style="left:88%; top:94%; animation-delay:2.8s;"></span>
-
-  <div class="hero-inner">
-    <div class="hero-left">
-      <div class="kicker"><span class="dot"></span> DESTAQUE DA SEMANA</div>
-      <div id="heroTitle" class="hero-title">Carregando…</div>
-      <div id="heroSub" class="hero-sub">Uma experiência premium estilo streaming — rápida, elegante e geral.</div>
-
-      <div class="mt-4 flex flex-wrap gap-2 text-sm text-white/70">
-        <div class="chip">🔥 <b id="heroActive">0</b> a ler agora</div>
-        <div class="chip">⭐ <b id="heroRating">0.0</b> avaliação média</div>
-        <div class="chip">👥 <b id="heroReaders">0</b> leitores</div>
-      </div>
-
-      <div class="hero-actions">
-        <a id="heroRead" class="btn-red px-4 py-2 rounded-xl font-semibold" href="#">Ler agora</a>
-        <button class="btn px-4 py-2 rounded-xl" type="button" onclick="scrollToCatalog()">Explorar catálogo ↓</button>
-      </div>
-    </div>
-
-    <div class="hero-cover">
-      <img id="heroCover" src="" alt="Capa em destaque" style="opacity:0" />
-    </div>
-  </div>
-</section>
-
-<div class="mt-6 panel" id="catalog">
-  <div class="filters">
-    <input id="searchInput" class="pill w-72 max-w-full" placeholder="Pesquisar título ou autor...">
-    <select id="genreSelect" class="pill">
-      <option value="__ALL__">Todas categorias</option>
-    </select>
-    <select id="typeSelect" class="pill">
-      <option value="__ALL__">Todos tipos</option>
-      <option value="free">Free</option>
-      <option value="premium">Premium</option>
-    </select>
-    <select id="sortSelect" class="pill">
-      <option value="trend">Ordenar: Tendência</option>
-      <option value="rating">Ordenar: Melhor avaliados</option>
-      <option value="new">Ordenar: Novidades</option>
-      <option value="readers">Ordenar: Mais lidos</option>
-    </select>
-
-    <button id="clearBtn" class="pill" type="button">Limpar</button>
-    <div class="right" id="countInfo">—</div>
-  </div>
-
-  <div class="px-2 pb-2">
-    <div class="mt-3 px-1">
-      <div class="flex items-end justify-between">
-        <h3 class="font-black text-white/90">Continuar a ler</h3>
-        <span class="text-xs text-white/60">retoma onde paraste</span>
-      </div>
-      <div id="rowContinue" class="row-scroll tile-row mt-2"></div>
-    </div>
-
-    <div class="mt-4 px-1">
-      <div class="flex items-end justify-between">
-        <h3 class="font-black text-white/90">Premium</h3>
-        <span class="text-xs text-white/60">conteúdo exclusivo</span>
-      </div>
-      <div id="rowPremium" class="row-scroll tile-row mt-2"></div>
-    </div>
-
-    <div class="mt-4 px-1">
-      <div class="flex items-end justify-between">
-        <h3 class="font-black text-white/90">Mais avaliados</h3>
-        <span class="text-xs text-white/60">os melhores</span>
-      </div>
-      <div id="rowTop" class="row-scroll tile-row mt-2"></div>
-    </div>
-
-    <div class="mt-4 px-1">
-      <div class="flex items-end justify-between">
-        <h3 class="font-black text-white/90">Novidades</h3>
-        <span class="text-xs text-white/60">o que chegou</span>
-      </div>
-      <div id="rowNew" class="row-scroll tile-row mt-2"></div>
-    </div>
-
-    <div class="mt-5 border-t border-white/10"></div>
-
-    <div class="mt-4 px-1">
-      <div class="flex items-end justify-between">
-        <h3 class="font-black text-white/90">Todos os livros</h3>
-        <span class="text-xs text-white/60">catálogo completo</span>
-      </div>
-
-      <div id="books" class="tile-grid mt-2"></div>
-      <div id="emptyMsg" class="px-3 pb-4 text-sm text-white/60 hidden">Nenhum livro encontrado com este filtro.</div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal simples (mantive o teu) -->
-<div id="modalBackdrop" class="fixed inset-0 hidden items-center justify-center p-4 z-[80]" style="background: rgba(0,0,0,.55); backdrop-filter: blur(12px);" onclick="closeBookModal(event)">
-  <div class="w-[min(980px,96vw)] rounded-2xl overflow-hidden border border-white/10" style="background: rgba(14,14,14,.94);" onclick="event.stopPropagation()">
-    <div class="p-5">
-      <div class="flex justify-between items-start gap-3">
-        <div>
-          <div id="mTitle" class="text-2xl md:text-3xl font-extrabold leading-tight"></div>
-          <div id="mAuthor" class="text-sm text-white/75 mt-1"></div>
-        </div>
-        <button class="btn px-3 py-2 rounded-xl" type="button" onclick="closeBookModal(event)">✕</button>
-      </div>
-
-      <div class="mt-4 flex gap-2 items-center flex-wrap">
-        <span id="mGenre" class="badge"></span>
-        <span id="mType" class="badge"></span>
-        <span class="badge">
-          <span class="stars" id="mStars"></span>
-          <span id="mAvg" class="text-white/90"></span>
-          <span id="mCount" class="text-white/60"></span>
-        </span>
-      </div>
-
-      <p id="mDesc" class="mt-4 text-white/75 text-sm leading-relaxed"></p>
-
-      <div class="mt-5 flex gap-2 flex-wrap">
-        <a id="mRead" class="btn-red px-4 py-2 rounded-xl font-semibold">Ler</a>
-        <button class="btn px-4 py-2 rounded-xl" type="button" onclick="closeBookModal(event)">Fechar</button>
-      </div>
-    </div>
-  </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-  function scrollToCatalog(){
-    document.getElementById("catalog").scrollIntoView({behavior:"smooth", block:"start"});
-  }
-
-  // ==== Auth via cookies (mesma lógica do teu index original) ====
-  let ME = null;
-  async function fetchMe(){
-    const res = await apiFetch("/api/auth/me/");
-    if(!res.ok) return null;
-    return res.json();
-  }
-
-  // ==== Util ====
-  function renderStars(avg){
-    const full = Math.floor(Number(avg || 0));
-    let stars = "";
-    for(let i=1;i<=5;i++) stars += (i <= full) ? "★" : "☆";
-    return stars;
-  }
-  function safeText(s, fallback=""){ return (s===null || s===undefined || s==="") ? fallback : String(s); }
-  function shortDesc(text, max=180){
-    const t = safeText(text, "");
-    if(!t) return "Sem descrição disponível.";
-    return t.length > max ? (t.slice(0, max).trim() + "…") : t;
-  }
-
-  // Hover blur
-  function setHovering(on, activeEl=null) {
-    const grid = document.getElementById("books");
-    if (!grid) return;
-    if (on) {
-      grid.classList.add("is-hovering");
-      if (activeEl) activeEl.classList.add("is-active");
-    } else {
-      grid.classList.remove("is-hovering");
-      document.querySelectorAll(".book-tile.is-active").forEach(x => x.classList.remove("is-active"));
+      --ring: rgba(225,6,0,.35);
+      --shadow: rgba(0,0,0,.62);
     }
-  }
 
-  // Modal
-  const BOOKS_BY_ID = {};
-  let PROGRESS_MAP = {};
-  let FAV_SET = new Set();
-
-  function openBookModalById(bookId, continuePage) {
-    const book = BOOKS_BY_ID[bookId];
-    if (!book) return;
-    document.getElementById("modalBackdrop").classList.remove("hidden");
-    document.getElementById("modalBackdrop").classList.add("flex");
-
-    document.getElementById("mTitle").textContent = safeText(book.title, "Livro");
-    document.getElementById("mAuthor").textContent = book.author ? ("Autor: " + book.author) : "";
-
-    const premium = (book.book_type === "premium");
-    const typeEl = document.getElementById("mType");
-    typeEl.textContent = premium ? "Pago / Premium" : "Free";
-    typeEl.className = "badge " + (premium ? "badge-premium" : "badge-free");
-
-    document.getElementById("mGenre").textContent = safeText(book.genre, "Sem gênero");
-
-    const avg = Number(book.avg_rating ?? 0);
-    const rcount = book.ratings_count ?? 0;
-    document.getElementById("mStars").textContent = renderStars(avg);
-    document.getElementById("mAvg").textContent = " " + avg.toFixed(1) + "/5";
-    document.getElementById("mCount").textContent = " (" + rcount.toLocaleString() + " avaliações)";
-
-    document.getElementById("mDesc").textContent = safeText(book.description, "Sem descrição disponível.");
-    document.getElementById("mRead").href = `/read/${book.id}/${continuePage}/`;
-  }
-  function closeBookModal(e) {
-    if (e) e.stopPropagation();
-    const b = document.getElementById("modalBackdrop");
-    b.classList.add("hidden");
-    b.classList.remove("flex");
-  }
-
-  // Dados
-  async function loadProgress(){
-    if(!ME) return {};
-    const res = await apiFetch("/api/progress/me/");
-    if(!res.ok) return {};
-    const arr = await res.json().catch(() => []);
-    const map = {};
-    for(const item of arr){ map[item.book_id] = item; }
-    return map;
-  }
-  async function loadFavorites(){
-    if(!ME) return new Set();
-    const res = await apiFetch("/api/favorites/me/");
-    if(!res.ok) return new Set();
-    const arr = await res.json().catch(() => []);
-    return new Set(arr.map(x => x.book_id));
-  }
-
-  async function toggleFavorite(bookId){
-    if(!ME){
-      window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
-      return;
+    html, body{ height: 100%; }
+    body{
+      margin:0;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
     }
-    await ensureCsrf();
-    const res = await apiFetch(`/api/favorites/toggle/${bookId}/`, { method:"POST" });
-    const data = await res.json().catch(() => ({}));
-    if(!res.ok){ alert(data.error || data.detail || "Erro ao favoritar."); return; }
-    await hydrateAndRender();
-  }
 
-  function rateStarsHTML(bookId){
-    return `
-      <div class="flex gap-1">
-        ${[1,2,3,4,5].map(s => `
-          <button type="button"
-            onclick="rateBook(${bookId}, ${s}); event.stopPropagation();"
-            class="text-lg text-yellow-500 hover:scale-110 transition"
-            title="Avaliar ${s} estrela(s)">
-            ★
-          </button>
-        `).join("")}
-      </div>
-    `;
-  }
-  async function rateBook(bookId, stars){
-    if(!ME){
-      window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
-      return;
+    /* Background */
+    body::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      z-index:-2;
+      background:
+        radial-gradient(900px 520px at 12% 10%, rgba(225,6,0,.18), transparent 60%),
+        radial-gradient(800px 540px at 85% 12%, rgba(225,6,0,.10), transparent 58%),
+        radial-gradient(900px 650px at 55% 110%, rgba(255,255,255,.06), transparent 62%),
+        linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.55));
+      filter: saturate(1.05);
+      transform: translateZ(0);
     }
-    await ensureCsrf();
-    const res = await apiFetch(`/api/ratings/${bookId}/`, {
-      method:"POST",
-      headers: { "Content-Type":"application/json" },
-      body: JSON.stringify({ stars })
-    });
-    const data = await res.json().catch(() => ({}));
-    if(!res.ok){ alert(data.error || data.detail || "Erro ao avaliar."); return; }
-    await hydrateAndRender();
-  }
-
-  // Filtros
-  let ALL_BOOKS = [];
-
-  function normalizeGenre(g){
-    const t = safeText(g,"").trim();
-    return t ? t : "Sem gênero";
-  }
-  function buildGenreOptions(books){
-    const set = new Set();
-    for(const b of books) set.add(normalizeGenre(b.genre));
-    return Array.from(set).sort((a,b) => a.localeCompare(b, "pt"));
-  }
-  function scoreTrend(b){
-    const readers = Number(b.readers_count || 0);
-    const active = Number(b.active_readers || 0);
-    const avg = Number(b.avg_rating || 0);
-    const cnt = Number(b.ratings_count || 0);
-    return (readers * 1.0) + (active * 2.2) + (avg * 18) + (cnt * 0.4);
-  }
-  function applyFilters(books){
-    const q = safeText(document.getElementById("searchInput").value,"").trim().toLowerCase();
-    const genre = document.getElementById("genreSelect").value;
-    const type = document.getElementById("typeSelect").value;
-
-    return books.filter(b => {
-      const title = safeText(b.title,"").toLowerCase();
-      const author = safeText(b.author,"").toLowerCase();
-      const g = normalizeGenre(b.genre);
-      const bt = safeText(b.book_type,"");
-
-      if(q && !(title.includes(q) || author.includes(q))) return false;
-      if(genre !== "__ALL__" && g !== genre) return false;
-      if(type !== "__ALL__" && bt !== type) return false;
-      return true;
-    });
-  }
-  function applySort(books){
-    const sort = document.getElementById("sortSelect").value;
-    const arr = [...books];
-
-    if(sort === "rating"){
-      arr.sort((a,b) => (Number(b.avg_rating||0) - Number(a.avg_rating||0)) || (Number(b.ratings_count||0)-Number(a.ratings_count||0)));
-    } else if(sort === "new"){
-      arr.sort((a,b) => (new Date(b.created_at||0) - new Date(a.created_at||0)) || (Number(b.id||0)-Number(a.id||0)));
-    } else if(sort === "readers"){
-      arr.sort((a,b) => Number(b.readers_count||0) - Number(a.readers_count||0));
-    } else {
-      arr.sort((a,b) => scoreTrend(b) - scoreTrend(a));
+    body::after{
+      content:"";
+      position: fixed;
+      inset: 0;
+      z-index:-1;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(255,255,255,.03) 0px,
+          rgba(255,255,255,.03) 1px,
+          transparent 1px,
+          transparent 14px
+        );
+      opacity: .10;
+      pointer-events:none;
+      mask-image: radial-gradient(70% 55% at 50% 15%, black 0%, transparent 70%);
     }
-    return arr;
-  }
 
-  function bookTileHTML(b){
-    const p = PROGRESS_MAP[b.id];
-    const continuePage = p?.last_page || 1;
-    const percent = p?.progress_percent || 0;
+    .wrap{ width: 100%; padding: 0; }
 
-    const readers = b.readers_count ?? 0;
-    const active = b.active_readers ?? 0;
-    const avg = Number(b.avg_rating ?? 0);
-    const rcount = b.ratings_count ?? 0;
+    /* Hero */
+    .hero{
+      position: relative;
+      min-height: 100svh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      overflow:hidden;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .hero-bg{
+      position:absolute;
+      inset:-40%;
+      background:
+        radial-gradient(closest-side at 30% 20%, rgba(225,6,0,.35), transparent 65%),
+        radial-gradient(closest-side at 75% 25%, rgba(225,6,0,.18), transparent 60%),
+        radial-gradient(closest-side at 55% 90%, rgba(255,255,255,.10), transparent 65%);
+      filter: blur(18px);
+      opacity: .9;
+      animation: heroGlow 10s ease-in-out infinite;
+      transform: translateZ(0);
+    }
+    @keyframes heroGlow{
+      0%   { transform: translate3d(-1.5%, -1.2%, 0) scale(1.02); opacity:.85; }
+      50%  { transform: translate3d(1.5%,  1.3%, 0) scale(1.06); opacity:1; }
+      100% { transform: translate3d(-1.5%, -1.2%, 0) scale(1.02); opacity:.85; }
+    }
 
-    const isFav = FAV_SET.has(b.id);
-    const premium = (b.book_type === "premium");
+    .spark{
+      position:absolute;
+      width: 6px; height: 6px;
+      border-radius: 999px;
+      background: rgba(225,6,0,.65);
+      filter: blur(.2px);
+      opacity: .0;
+      animation: spark 6s linear infinite;
+      pointer-events:none;
+    }
+    @keyframes spark{
+      0%{ transform: translateY(30px) translateX(0) scale(.8); opacity:0; }
+      15%{ opacity:.55; }
+      70%{ opacity:.20; }
+      100%{ transform: translateY(-380px) translateX(40px) scale(1.1); opacity:0; }
+    }
 
-    return `
-      <div class="book-tile"
-           tabindex="0"
-           onmouseenter="setHovering(true, this)"
-           onmouseleave="setHovering(false)"
-           onfocus="setHovering(true, this)"
-           onblur="setHovering(false)">
+    /* Nav */
+    .nav{
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 14px 16px;
+      background: linear-gradient(180deg, rgba(0,0,0,.70), rgba(0,0,0,.22));
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255,255,255,.10);
+    }
+    .brand{ display:flex; align-items:center; gap: 10px; min-width: 0; }
+    .brand img{ height: 34px; object-fit: contain; }
+    .brand .tag{
+      color: rgba(255,255,255,.45);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+    }
 
-        <div class="coverbox">
-          ${
-            b.cover
-              ? `<img src="${b.cover}" alt="Capa" />`
-              : `<div class="w-full h-full flex items-center justify-center text-white/40" style="aspect-ratio:3/4;">Sem capa</div>`
-          }
+    .pill{
+      padding: 8px 12px;
+      border-radius: 12px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      transition: background .12s ease, border-color .12s ease, transform .12s ease;
+      color: rgba(255,255,255,.86);
+      font-size: 14px;
+      cursor:pointer;
+      user-select:none;
+      line-height: 1;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+    }
+    .pill:hover{
+      background: rgba(255,255,255,.08);
+      border-color: rgba(225,6,0,.25);
+      transform: translateY(-1px);
+    }
+
+    .btn{
+      padding: 9px 14px;
+      border-radius: 12px;
+      font-size: 12.5px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.9);
+      transition: transform .12s ease, background .12s ease, border-color .12s ease, filter .12s ease;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select:none;
+      line-height: 1;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      justify-content:center;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); border-color: rgba(225,6,0,.25); }
+
+    .btn-primary{
+      background: linear-gradient(180deg, var(--red), var(--red2));
+      border-color: rgba(225,6,0,.45);
+      color:#fff;
+    }
+    .btn-primary:hover{ filter: brightness(1.08); }
+
+    /* Hero content */
+    .hero-inner{
+      position: relative;
+      z-index: 2;
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap: 18px;
+      padding: 22px 16px 18px;
+      align-items:center;
+      height: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .hero-left .kicker{
+      display:inline-flex;
+      align-items:center;
+      gap: 10px;
+      color: rgba(255,255,255,.65);
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .16em;
+    }
+    .dot{
+      width: 8px; height: 8px;
+      border-radius: 999px;
+      background: rgba(225,6,0,.9);
+      box-shadow: 0 0 0 6px rgba(225,6,0,.15);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse{
+      0%,100%{ transform: scale(.9); box-shadow: 0 0 0 6px rgba(225,6,0,.12); }
+      50%{ transform: scale(1.1); box-shadow: 0 0 0 10px rgba(225,6,0,.16); }
+    }
+
+    .hero-title{
+      margin-top: 10px;
+      font-weight: 950;
+      line-height: 1.03;
+      font-size: clamp(30px, 4vw, 56px);
+      letter-spacing: -.02em;
+    }
+    .hero-sub{
+      margin-top: 10px;
+      color: rgba(255,255,255,.72);
+      font-size: clamp(14px, 1.6vw, 18px);
+      max-width: 62ch;
+      line-height: 1.45;
+    }
+
+    .hero-metrics{
+      margin-top: 14px;
+      display:flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      color: rgba(255,255,255,.70);
+      font-size: 13px;
+    }
+    .chip{
+      display:inline-flex;
+      gap: 8px;
+      align-items:center;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+    }
+    .chip b{ color: rgba(255,255,255,.92); }
+
+    .hero-actions{
+      margin-top: 16px;
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items:center;
+    }
+
+    .hero-cover{
+      justify-self:end;
+      width: min(320px, 52vw);
+      aspect-ratio: 3/4;
+      border-radius: 18px;
+      overflow:hidden;
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 28px 90px rgba(0,0,0,.65);
+      background: rgba(255,255,255,.04);
+      transform: rotate(1.5deg);
+      position: relative;
+      animation: floaty 4.8s ease-in-out infinite;
+    }
+    .hero-cover::after{
+      content:"";
+      position:absolute; inset:0;
+      background:
+        radial-gradient(300px 220px at 40% 20%, rgba(225,6,0,.22), transparent 70%),
+        linear-gradient(180deg, rgba(255,255,255,.10), transparent 35%, rgba(0,0,0,.35));
+      pointer-events:none;
+      mix-blend-mode: screen;
+      opacity:.8;
+    }
+    @keyframes floaty{
+      0%,100%{ transform: rotate(1.5deg) translateY(0px); }
+      50%{ transform: rotate(.6deg) translateY(-10px); }
+    }
+    .hero-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+    /* Drawer */
+    .drawer-backdrop{
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0,0,0,.62);
+      backdrop-filter: blur(10px);
+      display:none;
+    }
+    .drawer-backdrop.open{ display:block; }
+
+    .drawer{
+      position: absolute;
+      top: 0; right: 0;
+      width: min(360px, 92vw);
+      height: 100%;
+      background: rgba(12,12,12,.96);
+      border-left: 1px solid rgba(255,255,255,.10);
+      box-shadow: -20px 0 80px rgba(0,0,0,.65);
+      padding: 14px;
+      transform: translateX(100%);
+      transition: transform .18s ease;
+    }
+    .drawer-backdrop.open .drawer{ transform: translateX(0); }
+
+    .drawer a, .drawer button{
+      width: 100%;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      color: rgba(255,255,255,.90);
+      margin-top: 10px;
+      cursor:pointer;
+      user-select:none;
+      text-decoration:none;
+    }
+    .drawer a:hover, .drawer button:hover{
+      border-color: rgba(225,6,0,.25);
+      background: rgba(255,255,255,.08);
+    }
+    .drawer .head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+    }
+    .drawer .x{
+      width: 42px; height: 42px;
+      border-radius: 999px;
+      display:flex; align-items:center; justify-content:center;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: #fff;
+    }
+
+    /* Content */
+    .content{
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 16px;
+    }
+    .panel{
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 18px;
+      overflow:hidden;
+      box-shadow: 0 18px 70px rgba(0,0,0,.45);
+    }
+
+    .filters{
+      display:flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items:center;
+      padding: 14px;
+      border-bottom: 1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(255,255,255,.02), rgba(0,0,0,.18));
+    }
+    .filters .right{ margin-left: auto; color: rgba(255,255,255,.60); font-size: 13px; }
+
+    .section-title{
+      display:flex;
+      align-items:end;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 0 6px;
+      margin: 16px 0 8px;
+    }
+    .section-title h3{
+      font-weight: 900;
+      font-size: 16px;
+      color: rgba(255,255,255,.92);
+    }
+    .section-title span{
+      font-size: 12.5px;
+      color: rgba(255,255,255,.55);
+    }
+
+    .row-scroll{
+      display:flex;
+      gap: 12px;
+      overflow-x:auto;
+      padding: 4px 6px 10px;
+      scroll-snap-type: x mandatory;
+    }
+    .row-scroll::-webkit-scrollbar{ height: 10px; }
+    .row-scroll::-webkit-scrollbar-thumb{ background: rgba(255,255,255,.12); border-radius: 999px; }
+    .row-scroll::-webkit-scrollbar-track{ background: rgba(255,255,255,.06); border-radius: 999px; }
+
+    #books.is-hovering .book-tile { filter: blur(2px); opacity: .45; }
+    #books.is-hovering .book-tile.is-active { filter: none; opacity: 1; }
+
+    .book-tile{
+      position: relative;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.08);
+      transition: transform .2s ease, filter .2s ease, opacity .2s ease, border-color .2s ease;
+      will-change: transform, filter, opacity;
+      border-radius: 14px;
+      overflow: visible;
+    }
+    .book-tile:hover{
+      transform: scale(1.03);
+      z-index: 30;
+      border-color: rgba(225,6,0,.35);
+      box-shadow: 0 20px 70px rgba(0,0,0,.45);
+    }
+
+    .tile-row .book-tile{
+      width: 160px;
+      flex: 0 0 auto;
+      scroll-snap-align: start;
+    }
+    .tile-grid{
+      display:grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      padding: 10px;
+    }
+    @media (min-width: 640px){
+      .tile-grid{ grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    }
+    @media (min-width: 1024px){
+      .tile-grid{ grid-template-columns: repeat(6, minmax(0, 1fr)); }
+    }
+
+    .coverbox{ aspect-ratio: 3/4; overflow:hidden; border-radius: 14px; }
+    .coverbox img{ width:100%; height:100%; object-fit: cover; display:block; }
+
+    .hover-panel{
+      position:absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: var(--hover-w);
+      height: var(--hover-h);
+      overflow: hidden;
+      background: var(--panel);
+      border: 1px solid rgba(225,6,0,.25);
+      box-shadow: 0 26px 80px rgba(0,0,0,.55);
+      backdrop-filter: blur(12px);
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease;
+      z-index: 40;
+      border-radius: 16px;
+    }
+    .book-tile:hover .hover-panel,
+    .book-tile:focus-within .hover-panel{
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .hp-cover{ height: 100%; width: 100%; object-fit: cover; background: rgba(255,255,255,.04); }
+    .hp-right{
+      padding: 14px 14px 12px;
+      display:flex;
+      flex-direction:column;
+      gap: 3px;
+      min-width: 0;
+      height: 100%;
+    }
+    .hp-title{
+      font-weight: 900;
+      font-size: 18px;
+      line-height: 1.1;
+      color: #fff;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .hp-author{
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: -2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .row{ display:flex; gap: 8px; flex-wrap: wrap; align-items:center; }
+
+    .badge{
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.86);
+    }
+    .badge-premium{ background: rgba(225,6,0,.14); color: rgba(255,255,255,.95); border-color: rgba(225,6,0,.35); }
+    .badge-free{ background: rgba(34,197,94,.12); color: rgb(34,197,94); }
+
+    .hp-stats{
+      font-size: 12px;
+      color: var(--muted);
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items:center;
+    }
+    .stars{ color: rgb(250,204,21); letter-spacing: .5px; font-size: 13px; }
+
+    .hp-desc{
+      font-size: 12.5px;
+      color: rgba(255,255,255,.70);
+      line-height: 1.35;
+      margin-top: 2px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .progressbar{
+      height: 7px;
+      background: rgba(255,255,255,.12);
+      border-radius: 999px;
+      overflow:hidden;
+    }
+    .progressbar > div{
+      height: 100%;
+      background: linear-gradient(90deg, var(--red), var(--red2));
+      width: 0%;
+    }
+
+    .hp-actions{
+      margin-top: auto;
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+
+    /* Modal */
+    .modal-backdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(12px);
+      display: none;
+      align-items:center;
+      justify-content:center;
+      z-index: 120;
+      padding: 16px;
+    }
+    .modal-backdrop.open{ display:flex; }
+
+    .modal-card{
+      width: min(980px, 96vw);
+      border-radius: 18px;
+      overflow:hidden;
+      background: var(--panel2);
+      border: 1px solid var(--stroke);
+      box-shadow: 0 30px 100px rgba(0,0,0,.70);
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      position: relative;
+    }
+    .modal-left{ padding: 20px; }
+    .modal-right{ padding: 20px; display:flex; justify-content:center; align-items:center; background: rgba(255,255,255,.03); }
+
+    .modal-x{
+      position:absolute;
+      top: 12px;
+      right: 12px;
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      color: #fff;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      cursor:pointer;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      z-index: 2;
+    }
+    .modal-x:hover{
+      transform: scale(1.03);
+      background: rgba(225,6,0,.18);
+      border-color: rgba(225,6,0,.35);
+    }
+
+    .modal-cover{
+      width: 280px;
+      aspect-ratio: 3/4;
+      border-radius: 14px;
+      overflow:hidden;
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 18px 60px rgba(0,0,0,.55);
+      background: rgba(255,255,255,.04);
+    }
+    .modal-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+    /* Responsive */
+    @media (max-width: 900px){
+      .hero-inner{ grid-template-columns: 1fr; padding-top: 18px; }
+      .hero-cover{ justify-self: start; width: min(260px, 72vw); }
+      .hover-panel{ grid-template-columns: 150px 1fr; }
+      .modal-card{ grid-template-columns: 1fr; }
+      .modal-right{ order: -1; }
+      .modal-cover{ width: 220px; }
+    }
+    @media (max-width: 640px){
+      .brand .tag{ display:none; }
+      :root{ --hover-w: 330px; --hover-h: 270px; }
+      .hover-panel{ grid-template-columns: 120px 1fr; }
+      .tile-row .book-tile{ width: 140px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+
+    <section class="hero">
+      <div class="hero-bg"></div>
+
+      <span class="spark" style="left:8%; top:88%; animation-delay:0s;"></span>
+      <span class="spark" style="left:16%; top:92%; animation-delay:1.1s;"></span>
+      <span class="spark" style="left:42%; top:95%; animation-delay:2.2s;"></span>
+      <span class="spark" style="left:72%; top:90%; animation-delay:1.6s;"></span>
+      <span class="spark" style="left:88%; top:94%; animation-delay:2.8s;"></span>
+
+      <!-- NAV -->
+      <div class="nav">
+        <div class="brand">
+          <img src="{% static 'frontend/images/logo.png' %}" alt="Owlsight" />
+          <div class="tag">Biblioteca premium • estilo streaming</div>
         </div>
 
-        <div class="hover-panel" onmouseenter="setHovering(true, this.closest('.book-tile'))">
-          ${
-            b.cover
-              ? `<img src="${b.cover}" class="hp-cover" alt="Capa"/>`
-              : `<div class="hp-cover flex items-center justify-center text-white/40">Sem capa</div>`
-          }
+        <!-- ✅ Desktop (sm e acima) -->
+        <div class="hidden sm:flex gap-2 items-center">
+          <a class="pill" href="/categories/">Categoria</a>
+          <a class="pill" href="/favorites/">Favoritos</a>
 
-          <div class="hp-right">
-            <div class="flex items-start justify-between gap-2">
-              <div class="min-w-0">
-                <div class="hp-title" title="${safeText(b.title)}">${safeText(b.title)}</div>
-                <div class="hp-author">${safeText(b.author, "Autor desconhecido")}</div>
-              </div>
+          {% if request.user.is_authenticated %}
+            <a class="pill" href="/profile/">Minha Conta</a>
 
-              <button type="button"
-                class="text-xl leading-none ${isFav ? "text-yellow-500" : "text-white/40"}"
-                title="Favoritar"
-                onclick="toggleFavorite(${b.id}); event.stopPropagation();">
-                ★
-              </button>
+            {% if request.user.is_staff or request.user.is_superuser %}
+              {% url 'dashboard:home' as dash_url %}
+              {% if dash_url %}
+                <a href="{{ dash_url }}" class="pill btn-primary">Admin</a>
+              {% endif %}
+            {% endif %}
+
+            <button id="logoutBtn" class="pill" type="button">Sair</button>
+          {% else %}
+            <a class="pill" href="/login/">Login</a>
+          {% endif %}
+        </div>
+
+        <!-- ✅ Mobile (abaixo de sm) -->
+        <button class="pill inline-flex sm:hidden" type="button" onclick="openDrawer()" aria-label="Menu">☰</button>
+      </div>
+
+      <!-- HERO CONTENT -->
+      <div class="hero-inner">
+        <div class="hero-left">
+          <div class="kicker"><span class="dot"></span> DESTAQUE DA SEMANA</div>
+          <div id="heroTitle" class="hero-title">Carregando…</div>
+          <div id="heroSub" class="hero-sub">Uma experiência premium estilo streaming — rápida, elegante e geral.</div>
+
+          <div class="hero-metrics">
+            <div class="chip">🔥 <b id="heroActive">0</b> a ler agora</div>
+            <div class="chip">⭐ <b id="heroRating">0.0</b> avaliação média</div>
+            <div class="chip">👥 <b id="heroReaders">0</b> leitores</div>
+          </div>
+
+          <div class="hero-actions">
+            <a id="heroRead" class="btn btn-primary" href="#">Ler agora</a>
+            <button class="btn" type="button" onclick="scrollToCatalog()">Explorar catálogo ↓</button>
+          </div>
+        </div>
+
+        <div class="hero-cover">
+          <img id="heroCover" src="" alt="Capa em destaque" style="opacity:0" />
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTENT -->
+    <div class="content" id="catalog">
+      <div class="panel">
+
+        <div class="filters">
+          <input id="searchInput" class="pill w-72 max-w-full" placeholder="Pesquisar título ou autor..." style="outline:none;">
+          <select id="genreSelect" class="pill" style="outline:none;">
+            <option value="__ALL__">Todas categorias</option>
+          </select>
+          <select id="typeSelect" class="pill" style="outline:none;">
+            <option value="__ALL__">Todos tipos</option>
+            <option value="free">Free</option>
+            <option value="premium">Premium</option>
+          </select>
+          <select id="sortSelect" class="pill" style="outline:none;">
+            <option value="trend">Ordenar: Tendência</option>
+            <option value="rating">Ordenar: Melhor avaliados</option>
+            <option value="new">Ordenar: Novidades</option>
+            <option value="readers">Ordenar: Mais lidos</option>
+          </select>
+
+          <button id="clearBtn" class="pill" type="button">Limpar</button>
+          <div class="right" id="countInfo">—</div>
+        </div>
+
+        <div class="px-2 pb-2">
+          <div>
+            <div class="section-title">
+              <h3>Continuar a ler</h3>
+              <span>retoma onde paraste</span>
+            </div>
+            <div id="rowContinue" class="row-scroll tile-row"></div>
+          </div>
+
+          <div>
+            <div class="section-title">
+              <h3>Premium</h3>
+              <span>conteúdo exclusivo</span>
+            </div>
+            <div id="rowPremium" class="row-scroll tile-row"></div>
+          </div>
+
+          <div>
+            <div class="section-title">
+              <h3>Mais avaliados</h3>
+              <span>os melhores da plataforma</span>
+            </div>
+            <div id="rowTop" class="row-scroll tile-row"></div>
+          </div>
+
+          <div>
+            <div class="section-title">
+              <h3>Novidades</h3>
+              <span>descobre o que chegou</span>
+            </div>
+            <div id="rowNew" class="row-scroll tile-row"></div>
+          </div>
+
+          <div class="mt-4 border-t border-white/10"></div>
+
+          <div>
+            <div class="section-title">
+              <h3>Todos os livros</h3>
+              <span>catálogo completo</span>
             </div>
 
-            <div class="flex gap-2 flex-wrap mt-2">
-              <span class="badge">${safeText(b.genre, "Sem gênero")}</span>
-              <span class="badge ${premium ? "badge-premium" : "badge-free"}">
-                ${premium ? "Pago" : "Free"}
-              </span>
-            </div>
-
-            <div class="hp-stats mt-2">
-              <span><b class="text-white/90">${readers.toLocaleString()}</b> Leram</span>
-              <span>🔥 <b class="text-white/90">${active.toLocaleString()}</b> a ler</span>
-            </div>
-
-            <div class="hp-stats">
-              <span class="stars">${renderStars(avg)}</span>
-              <span class="text-white/85">${avg.toFixed(1)}</span>
-              <span class="text-white/50">• ${rcount.toLocaleString()} avaliações</span>
-            </div>
-
-            ${ME ? rateStarsHTML(b.id) : `<div class="text-xs text-white/50">Faça login para avaliar.</div>`}
-
-            <div class="hp-stats mt-2">
-              <span class="text-white/60">Progresso</span>
-              <span class="text-white/85"><b>${percent}%</b></span>
-            </div>
-            <div class="progressbar"><div style="width:${percent}%"></div></div>
-
-            <div class="text-xs text-white/70 mt-2">${shortDesc(b.description, 220)}</div>
-
-            <div class="mt-auto flex gap-2 flex-wrap pt-3">
-              <a class="btn-red px-3 py-2 rounded-xl text-sm font-semibold" href="/read/${b.id}/${continuePage}/">Ler</a>
-              <a class="btn px-3 py-2 rounded-xl text-sm" href="/read/${b.id}/1/">Recomeçar</a>
-              <button class="btn px-3 py-2 rounded-xl text-sm" type="button"
-                      onclick="openBookModalById(${b.id}, ${continuePage}); event.stopPropagation();">
-                Descrição
-              </button>
-            </div>
+            <div id="books" class="tile-grid"></div>
+            <div id="emptyMsg" class="px-3 pb-4 text-sm text-white/60 hidden">Nenhum livro encontrado com este filtro.</div>
           </div>
         </div>
       </div>
-    `;
-  }
+    </div>
 
-  function renderRow(elId, books){
-    const el = document.getElementById(elId);
-    if(!el) return;
-    if(!books || books.length === 0){
-      el.innerHTML = `<div class="text-white/50 text-sm px-2">Nada aqui (ainda).</div>`;
-      return;
+    <!-- Drawer (mobile menu) -->
+    <div id="drawerBackdrop" class="drawer-backdrop" onclick="closeDrawer(event)">
+      <div class="drawer" onclick="event.stopPropagation()">
+        <div class="head">
+          <div class="text-white/90 font-extrabold">Menu</div>
+          <button class="x" type="button" onclick="closeDrawer(event)">✕</button>
+        </div>
+
+        <!-- sempre -->
+        <a href="/categories/">Categoria <span>›</span></a>
+        <a href="/favorites/">Favoritos <span>›</span></a>
+
+        {% if request.user.is_authenticated %}
+          <a href="/profile/">Minha Conta <span>›</span></a>
+
+          {% if request.user.is_staff or request.user.is_superuser %}
+            {% url 'dashboard:home' as dash_url %}
+            {% if dash_url %}
+              <a href="{{ dash_url }}">Admin <span>›</span></a>
+            {% endif %}
+          {% endif %}
+
+          <button id="logoutBtn2" type="button">Sair <span>›</span></button>
+        {% else %}
+          <a href="/login/">Login <span>›</span></a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- MODAL -->
+    <div id="modalBackdrop" class="modal-backdrop" onclick="closeBookModal(event)">
+      <div class="modal-card" onclick="event.stopPropagation()">
+        <button class="modal-x" type="button" onclick="closeBookModal(event)" aria-label="Fechar">✕</button>
+
+        <div class="modal-left">
+          <div id="mTitle" class="text-3xl font-extrabold leading-tight"></div>
+          <div id="mAuthor" class="text-sm text-white/75 mt-1"></div>
+
+          <div class="flex gap-2 mt-4 items-center flex-wrap">
+            <span id="mGenre" class="badge"></span>
+            <span id="mType" class="badge"></span>
+            <span class="badge">
+              <span class="stars" id="mStars"></span>
+              <span id="mAvg" class="text-white/90"></span>
+              <span id="mCount" class="text-white/60"></span>
+            </span>
+          </div>
+
+          <p id="mDesc" class="mt-5 text-white/75 text-sm leading-relaxed"></p>
+
+          <div class="mt-6 flex gap-2 flex-wrap">
+            <a id="mRead" class="btn btn-primary">Ler</a>
+            <button class="btn" type="button" onclick="closeBookModal(event)">Fechar</button>
+          </div>
+        </div>
+
+        <div class="modal-right">
+          <div class="modal-cover">
+            <img id="mCover" src="" alt="Capa do livro" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /** ========= Cookies + CSRF + fetch ========= **/
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+      return m ? decodeURIComponent(m[2]) : null;
     }
-    el.innerHTML = books.map(bookTileHTML).join("");
-  }
-  function renderGrid(books){
-    const el = document.getElementById("books");
-    const emptyMsg = document.getElementById("emptyMsg");
-
-    if(!books || books.length === 0){
-      el.innerHTML = "";
-      emptyMsg.classList.remove("hidden");
-      return;
+    function isUnsafe(method) {
+      return ["POST","PUT","PATCH","DELETE"].includes((method || "GET").toUpperCase());
     }
-    emptyMsg.classList.add("hidden");
-    el.innerHTML = books.map(bookTileHTML).join("");
-  }
-
-  function setHero(book){
-    if(!book) return;
-    const p = PROGRESS_MAP[book.id];
-    const continuePage = p?.last_page || 1;
-
-    document.getElementById("heroTitle").textContent = safeText(book.title, "Livro em destaque");
-    document.getElementById("heroSub").textContent = shortDesc(book.description, 220);
-
-    const img = document.getElementById("heroCover");
-    img.src = book.cover || "";
-    img.style.opacity = book.cover ? "1" : "0";
-
-    document.getElementById("heroRead").href = `/read/${book.id}/${continuePage}/`;
-
-    document.getElementById("heroActive").textContent = Number(book.active_readers||0).toLocaleString();
-    document.getElementById("heroRating").textContent = Number(book.avg_rating||0).toFixed(1);
-    document.getElementById("heroReaders").textContent = Number(book.readers_count||0).toLocaleString();
-  }
-
-  function renderAll(){
-    const filtered = applyFilters(ALL_BOOKS);
-    const sortedTrend = [...filtered].sort((a,b) => scoreTrend(b) - scoreTrend(a));
-
-    setHero(sortedTrend[0] || ALL_BOOKS[0]);
-
-    const cont = sortedTrend.filter(b => (PROGRESS_MAP[b.id]?.progress_percent || 0) > 0).slice(0, 14);
-    renderRow("rowContinue", cont);
-
-    const prem = sortedTrend.filter(b => b.book_type === "premium").slice(0, 14);
-    renderRow("rowPremium", prem);
-
-    const top = [...filtered].sort((a,b) =>
-      (Number(b.avg_rating||0) - Number(a.avg_rating||0)) ||
-      (Number(b.ratings_count||0) - Number(a.ratings_count||0))
-    ).slice(0, 14);
-    renderRow("rowTop", top);
-
-    const news = [...filtered].sort((a,b) =>
-      (new Date(b.created_at||0) - new Date(a.created_at||0)) ||
-      (Number(b.id||0) - Number(a.id||0))
-    ).slice(0, 14);
-    renderRow("rowNew", news);
-
-    const gridBooks = applySort(filtered);
-    renderGrid(gridBooks);
-
-    document.getElementById("countInfo").textContent = `${filtered.length} / ${ALL_BOOKS.length}`;
-  }
-
-  async function hydrateAndRender(){
-    const [progressMap, favSet] = await Promise.all([ loadProgress(), loadFavorites() ]);
-    PROGRESS_MAP = progressMap;
-    FAV_SET = favSet;
-    renderAll();
-  }
-
-  async function init(){
-    await ensureCsrf();
-
-    ME = await fetchMe();
-
-    const res = await apiFetch("/api/books/");
-    if(!res.ok){
-      document.getElementById("heroTitle").textContent = "Erro ao carregar livros.";
-      document.getElementById("heroSub").textContent = `HTTP ${res.status}`;
-      return;
+    async function apiFetch(url, options = {}) {
+      const opts = { ...options };
+      opts.credentials = "include";
+      opts.headers = opts.headers || {};
+      opts.headers["Accept"] = "application/json";
+      const method = (opts.method || "GET").toUpperCase();
+      if (isUnsafe(method)) {
+        const csrf = getCookie("csrftoken");
+        if (csrf) opts.headers["X-CSRFToken"] = csrf;
+      }
+      return fetch(url, opts);
+    }
+    let CSRF_READY = false;
+    async function ensureCsrf(){
+      if (CSRF_READY) return;
+      const res = await apiFetch("/api/csrf/");
+      if (res.ok) CSRF_READY = true;
     }
 
-    ALL_BOOKS = await res.json().catch(() => []);
-    if(!Array.isArray(ALL_BOOKS)) ALL_BOOKS = [];
-    for(const b of ALL_BOOKS) BOOKS_BY_ID[b.id] = b;
+    /** ========= Drawer ========= **/
+    function openDrawer(){ document.getElementById("drawerBackdrop").classList.add("open"); }
+    function closeDrawer(e){
+      if(e) e.stopPropagation();
+      document.getElementById("drawerBackdrop").classList.remove("open");
+    }
+    document.addEventListener("click", (e) => {
+      const a = e.target.closest("#drawerBackdrop a");
+      if(a) closeDrawer();
+    });
+    document.addEventListener("keydown", (e) => {
+      if(e.key === "Escape") closeDrawer();
+    });
 
-    const genres = buildGenreOptions(ALL_BOOKS);
-    const genreSelect = document.getElementById("genreSelect");
-    genreSelect.innerHTML =
-      `<option value="__ALL__">Todas categorias</option>` +
-      genres.map(g => `<option value="${g.replace(/"/g,'&quot;')}">${g}</option>`).join("");
+    function scrollToCatalog(){
+      document.getElementById("catalog").scrollIntoView({behavior:"smooth", block:"start"});
+    }
 
-    await hydrateAndRender();
-  }
+    /** ========= Logout ========= **/
+    async function bindLogout(){
+      const btn1 = document.getElementById("logoutBtn");
+      const btn2 = document.getElementById("logoutBtn2");
+      if (!btn1 && !btn2) return;
 
-  document.getElementById("searchInput").addEventListener("input", renderAll);
-  document.getElementById("genreSelect").addEventListener("change", renderAll);
-  document.getElementById("typeSelect").addEventListener("change", renderAll);
-  document.getElementById("sortSelect").addEventListener("change", renderAll);
+      const doLogout = async () => {
+        try{
+          await ensureCsrf();
+          await apiFetch("/api/auth/logout/", { method:"POST" });
+        } finally {
+          window.location.href = "/";
+        }
+      };
 
-  document.getElementById("clearBtn").addEventListener("click", () => {
-    document.getElementById("searchInput").value = "";
-    document.getElementById("genreSelect").value = "__ALL__";
-    document.getElementById("typeSelect").value = "__ALL__";
-    document.getElementById("sortSelect").value = "trend";
-    renderAll();
-  });
+      if (btn1) btn1.onclick = doLogout;
+      if (btn2) btn2.onclick = doLogout;
+    }
 
-  init();
-</script>
-{% endblock %}
+    /** ========= Util ========= **/
+    function renderStars(avg){
+      const full = Math.floor(Number(avg || 0));
+      let stars = "";
+      for(let i=1;i<=5;i++) stars += (i <= full) ? "★" : "☆";
+      return stars;
+    }
+    function safeText(s, fallback=""){ return (s===null || s===undefined || s==="") ? fallback : String(s); }
+    function shortDesc(text, max=180){
+      const t = safeText(text, "");
+      if(!t) return "Sem descrição disponível.";
+      return t.length > max ? (t.slice(0, max).trim() + "…") : t;
+    }
+
+    /** ========= Hover blur ========= **/
+    function setHovering(on, activeEl=null) {
+      const grid = document.getElementById("books");
+      if (!grid) return;
+      if (on) {
+        grid.classList.add("is-hovering");
+        if (activeEl) activeEl.classList.add("is-active");
+      } else {
+        grid.classList.remove("is-hovering");
+        document.querySelectorAll(".book-tile.is-active").forEach(x => x.classList.remove("is-active"));
+      }
+    }
+
+    /** ========= Modal ========= **/
+    const BOOKS_BY_ID = {};
+    let PROGRESS_MAP = {};
+    let FAV_SET = new Set();
+    let ME = null;
+
+    function openBookModalById(bookId, continuePage) {
+      const book = BOOKS_BY_ID[bookId];
+      if (!book) return;
+      document.getElementById("modalBackdrop").classList.add("open");
+
+      document.getElementById("mTitle").textContent = safeText(book.title, "Livro");
+      document.getElementById("mAuthor").textContent = book.author ? ("Autor: " + book.author) : "";
+
+      const premium = (book.book_type === "premium");
+      const typeEl = document.getElementById("mType");
+      typeEl.textContent = premium ? "Pago / Premium" : "Free";
+      typeEl.className = "badge " + (premium ? "badge-premium" : "badge-free");
+
+      document.getElementById("mGenre").textContent = safeText(book.genre, "Sem gênero");
+
+      const avg = Number(book.avg_rating ?? 0);
+      const rcount = book.ratings_count ?? 0;
+      document.getElementById("mStars").textContent = renderStars(avg);
+      document.getElementById("mAvg").textContent = " " + avg.toFixed(1) + "/5";
+      document.getElementById("mCount").textContent = " (" + Number(rcount).toLocaleString() + " avaliações)";
+
+      document.getElementById("mDesc").textContent = safeText(book.description, "Sem descrição disponível.");
+
+      const cover = book.cover || "";
+      const mCover = document.getElementById("mCover");
+      mCover.src = cover || "";
+      mCover.style.opacity = cover ? "1" : "0";
+
+      document.getElementById("mRead").href = `/read/${book.id}/${continuePage}/`;
+    }
+    function closeBookModal(e) {
+      if (e) e.stopPropagation();
+      document.getElementById("modalBackdrop").classList.remove("open");
+    }
+
+    /** ========= Dados ========= **/
+    async function fetchMe(){
+      const res = await apiFetch("/api/auth/me/");
+      if(!res.ok) return null;
+      return res.json();
+    }
+    async function loadProgress(){
+      if(!ME) return {};
+      const res = await apiFetch("/api/progress/me/");
+      if(!res.ok) return {};
+      const arr = await res.json().catch(() => []);
+      const map = {};
+      for(const item of arr){ map[item.book_id] = item; }
+      return map;
+    }
+    async function loadFavorites(){
+      if(!ME) return new Set();
+      const res = await apiFetch("/api/favorites/me/");
+      if(!res.ok) return new Set();
+      const arr = await res.json().catch(() => []);
+      return new Set(arr.map(x => x.book_id));
+    }
+
+    /** ========= Favoritos / Avaliação ========= **/
+    async function toggleFavorite(bookId){
+      if(!ME){
+        window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
+        return;
+      }
+      await ensureCsrf();
+      const res = await apiFetch(`/api/favorites/toggle/${bookId}/`, { method:"POST" });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok){ alert(data.error || data.detail || "Erro ao favoritar."); return; }
+      await hydrateAndRender();
+    }
+
+    function rateStarsHTML(bookId){
+      return `
+        <div class="flex gap-1">
+          ${[1,2,3,4,5].map(s => `
+            <button type="button"
+              onclick="rateBook(${bookId}, ${s}); event.stopPropagation();"
+              class="text-lg text-yellow-500 hover:scale-110 transition"
+              title="Avaliar ${s} estrela(s)">
+              ★
+            </button>
+          `).join("")}
+        </div>
+      `;
+    }
+    async function rateBook(bookId, stars){
+      if(!ME){
+        window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
+        return;
+      }
+      await ensureCsrf();
+      const res = await apiFetch(`/api/ratings/${bookId}/`, {
+        method:"POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify({ stars })
+      });
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok){ alert(data.error || data.detail || "Erro ao avaliar."); return; }
+      await hydrateAndRender();
+    }
+
+    /** ========= Filtros ========= **/
+    let ALL_BOOKS = [];
+
+    function normalizeGenre(g){
+      const t = safeText(g,"").trim();
+      return t ? t : "Sem gênero";
+    }
+    function buildGenreOptions(books){
+      const set = new Set();
+      for(const b of books) set.add(normalizeGenre(b.genre));
+      return Array.from(set).sort((a,b) => a.localeCompare(b, "pt"));
+    }
+    function scoreTrend(b){
+      const readers = Number(b.readers_count || 0);
+      const active = Number(b.active_readers || 0);
+      const avg = Number(b.avg_rating || 0);
+      const cnt = Number(b.ratings_count || 0);
+      return (readers * 1.0) + (active * 2.2) + (avg * 18) + (cnt * 0.4);
+    }
+
+    function applyFilters(books){
+      const q = safeText(document.getElementById("searchInput").value,"").trim().toLowerCase();
+      const genre = document.getElementById("genreSelect").value;
+      const type = document.getElementById("typeSelect").value;
+
+      return books.filter(b => {
+        const title = safeText(b.title,"").toLowerCase();
+        const author = safeText(b.author,"").toLowerCase();
+        const g = normalizeGenre(b.genre);
+        const bt = safeText(b.book_type,"");
+
+        if(q && !(title.includes(q) || author.includes(q))) return false;
+        if(genre !== "__ALL__" && g !== genre) return false;
+        if(type !== "__ALL__" && bt !== type) return false;
+        return true;
+      });
+    }
+
+    function applySort(books){
+      const sort = document.getElementById("sortSelect").value;
+      const arr = [...books];
+
+      if(sort === "rating"){
+        arr.sort((a,b) => (Number(b.avg_rating||0) - Number(a.avg_rating||0)) || (Number(b.ratings_count||0)-Number(a.ratings_count||0)));
+      } else if(sort === "new"){
+        arr.sort((a,b) => (new Date(b.created_at||0) - new Date(a.created_at||0)) || (Number(b.id||0)-Number(a.id||0)));
+      } else if(sort === "readers"){
+        arr.sort((a,b) => Number(b.readers_count||0) - Number(a.readers_count||0));
+      } else {
+        arr.sort((a,b) => scoreTrend(b) - scoreTrend(a));
+      }
+      return arr;
+    }
+
+    /** ========= Render ========= **/
+    function bookTileHTML(b){
+      const p = PROGRESS_MAP[b.id];
+      const continuePage = p?.last_page || 1;
+      const percent = p?.progress_percent || 0;
+
+      const readers = b.readers_count ?? 0;
+      const active = b.active_readers ?? 0;
+      const avg = Number(b.avg_rating ?? 0);
+      const rcount = b.ratings_count ?? 0;
+
+      const isFav = FAV_SET.has(b.id);
+      const premium = (b.book_type === "premium");
+
+      return `
+        <div class="book-tile"
+             tabindex="0"
+             onmouseenter="setHovering(true, this)"
+             onmouseleave="setHovering(false)"
+             onfocus="setHovering(true, this)"
+             onblur="setHovering(false)">
+
+          <div class="coverbox">
+            ${
+              b.cover
+                ? `<img src="${b.cover}" alt="Capa" />`
+                : `<div class="w-full h-full flex items-center justify-center text-white/40" style="aspect-ratio:3/4;">Sem capa</div>`
+            }
+          </div>
+
+          <div class="hover-panel" onmouseenter="setHovering(true, this.closest('.book-tile'))">
+            ${
+              b.cover
+                ? `<img src="${b.cover}" class="hp-cover" alt="Capa"/>`
+                : `<div class="hp-cover flex items-center justify-center text-white/40">Sem capa</div>`
+            }
+
+            <div class="hp-right">
+              <div class="flex items-start justify-between gap-2">
+                <div class="min-w-0">
+                  <div class="hp-title" title="${safeText(b.title)}">${safeText(b.title)}</div>
+                  <div class="hp-author">${safeText(b.author, "Autor desconhecido")}</div>
+                </div>
+
+                <button type="button"
+                  class="text-xl leading-none ${isFav ? "text-yellow-500" : "text-white/40"}"
+                  title="Favoritar"
+                  onclick="toggleFavorite(${b.id}); event.stopPropagation();">
+                  ★
+                </button>
+              </div>
+
+              <div class="row">
+                <span class="badge">${safeText(b.genre, "Sem gênero")}</span>
+                <span class="badge ${premium ? "badge-premium" : "badge-free"}">
+                  ${premium ? "Pago" : "Free"}
+                </span>
+              </div>
+
+              <div class="hp-stats">
+                <span><b class="text-white/90">${Number(readers).toLocaleString()}</b> Leram</span>
+                <span>🔥 <b class="text-white/90">${Number(active).toLocaleString()}</b> a ler</span>
+              </div>
+
+              <div class="hp-stats">
+                <span class="stars">${renderStars(avg)}</span>
+                <span class="text-white/85">${avg.toFixed(1)}</span>
+                <span class="text-white/50">• ${Number(rcount).toLocaleString()} avaliações</span>
+              </div>
+
+              ${ME ? rateStarsHTML(b.id) : `<div class="text-xs text-white/50">Faça login para avaliar.</div>`}
+
+              <div class="hp-stats">
+                <span class="text-white/60">Progresso</span>
+                <span class="text-white/85"><b>${Number(percent)}%</b></span>
+              </div>
+              <div class="progressbar"><div style="width:${Number(percent)}%"></div></div>
+
+              <div class="hp-desc">${shortDesc(b.description, 220)}</div>
+
+              <div class="hp-actions">
+                <a class="btn btn-primary" href="/read/${b.id}/${continuePage}/">Ler</a>
+                <a class="btn" href="/read/${b.id}/1/">Recomeçar</a>
+                <button class="btn" type="button"
+                        onclick="openBookModalById(${b.id}, ${continuePage}); event.stopPropagation();">
+                  Descrição
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderRow(elId, books){
+      const el = document.getElementById(elId);
+      if(!el) return;
+      if(!books || books.length === 0){
+        el.innerHTML = `<div class="text-white/50 text-sm px-2">Nada aqui (ainda).</div>`;
+        return;
+      }
+      el.innerHTML = books.map(bookTileHTML).join("");
+    }
+
+    function renderGrid(books){
+      const el = document.getElementById("books");
+      const emptyMsg = document.getElementById("emptyMsg");
+
+      if(!books || books.length === 0){
+        el.innerHTML = "";
+        emptyMsg.classList.remove("hidden");
+        return;
+      }
+      emptyMsg.classList.add("hidden");
+      el.innerHTML = books.map(bookTileHTML).join("");
+    }
+
+    function setHero(book){
+      if(!book) return;
+      const p = PROGRESS_MAP[book.id];
+      const continuePage = p?.last_page || 1;
+
+      document.getElementById("heroTitle").textContent = safeText(book.title, "Livro em destaque");
+      document.getElementById("heroSub").textContent = shortDesc(book.description, 220);
+
+      const img = document.getElementById("heroCover");
+      img.src = book.cover || "";
+      img.style.opacity = book.cover ? "1" : "0";
+
+      document.getElementById("heroRead").href = `/read/${book.id}/${continuePage}/`;
+
+      document.getElementById("heroActive").textContent = Number(book.active_readers||0).toLocaleString();
+      document.getElementById("heroRating").textContent = Number(book.avg_rating||0).toFixed(1);
+      document.getElementById("heroReaders").textContent = Number(book.readers_count||0).toLocaleString();
+    }
+
+    function renderAll(){
+      const filtered = applyFilters(ALL_BOOKS);
+      const sortedTrend = [...filtered].sort((a,b) => scoreTrend(b) - scoreTrend(a));
+
+      setHero(sortedTrend[0] || ALL_BOOKS[0]);
+
+      const cont = sortedTrend.filter(b => (PROGRESS_MAP[b.id]?.progress_percent || 0) > 0).slice(0, 14);
+      renderRow("rowContinue", cont);
+
+      const prem = sortedTrend.filter(b => b.book_type === "premium").slice(0, 14);
+      renderRow("rowPremium", prem);
+
+      const top = [...filtered].sort((a,b) =>
+        (Number(b.avg_rating||0) - Number(a.avg_rating||0)) ||
+        (Number(b.ratings_count||0) - Number(a.ratings_count||0))
+      ).slice(0, 14);
+      renderRow("rowTop", top);
+
+      const news = [...filtered].sort((a,b) =>
+        (new Date(b.created_at||0) - new Date(a.created_at||0)) ||
+        (Number(b.id||0) - Number(a.id||0))
+      ).slice(0, 14);
+      renderRow("rowNew", news);
+
+      const gridBooks = applySort(filtered);
+      renderGrid(gridBooks);
+
+      document.getElementById("countInfo").textContent = `${filtered.length} / ${ALL_BOOKS.length}`;
+    }
+
+    /** ========= Carregar + hidratar ========= **/
+    async function hydrateAndRender(){
+      const [progressMap, favSet] = await Promise.all([ loadProgress(), loadFavorites() ]);
+      PROGRESS_MAP = progressMap;
+      FAV_SET = favSet;
+      renderAll();
+    }
+
+    async function init(){
+      await ensureCsrf();
+      await bindLogout();
+
+      ME = await fetchMe(); // usado para rating/favoritos (menu já é server-side)
+
+      const res = await apiFetch("/api/books/");
+      if(!res.ok){
+        document.getElementById("heroTitle").textContent = "Erro ao carregar livros.";
+        document.getElementById("heroSub").textContent = `HTTP ${res.status}`;
+        return;
+      }
+
+      ALL_BOOKS = await res.json().catch(() => []);
+      if(!Array.isArray(ALL_BOOKS)) ALL_BOOKS = [];
+      for(const b of ALL_BOOKS) BOOKS_BY_ID[b.id] = b;
+
+      const genres = buildGenreOptions(ALL_BOOKS);
+      const genreSelect = document.getElementById("genreSelect");
+      genreSelect.innerHTML =
+        `<option value="__ALL__">Todas categorias</option>` +
+        genres.map(g => `<option value="${g.replace(/"/g,'&quot;')}">${g}</option>`).join("");
+
+      await hydrateAndRender();
+    }
+
+    /** ========= Eventos ========= **/
+    document.getElementById("searchInput").addEventListener("input", renderAll);
+    document.getElementById("genreSelect").addEventListener("change", renderAll);
+    document.getElementById("typeSelect").addEventListener("change", renderAll);
+    document.getElementById("sortSelect").addEventListener("change", renderAll);
+
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      document.getElementById("searchInput").value = "";
+      document.getElementById("genreSelect").value = "__ALL__";
+      document.getElementById("typeSelect").value = "__ALL__";
+      document.getElementById("sortSelect").value = "trend";
+      renderAll();
+    });
+
+    init();
+  </script>
+</body>
+</html>
