@@ -36,6 +36,8 @@
 {% block extra_js %}
 <script>
 document.getElementById("btn").onclick = async () => {
+  await ensureCsrf();
+
   const payload = {
     first_name: document.getElementById("first_name").value.trim(),
     last_name: document.getElementById("last_name").value.trim(),
@@ -50,7 +52,7 @@ document.getElementById("btn").onclick = async () => {
   const msg = document.getElementById("msg");
   msg.textContent = "";
 
-  const res = await fetch("/api/auth/register/", {
+  const res = await apiFetch("/api/auth/register/", {
     method: "POST",
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify(payload),
@@ -59,7 +61,7 @@ document.getElementById("btn").onclick = async () => {
   const data = await res.json().catch(() => ({}));
 
   if(!res.ok){
-    msg.textContent = typeof data === "string" ? data : JSON.stringify(data);
+    msg.textContent = data.error || data.detail || JSON.stringify(data);
     return;
   }
 

@@ -1,0 +1,42 @@
+{% extends "frontend/base.html" %}
+{% block title %}Owlsight — Minha Conta{% endblock %}
+
+{% block content %}
+<section class="fade-in max-w-2xl">
+  <h1 class="text-2xl md:text-3xl font-black">Minha Conta</h1>
+  <p class="text-sm mt-1 text-white/60">Informações do teu perfil.</p>
+
+  <div class="glass soft-shadow rounded-3xl p-5 mt-5">
+    <div id="box" class="text-white/70">Carregando…</div>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function load(){
+  const res = await apiFetch("/api/auth/me/");
+  if(!res.ok){
+    window.location.href = "/login/?next=/profile/";
+    return;
+  }
+  const me = await res.json().catch(()=>null);
+  if(!me){
+    window.location.href = "/login/?next=/profile/";
+    return;
+  }
+
+  document.getElementById("box").innerHTML = `
+    <div class="grid gap-2">
+      <div><span class="text-white/50">Utilizador:</span> <b class="text-white/90">${me.username || "-"}</b></div>
+      <div><span class="text-white/50">Nome:</span> <b class="text-white/90">${(me.first_name || "")} ${(me.last_name || "")}</b></div>
+      <div><span class="text-white/50">Email:</span> <b class="text-white/90">${me.email || "-"}</b></div>
+      <div class="mt-2 text-xs text-white/50">
+        (Se você quiser mostrar Plano/Expira aqui, o backend deve devolver esses campos em /api/auth/me/.)
+      </div>
+    </div>
+  `;
+}
+load();
+</script>
+{% endblock %}

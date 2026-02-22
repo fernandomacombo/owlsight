@@ -1,0 +1,41 @@
+{% extends "frontend/base.html" %}
+{% block title %}Owlsight — Categorias{% endblock %}
+
+{% block content %}
+<section class="fade-in">
+  <h1 class="text-2xl md:text-3xl font-black">Categorias</h1>
+  <p class="text-sm mt-1 text-white/60">Escolha uma categoria para filtrar o catálogo.</p>
+
+  <div id="grid" class="mt-5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3"></div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function normalizeGenre(g){
+  const t = (g || "").trim();
+  return t ? t : "Sem gênero";
+}
+
+async function load(){
+  const res = await apiFetch("/api/books/");
+  if(!res.ok){
+    document.getElementById("grid").innerHTML = `<div class="text-white/60">Erro ao carregar.</div>`;
+    return;
+  }
+  const books = await res.json().catch(()=>[]);
+  const set = new Set();
+  for(const b of books) set.add(normalizeGenre(b.genre));
+
+  const genres = Array.from(set).sort((a,b)=>a.localeCompare(b, "pt"));
+  document.getElementById("grid").innerHTML = genres.map(g => `
+    <a href="/?genre=${encodeURIComponent(g)}"
+       class="btn px-4 py-3 rounded-2xl text-sm font-semibold text-white/85">
+      ${g}
+    </a>
+  `).join("");
+}
+
+load();
+</script>
+{% endblock %}
