@@ -29,13 +29,10 @@
       margin:0;
       background: var(--bg);
       color: var(--text);
-
-      /* ✅ deixa a página respirar em telas pequenas/teclado mobile */
       overflow-x: hidden;
       overflow-y: auto;
     }
 
-    /* Cinematic background layers */
     body::before{
       content:"";
       position:fixed; inset:0;
@@ -49,7 +46,6 @@
       transform: translateZ(0);
     }
 
-    /* Soft grid / film texture */
     body::after{
       content:"";
       position:fixed; inset:0;
@@ -67,7 +63,6 @@
       mask-image: radial-gradient(70% 55% at 50% 20%, black 0%, transparent 72%);
     }
 
-    /* Moving glow (alive) */
     .glow{
       position:fixed;
       inset:-40%;
@@ -87,7 +82,6 @@
       100% { transform: translate3d(-1.5%,-1.2%,0) scale(1.02); opacity:.85; }
     }
 
-    /* tiny sparks */
     .spark{
       position:fixed;
       width:6px; height:6px;
@@ -106,15 +100,12 @@
       100%{ transform: translateY(-420px) translateX(48px) scale(1.1); opacity:0; }
     }
 
-    /* Glass card */
     .glass{
       background: rgba(255,255,255,.05);
       border: 1px solid rgba(255,255,255,.10);
       box-shadow: 0 30px 100px rgba(0,0,0,.55);
       backdrop-filter: blur(14px);
     }
-
-    /* subtle border glow */
     .ring{
       box-shadow:
         0 0 0 1px rgba(255,255,255,.06) inset,
@@ -122,7 +113,6 @@
         0 30px 100px rgba(0,0,0,.55);
     }
 
-    /* Hero badge */
     .badge{
       display:inline-flex;
       align-items:center;
@@ -149,14 +139,12 @@
       50%{ transform: scale(1.1); box-shadow: 0 0 0 12px rgba(225,6,0,.16); }
     }
 
-    /* Inputs focus */
     .inpt:focus{
       outline:none;
       box-shadow: 0 0 0 4px rgba(225,6,0,.14);
       border-color: rgba(225,6,0,.30);
     }
 
-    /* Button premium */
     .btn-red{
       background: linear-gradient(180deg, var(--red), var(--red2));
       box-shadow: 0 18px 40px rgba(225,6,0,.18);
@@ -164,12 +152,8 @@
     }
     .btn-red:hover{ filter: brightness(1.08); }
 
-    /* Mobile safe height */
     .screen{ min-height: 100svh; }
 
-    /* =========================
-       SOCIAL (Premium)
-    ========================= */
     .social-grid{
       display:grid;
       grid-template-columns: 1fr 1fr;
@@ -230,7 +214,6 @@
       color: rgba(255,255,255,.70);
     }
 
-    /* Google button stage (iframe inside) */
     .google-shell{
       position: relative;
       z-index: 1;
@@ -255,7 +238,6 @@
       max-width: 100% !important;
     }
 
-    /* Apple button */
     .apple-btn{
       width: 100%;
       text-align:left;
@@ -387,7 +369,7 @@
                      name="username"
                      autocomplete="username"
                      required
-                     class="inpt mt-2 w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10 focus:ring-2 focus:ring-red-500/40"
+                     class="inpt mt-2 w-full px-4 py-3 rounded-xl bg-black/30 border border-white/10"
                      placeholder="ex: fernando@owlsight.com" />
             </div>
 
@@ -399,7 +381,7 @@
                        type="password"
                        autocomplete="current-password"
                        required
-                       class="inpt w-full px-4 py-3 pr-12 rounded-xl bg-black/30 border border-white/10 focus:ring-2 focus:ring-red-500/40"
+                       class="inpt w-full px-4 py-3 pr-12 rounded-xl bg-black/30 border border-white/10"
                        placeholder="••••••••" />
                 <button type="button"
                         onclick="togglePwd()"
@@ -624,7 +606,7 @@
         const me = await assertLoggedIn();
         if (!me) {
           setLoading(false);
-          showAlert("Login respondeu OK, mas a sessão não ficou ativa (cookie bloqueado/domínio/SameSite).");
+          showAlert("Login OK, mas a sessão não ficou ativa (cookie bloqueado/domínio/SameSite).");
           return;
         }
 
@@ -640,8 +622,43 @@
       }
     });
 
-    /* ========= Google Login (renderButton) ========= */
+    /* ========= Google Login ========= */
     const GOOGLE_CLIENT_ID = "{{ GOOGLE_CLIENT_ID|default:''|escapejs }}";
+
+    async function onGoogleCredential(response){
+      try{
+        if(!response || !response.credential){
+          showAlert("Falha no login Google.");
+          return;
+        }
+        await ensureCsrf();
+
+        const res = await apiFetch("/api/auth/google/", {
+          method:"POST",
+          headers: { "Content-Type":"application/json" },
+          body: JSON.stringify({ credential: response.credential })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if(!res.ok){
+          showAlert(data.error || data.detail || "Erro ao autenticar com Google.");
+          return;
+        }
+
+        const me = await assertLoggedIn();
+        if(!me){
+          showAlert("Google OK, mas a sessão não ficou ativa (cookie/domínio/SameSite).");
+          return;
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const next = params.get("next");
+        window.location.href = next || "/";
+
+      } catch(e){
+        showAlert("Erro ao entrar com Google.");
+      }
+    }
 
     function initGoogleLoginSafe() {
       const holder = document.getElementById("googleBtn");
@@ -658,85 +675,22 @@
         return;
       }
 
-      try{
-        google.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: onGoogleCredential,
-          auto_select: false,
-          cancel_on_tap_outside: true,
-          use_fedcm_for_prompt: false,
-        });
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: onGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
 
-        const w = holder.getBoundingClientRect().width || 260;
-
-        google.accounts.id.renderButton(holder, {
-          type: "standard",
-          theme: "outline",
-          size: "large",
-          text: "signin_with",
-          shape: "pill",
-          width: Math.floor(w),
-        });
-
-      } catch (e){
-        console.error("Erro ao iniciar Google Login:", e);
-        holder.innerHTML = "<span class='text-white/70'>Google (erro)</span>";
-      }
+      holder.innerHTML = "";
+      google.accounts.id.renderButton(holder, {
+        theme: "outline",
+        size: "large",
+        width: holder.clientWidth
+      });
     }
 
-    async function onGoogleCredential(resp) {
-      try {
-        setLoading(true);
-        await ensureCsrf();
-
-        const res = await apiFetch("/api/auth/google/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ credential: resp.credential }),
-        });
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-          setLoading(false);
-          showAlert(data.error || data.detail || "Falha no login Google.");
-          return;
-        }
-
-        const me = await assertLoggedIn();
-        if (!me) {
-          setLoading(false);
-          showAlert("Google OK, mas a sessão não ficou ativa (cookie bloqueado/domínio/SameSite).");
-          return;
-        }
-
-        showAlert("Login Google efetuado com sucesso!", "success");
-
-        const params = new URLSearchParams(window.location.search);
-        const next = params.get("next");
-        window.location.href = next || "/";
-
-      } catch (e) {
-        setLoading(false);
-        showAlert("Erro inesperado no Google login.");
-      }
-    }
-
-    window.addEventListener("load", () => {
-      initGoogleLoginSafe();
-
-      window.addEventListener("resize", () => {
-        const holder = document.getElementById("googleBtn");
-        if (!holder) return;
-        holder.innerHTML = "";
-        initGoogleLoginSafe();
-      }, { passive: true });
-    });
-
-    /* ========= Apple (por enquanto) ========= */
-    document.getElementById("appleBtn").addEventListener("click", () => {
-      showAlert("Login com Apple (em breve).", "error");
-    });
+    initGoogleLoginSafe();
   </script>
 </body>
 </html>
