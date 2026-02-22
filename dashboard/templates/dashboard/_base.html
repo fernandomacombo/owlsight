@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>{% block title %}Dashboard{% endblock %}</title>
+
+  <style>
+    :root{ --bg:#070707; --panel: rgba(18,18,18,.82); --stroke: rgba(255,255,255,.10); --text: rgba(255,255,255,.92); --red:#E10600; --red2:#8A0000; }
+    body{ background:var(--bg); color:var(--text); }
+    .card{ background: rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.10); border-radius:16px; }
+    .link{ display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); }
+    .link:hover{ border-color: rgba(225,6,0,.25); background: rgba(255,255,255,.07); }
+    .active{ background: linear-gradient(180deg, rgba(225,6,0,.28), rgba(138,0,0,.18)); border-color: rgba(225,6,0,.35); }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <div class="max-w-6xl mx-auto p-4">
+    <!-- Top bar -->
+    <div class="flex items-center justify-between gap-3 mb-4">
+      <div>
+        <div class="text-xl font-extrabold">Owlsight — Dashboard</div>
+        <div class="text-sm text-white/60">Bem-vindo, {{ request.user.username }}</div>
+      </div>
+
+      <div class="flex gap-2">
+        <a href="/" class="px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10">Voltar</a>
+        <form method="post" action="/api/auth/logout/">
+          {% csrf_token %}
+          <button class="px-3 py-2 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10" type="submit">
+            Sair
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-[260px_1fr] gap-4">
+      <!-- Sidebar -->
+      <aside class="card p-3">
+        <nav class="space-y-2">
+          <a class="link {% if request.path == '/dash/' %}active{% endif %}" href="{% url 'dashboard:home' %}">🏠 Home</a>
+          <a class="link {% if '/dash/books/' in request.path %}active{% endif %}" href="{% url 'dashboard:books' %}">📚 Livros</a>
+          <a class="link {% if '/dash/settings/' in request.path %}active{% endif %}" href="{% url 'dashboard:settings' %}">⚙️ Definições</a>
+
+          {% if request.user.is_superuser %}
+            <a class="link {% if '/dash/users/' in request.path %}active{% endif %}" href="{% url 'dashboard:users' %}">👤 Usuários</a>
+          {% endif %}
+        </nav>
+
+        <div class="mt-4 text-xs text-white/45">
+          auth={{ request.user.is_authenticated }} • staff={{ request.user.is_staff }} • super={{ request.user.is_superuser }}
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <main class="card p-4">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+</body>
+</html>
