@@ -2,6 +2,8 @@ from django.shortcuts import render, get_object_or_404
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.cache import never_cache
 from django.db.models import Q
+from django.contrib.auth import logout
+from django.shortcuts import redirect
 
 from books.models import Book
 
@@ -123,3 +125,7 @@ def terms_view(request):
 @never_cache
 def privacy_view(request):
     return render(request, "frontend/privacy.html")
+
+def logout_view(request):
+    logout(request)
+    return redirect("/")
