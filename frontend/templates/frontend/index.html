@@ -630,15 +630,11 @@
     @media (max-width: 640px){
       .brand .tag{ display:none; }
       .hamburger{ display:inline-flex; }
-      .nav-links{ display:none; } /* ✅ menus SOMEM no mobile */
+      .nav-links{ display:none; }
       :root{ --hover-w: 330px; --hover-h: 270px; }
       .hover-panel{ grid-template-columns: 120px 1fr; }
       .tile-row .book-tile{ width: 140px; }
     }
-
-    /* ✅ Logout form como botão */
-    .logout-form{ display:inline; }
-    .logout-form button{ all:unset; }
   </style>
 </head>
 
@@ -657,39 +653,31 @@
       <!-- NAV -->
       <div class="nav">
         <div class="brand">
-          <img src="{% static 'frontend/images/logo.png' %}" alt="BeOnline" />
+          <img src="{% static 'frontend/images/logo.png' %}" alt="Owlsight" />
           <div class="tag">Biblioteca premium • estilo streaming</div>
         </div>
 
         <!-- links desktop -->
         <div class="nav-links flex gap-2 items-center">
-          <a class="pill" href="/">Início</a>
           <a class="pill" href="/categories/">Categoria</a>
           <a class="pill" href="/favorites/">Favoritos</a>
 
-          {% if user.is_authenticated %}
-            <a class="pill" href="/profile/">Minha Conta</a>
+          <!-- aparece só quando logado -->
+          <a id="myAccountBtn" class="pill hidden" href="/profile/">Minha Conta</a>
 
-            {% if user.is_staff or user.is_superuser %}
-              {% url 'dashboard:home' as dash_url %}
-              {% if dash_url %}
-                <a href="{{ dash_url }}" class="pill btn-primary">Admin</a>
-              {% endif %}
-            {% endif %}
-
-            <form class="logout-form" method="post" action="{% url 'frontend:logout' %}">
-              {% csrf_token %}
-              <button class="pill" type="submit">Sair</button>
-            </form>
-          {% else %}
-            <a class="pill" href="/login/">Login</a>
+          {% url 'dashboard:home' as dash_url %}
+          {% if dash_url %}
+            <!-- aparece só staff/superuser -->
+            <a id="adminBtn" href="{{ dash_url }}" class="pill btn-primary hidden">Admin</a>
           {% endif %}
+
+          <!-- auth -->
+          <button id="logoutBtn" class="pill hidden" type="button">Sair</button>
+          <a id="loginBtn" href="/login/" class="pill">Login</a>
         </div>
 
-        <!-- hamburger mobile (só abre ao clicar) -->
-        <button class="pill hamburger" type="button" onclick="openDrawer()" aria-label="Menu">
-          ☰
-        </button>
+        <!-- hamburger mobile -->
+        <button class="pill hamburger" type="button" onclick="openDrawer()" aria-label="Menu">☰</button>
       </div>
 
       <!-- HERO CONTENT -->
@@ -798,27 +786,22 @@
           <button class="x" type="button" onclick="closeDrawer(event)">✕</button>
         </div>
 
-        <a href="/">Início <span>›</span></a>
+        <!-- sempre -->
         <a href="/categories/">Categoria <span>›</span></a>
         <a href="/favorites/">Favoritos <span>›</span></a>
 
-        {% if user.is_authenticated %}
-          <a href="/profile/">Minha Conta <span>›</span></a>
+        <!-- só logado -->
+        <a id="myAccountBtn2" class="hidden" href="/profile/">Minha Conta <span>›</span></a>
 
-          {% if user.is_staff or user.is_superuser %}
-            {% url 'dashboard:home' as dash_url %}
-            {% if dash_url %}
-              <a href="{{ dash_url }}">Admin <span>›</span></a>
-            {% endif %}
-          {% endif %}
-
-          <form method="post" action="{% url 'frontend:logout' %}">
-            {% csrf_token %}
-            <button type="submit">Sair <span>›</span></button>
-          </form>
-        {% else %}
-          <a href="/login/">Login <span>›</span></a>
+        {% url 'dashboard:home' as dash_url %}
+        {% if dash_url %}
+          <!-- só staff/superuser -->
+          <a id="adminBtn2" href="{{ dash_url }}" class="hidden">Admin <span>›</span></a>
         {% endif %}
+
+        <!-- auth -->
+        <button id="logoutBtn2" class="hidden" type="button">Sair <span>›</span></button>
+        <a id="loginBtn2" href="/login/">Login <span>›</span></a>
       </div>
     </div>
 
@@ -860,6 +843,32 @@
   </div>
 
   <script>
+    /** ========= Cookies + CSRF + fetch ========= **/
+    function getCookie(name) {
+      const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+      return m ? decodeURIComponent(m[2]) : null;
+    }
+    function isUnsafe(method) {
+      return ["POST","PUT","PATCH","DELETE"].includes((method || "GET").toUpperCase());
+    }
+    async function apiFetch(url, options = {}) {
+      const opts = { ...options };
+      opts.credentials = "include";
+      opts.headers = opts.headers || {};
+      opts.headers["Accept"] = "application/json";
+      if (isUnsafe(opts.method)) {
+        const csrf = getCookie("csrftoken");
+        if (csrf) opts.headers["X-CSRFToken"] = csrf;
+      }
+      return fetch(url, opts);
+    }
+    let CSRF_READY = false;
+    async function ensureCsrf(){
+      if (CSRF_READY) return;
+      const res = await apiFetch("/api/csrf/");
+      if (res.ok) CSRF_READY = true;
+    }
+
     /** ========= Drawer ========= **/
     function openDrawer(){ document.getElementById("drawerBackdrop").classList.add("open"); }
     function closeDrawer(e){
@@ -876,6 +885,55 @@
 
     function scrollToCatalog(){
       document.getElementById("catalog").scrollIntoView({behavior:"smooth", block:"start"});
+    }
+
+    /** ========= Auth ========= **/
+    let ME = null;
+    async function fetchMe(){
+      const res = await apiFetch("/api/auth/me/");
+      if(!res.ok) return null;
+      return res.json();
+    }
+
+    function setAuthUI(me){
+      const isLoggedIn = !!me;
+      const isAdmin = !!(me && (me.is_staff || me.is_superuser));
+
+      const loginBtn = document.getElementById("loginBtn");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const loginBtn2 = document.getElementById("loginBtn2");
+      const logoutBtn2 = document.getElementById("logoutBtn2");
+
+      const myAccountBtn = document.getElementById("myAccountBtn");
+      const myAccountBtn2 = document.getElementById("myAccountBtn2");
+
+      const adminBtn = document.getElementById("adminBtn");
+      const adminBtn2 = document.getElementById("adminBtn2");
+
+      // Não logado
+      loginBtn.classList.toggle("hidden", isLoggedIn);
+      loginBtn2.classList.toggle("hidden", isLoggedIn);
+
+      // Logado
+      logoutBtn.classList.toggle("hidden", !isLoggedIn);
+      logoutBtn2.classList.toggle("hidden", !isLoggedIn);
+
+      myAccountBtn.classList.toggle("hidden", !isLoggedIn);
+      myAccountBtn2.classList.toggle("hidden", !isLoggedIn);
+
+      // Admin (staff/superuser)
+      if(adminBtn) adminBtn.classList.toggle("hidden", !isAdmin);
+      if(adminBtn2) adminBtn2.classList.toggle("hidden", !isAdmin);
+
+      if(isLoggedIn){
+        const doLogout = async () => {
+          await ensureCsrf();
+          await apiFetch("/api/auth/logout/", { method:"POST" });
+          window.location.reload();
+        };
+        logoutBtn.onclick = doLogout;
+        logoutBtn2.onclick = doLogout;
+      }
     }
 
     /** ========= Util ========= **/
@@ -947,15 +1005,8 @@
     }
 
     /** ========= Dados ========= **/
-    async function apiFetch(url, options = {}) {
-      const opts = { ...options };
-      opts.credentials = "include";
-      opts.headers = opts.headers || {};
-      opts.headers["Accept"] = "application/json";
-      return fetch(url, opts);
-    }
-
     async function loadProgress(){
+      if(!ME) return {};
       const res = await apiFetch("/api/progress/me/");
       if(!res.ok) return {};
       const arr = await res.json().catch(() => []);
@@ -964,6 +1015,7 @@
       return map;
     }
     async function loadFavorites(){
+      if(!ME) return new Set();
       const res = await apiFetch("/api/favorites/me/");
       if(!res.ok) return new Set();
       const arr = await res.json().catch(() => []);
@@ -972,12 +1024,12 @@
 
     /** ========= Favoritos / Avaliação ========= **/
     async function toggleFavorite(bookId){
-      // se não tiver sessão, backend deve responder 403/401 e redirecionamos
-      const res = await apiFetch(`/api/favorites/toggle/${bookId}/`, { method:"POST" });
-      if(res.status === 401 || res.status === 403){
+      if(!ME){
         window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
         return;
       }
+      await ensureCsrf();
+      const res = await apiFetch(`/api/favorites/toggle/${bookId}/`, { method:"POST" });
       const data = await res.json().catch(() => ({}));
       if(!res.ok){ alert(data.error || data.detail || "Erro ao favoritar."); return; }
       await hydrateAndRender();
@@ -998,15 +1050,16 @@
       `;
     }
     async function rateBook(bookId, stars){
+      if(!ME){
+        window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
+        return;
+      }
+      await ensureCsrf();
       const res = await apiFetch(`/api/ratings/${bookId}/`, {
         method:"POST",
         headers: { "Content-Type":"application/json" },
         body: JSON.stringify({ stars })
       });
-      if(res.status === 401 || res.status === 403){
-        window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
-        return;
-      }
       const data = await res.json().catch(() => ({}));
       if(!res.ok){ alert(data.error || data.detail || "Erro ao avaliar."); return; }
       await hydrateAndRender();
@@ -1136,7 +1189,7 @@
                 <span class="text-white/50">• ${rcount.toLocaleString()} avaliações</span>
               </div>
 
-              ${rateStarsHTML(b.id)}
+              ${ME ? rateStarsHTML(b.id) : `<div class="text-xs text-white/50">Faça login para avaliar.</div>`}
 
               <div class="hp-stats">
                 <span class="text-white/60">Progresso</span>
@@ -1232,6 +1285,7 @@
       document.getElementById("countInfo").textContent = `${filtered.length} / ${ALL_BOOKS.length}`;
     }
 
+    /** ========= Carregar + hidratar ========= **/
     async function hydrateAndRender(){
       const [progressMap, favSet] = await Promise.all([ loadProgress(), loadFavorites() ]);
       PROGRESS_MAP = progressMap;
@@ -1240,6 +1294,11 @@
     }
 
     async function init(){
+      await ensureCsrf();
+
+      ME = await fetchMe();
+      setAuthUI(ME);
+
       const res = await apiFetch("/api/books/");
       if(!res.ok){
         document.getElementById("heroTitle").textContent = "Erro ao carregar livros.";
@@ -1260,6 +1319,7 @@
       await hydrateAndRender();
     }
 
+    /** ========= Eventos ========= **/
     document.getElementById("searchInput").addEventListener("input", renderAll);
     document.getElementById("genreSelect").addEventListener("change", renderAll);
     document.getElementById("typeSelect").addEventListener("change", renderAll);
