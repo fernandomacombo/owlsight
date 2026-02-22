@@ -16,11 +16,9 @@ SECRET_KEY = os.getenv("SECRET_KEY") or "dev-only-unsafe-secret-key"
 
 DEBUG = os.getenv("DEBUG", "False").lower() in ("1", "true", "yes", "on")
 
-# Em DEV pode ser "*", em PROD evita. No Railway põe ALLOWED_HOSTS com o teu domínio.
 _raw_hosts = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost")
 ALLOWED_HOSTS = [h.strip() for h in _raw_hosts.split(",") if h.strip()]
 
-# CSRF_TRUSTED_ORIGINS precisa do esquema (https://...)
 _raw_csrf = os.getenv("CSRF_TRUSTED_ORIGINS", "")
 CSRF_TRUSTED_ORIGINS = [o.strip() for o in _raw_csrf.split(",") if o.strip()]
 
@@ -37,13 +35,13 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
 
-    # terceiros (confere se estão no requirements!)
+    # Terceiros
     "rest_framework",
     "storages",
     "axes",
     "csp",
 
-    # apps do projeto
+    # Apps do projeto
     "frontend",
     "books",
     "reading",
@@ -84,6 +82,9 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
+# =========================
+# URLs / Templates / WSGI
+# =========================
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [
@@ -166,7 +167,13 @@ REST_FRAMEWORK = {
 # =========================
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_DIRS = [BASE_DIR / "static"] if (BASE_DIR / "static").exists() else []
+
+# Se tiveres uma pasta global "static/" no projeto, usa.
+# (As pastas "static/" dentro das apps já são detectadas automaticamente.)
+if (BASE_DIR / "static").exists():
+    STATICFILES_DIRS = [BASE_DIR / "static"]
+else:
+    STATICFILES_DIRS = []
 
 STORAGES = {
     "staticfiles": {
@@ -174,7 +181,9 @@ STORAGES = {
     }
 }
 
-WHITENOISE_MANIFEST_STRICT = False  # ✅ ADICIONA ISTO
+# Evita 500 se algum ficheiro estático estiver faltando (útil em deploy)
+WHITENOISE_MANIFEST_STRICT = False
+
 
 # =========================
 # Media / Storage (Backblaze B2 via S3)
@@ -182,14 +191,20 @@ WHITENOISE_MANIFEST_STRICT = False  # ✅ ADICIONA ISTO
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "")
 AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", "")
-AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL", "")
+AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL", "")  # ex: https://s3.us-west-004.backblazeb2.com
 AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "us-east-1")
 AWS_S3_SIGNATURE_VERSION = os.getenv("AWS_S3_SIGNATURE_VERSION", "s3v4")
-AWS_S3_ADDRESSING_STYLE = os.getenv("AWS_S3_ADDRESSING_STYLE", "path")
+AWS_S3_ADDRESSING_STYLE = os.getenv("AWS_S3_ADDRESSING_STYLE", "path")  # B2 costuma funcionar bem com path
+
+# Se bucket for privado, True gera links assinados (recomendado para PDFs privados)
 AWS_QUERYSTRING_AUTH = os.getenv("AWS_QUERYSTRING_AUTH", "True").lower() in ("1", "true", "yes", "on")
 
 AWS_DEFAULT_ACL = None
 AWS_S3_FILE_OVERWRITE = False
+
+# Opcional (melhor): um domínio público (CDN / Friendly URL)
+# Ex: cdn.teudominio.com ou algo do próprio B2
+AWS_S3_CUSTOM_DOMAIN = os.getenv("AWS_S3_CUSTOM_DOMAIN", "").strip()
 
 USE_B2 = all([
     AWS_ACCESS_KEY_ID,
@@ -198,11 +213,19 @@ USE_B2 = all([
     AWS_S3_ENDPOINT_URL,
 ])
 
-MEDIA_URL = "/media/"
-
 if USE_B2:
+    # Storage default (MEDIA) no B2
     STORAGES["default"] = {"BACKEND": "storages.backends.s3boto3.S3Boto3Storage"}
+
+    # MEDIA_URL útil para algumas views/templates, mas o .url do storage já resolve.
+    if AWS_S3_CUSTOM_DOMAIN:
+        MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/"
+    else:
+        # path-style: https://endpoint/bucket/
+        MEDIA_URL = f"{AWS_S3_ENDPOINT_URL.rstrip('/')}/{AWS_STORAGE_BUCKET_NAME}/"
 else:
+    # Local (dev)
+    MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
 
 
@@ -214,24 +237,35 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = 200 * 1024 * 1024
 
 
 # =========================
-# Segurança forte (produção)
+# Cookies / Sessões / CSRF (importante para fetch do login)
 # =========================
 SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_HTTPONLY = True
+
+# Teu JS lê csrftoken via document.cookie -> precisa ser False
+CSRF_COOKIE_HTTPONLY = False
+
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_COOKIE_SAMESITE = "Lax"
 
-X_FRAME_OPTIONS = "DENY"
-SECURE_CONTENT_TYPE_NOSNIFF = True
-SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
-
-# Proxy header (Railway/Render/etc)
+# Proxy header (Railway)
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+else:
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
+
+# =========================
+# Segurança forte (produção)
+# =========================
+X_FRAME_OPTIONS = "DENY"
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
+
+if not DEBUG:
     SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "True").lower() in ("1", "true", "yes", "on")
 
     SECURE_HSTS_SECONDS = 60 * 60 * 24 * 30
@@ -239,10 +273,18 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
 
 
+# =========================
 # URLs de auth
+# =========================
 LOGIN_URL = "/login/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login/"
+
+
+# =========================
+# Google (Login)
+# =========================
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
 
 # =========================
@@ -259,16 +301,44 @@ AXES_ENABLE_ACCESS_FAILURE_LOG = True
 
 
 # =========================
-# CSP (django-csp >= 4.0) — formato novo
+# CSP (django-csp >= 4.0)
 # =========================
+# Nota: Google Identity Services precisa de:
+# - script-src https://accounts.google.com
+# - frame-src https://accounts.google.com (iframe/botão)
+# - connect-src para endpoints Google (às vezes)
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ("'self'",),
-        "connect-src": ("'self'",),
-        "img-src": ("'self'", "data:", "blob:"),
+
+        "connect-src": (
+            "'self'",
+            "https://accounts.google.com",
+            "https://oauth2.googleapis.com",
+        ),
+
+        "img-src": (
+            "'self'",
+            "data:",
+            "blob:",
+            "https:",
+        ),
+
         "font-src": ("'self'", "data:"),
-        "script-src": ("'self'", "https://cdn.tailwindcss.com", "'unsafe-inline'"),
+
+        "script-src": (
+            "'self'",
+            "https://cdn.tailwindcss.com",
+            "https://accounts.google.com",
+            "'unsafe-inline'",
+        ),
+
         "style-src": ("'self'", "'unsafe-inline'"),
+
+        "frame-src": (
+            "'self'",
+            "https://accounts.google.com",
+        ),
     }
 }
 
@@ -292,25 +362,3 @@ LOGGING = {
         "axes.watch_login": {"handlers": ["console"], "level": "WARNING", "propagate": True},
     },
 }
-
-
-
-import os
-
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-
-# Sessões e cookies (importante para fetch + login)
-SESSION_COOKIE_HTTPONLY = True
-CSRF_COOKIE_HTTPONLY = False  # precisa ser lido pelo JS (csrftoken cookie)
-CSRF_COOKIE_SAMESITE = "Lax"
-SESSION_COOKIE_SAMESITE = "Lax"
-
-# Em produção HTTPS (Railway normalmente é https)
-CSRF_COOKIE_SECURE = (os.getenv("DEBUG", "False").lower() not in ("1","true","yes","on"))
-SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE
-
-# Se tiver erro de CSRF no Railway, adiciona o domínio aqui:
-# Ex: https://teu-app.up.railway.app
-csrf_trusted = os.getenv("CSRF_TRUSTED_ORIGINS", "")
-if csrf_trusted:
-    CSRF_TRUSTED_ORIGINS = [x.strip() for x in csrf_trusted.split(",") if x.strip()]
