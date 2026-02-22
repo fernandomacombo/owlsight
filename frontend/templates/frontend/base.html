@@ -208,7 +208,7 @@
 
         <form action="/api/auth/logout/" method="post">
           {% csrf_token %}
-          <button type="submit">Sair <span>›</span></button>
+          <a href="/logout/" class="btn">Sair</a>
         </form>
       {% else %}
         <a href="/login/">Login <span>›</span></a>
