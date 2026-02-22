@@ -21,4 +21,6 @@ urlpatterns = [
     path("", include("frontend.urls")),
 
     path("health/", health),
+
+    path("api/", include("reading.urls")),
 ]

@@ -2,12 +2,52 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from .models import Book
 
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+from django.db.models import Avg, Count, Q
+from django.utils import timezone
+from datetime import timedelta
+
+from .models import Book
+from reading.models import Rating, ReadingProgress
+
+
 @require_GET
 def books_list_api(request):
     """
     GET /api/books/
-    Retorna uma lista de livros no formato que o frontend (index.html) espera.
+    Retorna livros + métricas:
+      - avg_rating, ratings_count (da tabela Rating)
+      - readers_count, active_readers (da tabela ReadingProgress)
     """
+    now = timezone.now()
+    active_window = now - timedelta(hours=24)
+
+    # agrega ratings por livro
+    rating_aggs = (
+        Rating.objects
+        .values("book_id")
+        .annotate(avg=Avg("stars"), cnt=Count("id"))
+    )
+    rating_map = {r["book_id"]: r for r in rating_aggs}
+
+    # agrega leitores por livro (qualquer progresso)
+    readers_aggs = (
+        ReadingProgress.objects
+        .values("book_id")
+        .annotate(readers=Count("user_id", distinct=True))
+    )
+    readers_map = {r["book_id"]: r["readers"] for r in readers_aggs}
+
+    # agrega "a ler agora" (ativos nas últimas 24h)
+    active_aggs = (
+        ReadingProgress.objects
+        .filter(updated_at__gte=active_window)
+        .values("book_id")
+        .annotate(active=Count("user_id", distinct=True))
+    )
+    active_map = {r["book_id"]: r["active"] for r in active_aggs}
+
     qs = Book.objects.all().order_by("-id")
 
     data = []
@@ -40,11 +80,12 @@ def books_list_api(request):
         elif hasattr(b, "category") and getattr(b, "category"):
             genre = str(b.category)
 
-        avg_rating = float(getattr(b, "avg_rating", 0) or 0)
-        ratings_count = int(getattr(b, "ratings_count", 0) or 0)
+        r = rating_map.get(b.id, {})
+        avg_rating = float(r.get("avg") or 0)
+        ratings_count = int(r.get("cnt") or 0)
 
-        readers_count = int(getattr(b, "readers_count", 0) or 0)
-        active_readers = int(getattr(b, "active_readers", 0) or 0)
+        readers_count = int(readers_map.get(b.id, 0) or 0)
+        active_readers = int(active_map.get(b.id, 0) or 0)
 
         data.append({
             "id": b.id,
