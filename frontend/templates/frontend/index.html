@@ -34,7 +34,6 @@
       overflow-x: hidden;
     }
 
-    /* Background */
     body::before{
       content:"";
       position: fixed;
@@ -68,7 +67,6 @@
 
     .wrap{ width: 100%; padding: 0; }
 
-    /* Hero */
     .hero{
       position: relative;
       min-height: 100svh;
@@ -112,7 +110,6 @@
       100%{ transform: translateY(-380px) translateX(40px) scale(1.1); opacity:0; }
     }
 
-    /* Nav */
     .nav{
       position: sticky;
       top: 0;
@@ -185,7 +182,6 @@
     }
     .btn-primary:hover{ filter: brightness(1.08); }
 
-    /* Hero content */
     .hero-inner{
       position: relative;
       z-index: 2;
@@ -199,6 +195,7 @@
       margin: 0 auto;
       width: 100%;
     }
+
     .hero-left .kicker{
       display:inline-flex;
       align-items:center;
@@ -291,7 +288,6 @@
     }
     .hero-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
 
-    /* Drawer */
     .hamburger{ display:none; }
     .drawer-backdrop{
       position: fixed;
@@ -353,7 +349,6 @@
       color: #fff;
     }
 
-    /* Content */
     .content{
       max-width: 1400px;
       margin: 0 auto;
@@ -556,7 +551,6 @@
       flex-wrap: wrap;
     }
 
-    /* Modal */
     .modal-backdrop{
       position: fixed;
       inset: 0;
@@ -618,7 +612,6 @@
     }
     .modal-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
 
-    /* Responsive */
     @media (max-width: 900px){
       .hero-inner{ grid-template-columns: 1fr; padding-top: 18px; }
       .hero-cover{ justify-self: start; width: min(260px, 72vw); }
@@ -630,7 +623,7 @@
     @media (max-width: 640px){
       .brand .tag{ display:none; }
       .hamburger{ display:inline-flex; }
-      .nav-links{ display:none !important; } /* ✅ no mobile some tudo */
+      .nav-links{ display:none !important; }
       :root{ --hover-w: 330px; --hover-h: 270px; }
       .hover-panel{ grid-template-columns: 120px 1fr; }
       .tile-row .book-tile{ width: 140px; }
@@ -657,22 +650,19 @@
           <div class="tag">Biblioteca premium • estilo streaming</div>
         </div>
 
-        <!-- links desktop (JS controla o que aparece) -->
+        <!-- Desktop -->
         <div class="nav-links flex gap-2 items-center">
-          <!-- sempre visíveis (desktop) -->
           <a class="pill" href="/categories/">Categoria</a>
           <a class="pill" href="/favorites/">Favoritos</a>
 
-          <!-- não logado -->
           <a id="navLogin" class="pill hidden" href="/login/">Login</a>
 
-          <!-- logado normal -->
           <a id="navAccount" class="pill hidden" href="/profile/">Minha Conta</a>
-          <a id="navAdmin" class="pill btn-primary hidden" href="{% url 'dashboard:home' %}">Admin</a>
+          <a id="navAdmin" class="pill btn-primary hidden" href="/admin/">Admin</a>
           <button id="navLogout" class="pill hidden" type="button">Sair</button>
         </div>
 
-        <!-- hamburger mobile -->
+        <!-- Mobile -->
         <button class="pill hamburger" type="button" onclick="openDrawer()" aria-label="Menu">☰</button>
       </div>
 
@@ -774,7 +764,7 @@
       </div>
     </div>
 
-    <!-- Drawer (mobile menu) -->
+    <!-- Drawer -->
     <div id="drawerBackdrop" class="drawer-backdrop" onclick="closeDrawer(event)">
       <div class="drawer" onclick="event.stopPropagation()">
         <div class="head">
@@ -782,16 +772,13 @@
           <button class="x" type="button" onclick="closeDrawer(event)">✕</button>
         </div>
 
-        <!-- sempre -->
         <a href="/categories/">Categoria <span>›</span></a>
         <a href="/favorites/">Favoritos <span>›</span></a>
 
-        <!-- não logado -->
         <a id="drawerLogin" href="/login/" class="hidden">Login <span>›</span></a>
 
-        <!-- logado -->
         <a id="drawerAccount" href="/profile/" class="hidden">Minha Conta <span>›</span></a>
-        <a id="drawerAdmin" href="{% url 'dashboard:home' %}" class="hidden">Admin <span>›</span></a>
+        <a id="drawerAdmin" href="/admin/" class="hidden">Admin <span>›</span></a>
         <button id="drawerLogout" class="hidden" type="button">Sair <span>›</span></button>
       </div>
     </div>
@@ -872,7 +859,7 @@
       document.getElementById("catalog").scrollIntoView({behavior:"smooth", block:"start"});
     }
 
-    /** ========= Auth + NAV rules ========= **/
+    /** ========= Auth + NAV ========= **/
     let ME = null;
 
     async function fetchMe(){
@@ -885,21 +872,16 @@
       const isLogged = !!me;
       const isAdmin = !!(me && (me.is_staff || me.is_superuser));
 
-      // desktop
       const navLogin = document.getElementById("navLogin");
       const navAccount = document.getElementById("navAccount");
       const navAdmin = document.getElementById("navAdmin");
       const navLogout = document.getElementById("navLogout");
 
-      // drawer
       const drawerLogin = document.getElementById("drawerLogin");
       const drawerAccount = document.getElementById("drawerAccount");
       const drawerAdmin = document.getElementById("drawerAdmin");
       const drawerLogout = document.getElementById("drawerLogout");
 
-      // Não logado: Categoria, Favoritos, Login
-      // Logado normal: Categoria, Favoritos, Minha Conta, Sair
-      // Admin: Categoria, Favoritos, Minha Conta, Admin, Sair
       if(!isLogged){
         navLogin.classList.remove("hidden");
         navAccount.classList.add("hidden");
@@ -960,7 +942,6 @@
 
     /** ========= Modal ========= **/
     const BOOKS_BY_ID = {};
-    let HERO_BOOK_ID = null;
     let PROGRESS_MAP = {};
     let FAV_SET = new Set();
 
@@ -1044,6 +1025,7 @@
         </div>
       `;
     }
+
     async function rateBook(bookId, stars){
       if(!ME){
         window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
@@ -1233,7 +1215,6 @@
 
     function setHero(book){
       if(!book) return;
-      HERO_BOOK_ID = book.id;
 
       const p = PROGRESS_MAP[book.id];
       const continuePage = p?.last_page || 1;
@@ -1282,7 +1263,6 @@
       document.getElementById("countInfo").textContent = `${filtered.length} / ${ALL_BOOKS.length}`;
     }
 
-    /** ========= Carregar + hidratar ========= **/
     async function hydrateAndRender(){
       const [progressMap, favSet] = await Promise.all([ loadProgress(), loadFavorites() ]);
       PROGRESS_MAP = progressMap;
@@ -1316,7 +1296,6 @@
       await hydrateAndRender();
     }
 
-    /** ========= Eventos ========= **/
     document.getElementById("searchInput").addEventListener("input", renderAll);
     document.getElementById("genreSelect").addEventListener("change", renderAll);
     document.getElementById("typeSelect").addEventListener("change", renderAll);
