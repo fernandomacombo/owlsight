@@ -4,7 +4,6 @@
 {% block content %}
 <section class="fade-in">
   <div class="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4">
-    <!-- LEFT: info + navegação -->
     <aside class="glass soft-shadow rounded-3xl p-4">
       <div id="header" class="flex gap-3"></div>
 
@@ -16,12 +15,10 @@
 
         <p id="msg" class="text-sm" style="color: rgba(225,6,0,.92);"></p>
 
-        <!-- BLOQUEIO -->
         <div id="blocker" class="hidden rounded-2xl p-3"
              style="background: rgba(225,6,0,.10); border:1px solid rgba(225,6,0,.26);"></div>
       </div>
 
-      <!-- comentários -->
       <div class="mt-5">
         <h2 class="font-black text-lg">Comentários</h2>
 
@@ -35,7 +32,6 @@
       </div>
     </aside>
 
-    <!-- RIGHT: página -->
     <section class="glass soft-shadow rounded-3xl p-4">
       <div id="contentBox" class="rounded-2xl overflow-hidden"></div>
     </section>
@@ -49,28 +45,25 @@ const bookId = Number("{{ book_id }}");
 let page = Number("{{ page_number }}");
 let maxPages = 1;
 
-function getToken(){ return localStorage.getItem("access"); }
-function authHeaders(){
-  const token = getToken();
-  if(!token) return null;
-  return { "Authorization": "Bearer " + token };
+async function fetchMe(){
+  const res = await apiFetch("/api/auth/me/");
+  if(!res.ok) return null;
+  return res.json();
 }
 
 async function loadPage(){
-  const headers = authHeaders();
-  if(!headers){
-    window.location.href = "/login/";
+  const me = await fetchMe();
+  if(!me){
+    window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
     return;
   }
 
-  const res = await fetch(`/api/read/${bookId}/${page}/`, { headers });
+  const res = await apiFetch(`/api/read/${bookId}/${page}/`);
   const data = await res.json().catch(()=>({}));
 
   if(data.total_pages) maxPages = data.total_pages;
 
-  // header
-  const header = document.getElementById("header");
-  header.innerHTML = `
+  document.getElementById("header").innerHTML = `
     <div class="w-24 aspect-[3/4] rounded-2xl overflow-hidden poster">
       ${data.cover ? `<img src="${data.cover}" class="w-full h-full object-cover" />`
                    : `<div class="w-full h-full grid place-items-center text-xs" style="color: rgba(255,255,255,.45)">Sem capa</div>`}
@@ -90,7 +83,6 @@ async function loadPage(){
   const contentBox = document.getElementById("contentBox");
   const blocker = document.getElementById("blocker");
 
-  // BLOQUEIO (share/pay)
   if(res.status === 403 && data.blocked){
     contentBox.innerHTML = `
       <div class="p-10 text-center">
@@ -128,7 +120,6 @@ async function loadPage(){
   blocker.classList.add("hidden");
   msg.textContent = "";
 
-  // página real
   contentBox.innerHTML = data.page_image
     ? `<img src="${data.page_image}" class="w-full rounded-2xl" />`
     : `<div class="p-10 text-center" style="color: rgba(255,255,255,.62)">Página não encontrada.</div>`;
@@ -140,14 +131,14 @@ document.getElementById("nextBtn").onclick = () => {
   else alert("Você chegou ao final do livro.");
 };
 
-// pagamentos
 async function payPlan(plan){
-  const token = getToken();
-  if(!token){ window.location.href = "/login/"; return; }
+  const me = await fetchMe();
+  if(!me){ window.location.href = "/login/"; return; }
 
-  const res = await fetch("/api/pay/", {
+  await ensureCsrf();
+  const res = await apiFetch("/api/pay/", {
     method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ plan, provider: "mpesa" })
   });
 
@@ -156,30 +147,22 @@ async function payPlan(plan){
   loadPage();
 }
 
-// share
 async function share(){
   const url = window.location.origin;
   await navigator.clipboard.writeText(url);
 
-  const token = getToken();
-  if(!token){ window.location.href = "/login/"; return; }
-
-  const res = await fetch(`/api/unlock/share/${bookId}/`, {
-    method: "POST",
-    headers: { "Authorization": "Bearer " + token }
-  });
-
+  await ensureCsrf();
+  const res = await apiFetch(`/api/unlock/share/${bookId}/`, { method: "POST" });
   const data = await res.json().catch(()=>({}));
   alert(data.message || "Partilha registrada!");
   loadPage();
 }
 
-// comentários
 async function loadComments(){
-  const headers = authHeaders();
-  if(!headers) return;
+  const me = await fetchMe();
+  if(!me) return;
 
-  const res = await fetch(`/api/comments/${bookId}/`, { headers });
+  const res = await apiFetch(`/api/comments/${bookId}/`);
   const arr = await res.json().catch(() => []);
 
   const box = document.getElementById("commentsList");
@@ -200,16 +183,17 @@ async function loadComments(){
 }
 
 async function sendComment(){
-  const headers = authHeaders();
-  if(!headers){ window.location.href = "/login/"; return; }
+  const me = await fetchMe();
+  if(!me){ window.location.href = "/login/"; return; }
 
   const input = document.getElementById("commentInput");
   const text = input.value.trim();
   if(!text) return;
 
-  const res = await fetch(`/api/comments/${bookId}/`, {
+  await ensureCsrf();
+  const res = await apiFetch(`/api/comments/${bookId}/`, {
     method: "POST",
-    headers: { "Content-Type":"application/json", ...headers },
+    headers: { "Content-Type":"application/json" },
     body: JSON.stringify({ text })
   });
   const data = await res.json().catch(() => ({}));
@@ -226,16 +210,16 @@ async function sendComment(){
 }
 
 async function deleteComment(id){
-  const headers = authHeaders();
-  if(!headers) return;
-
-  const res = await fetch(`/api/comments/delete/${id}/`, { method: "POST", headers });
+  await ensureCsrf();
+  const res = await apiFetch(`/api/comments/delete/${id}/`, { method: "POST" });
   if(res.ok) loadComments();
 }
 
 document.getElementById("sendCommentBtn").onclick = sendComment;
 
-loadPage();
-loadComments();
+ensureCsrf().then(() => {
+  loadPage();
+  loadComments();
+});
 </script>
 {% endblock %}
