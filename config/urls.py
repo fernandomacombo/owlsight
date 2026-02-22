@@ -7,7 +7,7 @@ def health(request):
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-
+ path("api/", include("frontend.api_urls")),
     # ✅ APIs (mantém)
     path("api/books/", include("books.urls")),
     # Se tiveres outras APIs, adiciona aqui:
@@ -24,5 +24,5 @@ urlpatterns = [
 
      path("dash/", include("dashboard.urls", namespace="dashboard")),
 
-     path("api/", include("frontend.api_urls")),
+    
 ]
