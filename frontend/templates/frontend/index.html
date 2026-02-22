@@ -158,6 +158,26 @@
     }
     .pill option{ background-color: var(--panel2); }
 
+    .btn{
+      padding: 9px 14px;
+      border-radius: 12px;
+      font-size: 12.5px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.9);
+      transition: transform .12s ease, background .12s ease, border-color .12s ease, filter .12s ease;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select:none;
+      line-height: 1;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      gap: 8px;
+      justify-content:center;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); border-color: rgba(225,6,0,.25); }
+
     .btn-primary{
       background: linear-gradient(180deg, var(--red), var(--red2));
       border-color: rgba(225,6,0,.45);
@@ -279,7 +299,7 @@
       z-index: 100;
       background: rgba(0,0,0,.62);
       backdrop-filter: blur(10px);
-      display:none; /* só aparece quando clicar */
+      display:none;
     }
     .drawer-backdrop.open{ display:block; }
 
@@ -428,18 +448,197 @@
     .coverbox{ aspect-ratio: 3/4; overflow:hidden; border-radius: 14px; }
     .coverbox img{ width:100%; height:100%; object-fit: cover; display:block; }
 
+    .hover-panel{
+      position:absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: var(--hover-w);
+      height: var(--hover-h);
+      overflow: hidden;
+      background: var(--panel);
+      border: 1px solid rgba(225,6,0,.25);
+      box-shadow: 0 26px 80px rgba(0,0,0,.55);
+      backdrop-filter: blur(12px);
+      display: grid;
+      grid-template-columns: 170px 1fr;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .18s ease;
+      z-index: 40;
+      border-radius: 16px;
+    }
+    .book-tile:hover .hover-panel,
+    .book-tile:focus-within .hover-panel{
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .hp-cover{ height: 100%; width: 100%; object-fit: cover; background: rgba(255,255,255,.04); }
+    .hp-right{
+      padding: 14px 14px 12px;
+      display:flex;
+      flex-direction:column;
+      gap: 3px;
+      min-width: 0;
+      height: 100%;
+    }
+    .hp-title{
+      font-weight: 900;
+      font-size: 18px;
+      line-height: 1.1;
+      color: #fff;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .hp-author{
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: -2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .row{ display:flex; gap: 8px; flex-wrap: wrap; align-items:center; }
+
+    .badge{
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(255,255,255,.86);
+    }
+    .badge-premium{ background: rgba(225,6,0,.14); color: rgba(255,255,255,.95); border-color: rgba(225,6,0,.35); }
+    .badge-free{ background: rgba(34,197,94,.12); color: rgb(34,197,94); }
+
+    .hp-stats{
+      font-size: 12px;
+      color: var(--muted);
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items:center;
+    }
+    .stars{ color: rgb(250,204,21); letter-spacing: .5px; font-size: 13px; }
+
+    .hp-desc{
+      font-size: 12.5px;
+      color: rgba(255,255,255,.70);
+      line-height: 1.35;
+      margin-top: 2px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .progressbar{
+      height: 7px;
+      background: rgba(255,255,255,.12);
+      border-radius: 999px;
+      overflow:hidden;
+    }
+    .progressbar > div{
+      height: 100%;
+      background: linear-gradient(90deg, var(--red), var(--red2));
+      width: 0%;
+    }
+
+    .hp-actions{
+      margin-top: auto;
+      display:flex;
+      gap: 8px;
+      align-items:center;
+      flex-wrap: wrap;
+    }
+
+    /* Modal */
+    .modal-backdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.55);
+      backdrop-filter: blur(12px);
+      display: none;
+      align-items:center;
+      justify-content:center;
+      z-index: 120;
+      padding: 16px;
+    }
+    .modal-backdrop.open{ display:flex; }
+
+    .modal-card{
+      width: min(980px, 96vw);
+      border-radius: 18px;
+      overflow:hidden;
+      background: var(--panel2);
+      border: 1px solid var(--stroke);
+      box-shadow: 0 30px 100px rgba(0,0,0,.70);
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      position: relative;
+    }
+    .modal-left{ padding: 20px; }
+    .modal-right{ padding: 20px; display:flex; justify-content:center; align-items:center; background: rgba(255,255,255,.03); }
+
+    .modal-x{
+      position:absolute;
+      top: 12px;
+      right: 12px;
+      width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      color: #fff;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      cursor:pointer;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      z-index: 2;
+    }
+    .modal-x:hover{
+      transform: scale(1.03);
+      background: rgba(225,6,0,.18);
+      border-color: rgba(225,6,0,.35);
+    }
+
+    .modal-cover{
+      width: 280px;
+      aspect-ratio: 3/4;
+      border-radius: 14px;
+      overflow:hidden;
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 18px 60px rgba(0,0,0,.55);
+      background: rgba(255,255,255,.04);
+    }
+    .modal-cover img{ width:100%; height:100%; object-fit:cover; display:block; }
+
     /* Responsive */
     @media (max-width: 900px){
       .hero-inner{ grid-template-columns: 1fr; padding-top: 18px; }
       .hero-cover{ justify-self: start; width: min(260px, 72vw); }
+      .hover-panel{ grid-template-columns: 150px 1fr; }
+      .modal-card{ grid-template-columns: 1fr; }
+      .modal-right{ order: -1; }
+      .modal-cover{ width: 220px; }
     }
     @media (max-width: 640px){
       .brand .tag{ display:none; }
       .hamburger{ display:inline-flex; }
-      .nav-links{ display:none; } /* menus somem no mobile */
+      .nav-links{ display:none; } /* ✅ menus SOMEM no mobile */
       :root{ --hover-w: 330px; --hover-h: 270px; }
+      .hover-panel{ grid-template-columns: 120px 1fr; }
       .tile-row .book-tile{ width: 140px; }
     }
+
+    /* ✅ Logout form como botão */
+    .logout-form{ display:inline; }
+    .logout-form button{ all:unset; }
   </style>
 </head>
 
@@ -458,33 +657,39 @@
       <!-- NAV -->
       <div class="nav">
         <div class="brand">
-          <img src="{% static 'frontend/images/logo.png' %}" alt="Owlsight" />
+          <img src="{% static 'frontend/images/logo.png' %}" alt="BeOnline" />
           <div class="tag">Biblioteca premium • estilo streaming</div>
         </div>
 
         <!-- links desktop -->
         <div class="nav-links flex gap-2 items-center">
-          <a class="pill" href="{% url 'frontend:categories' %}">Categoria</a>
-          <a class="pill" href="{% url 'frontend:favorites' %}">Favoritos</a>
+          <a class="pill" href="/">Início</a>
+          <a class="pill" href="/categories/">Categoria</a>
+          <a class="pill" href="/favorites/">Favoritos</a>
 
           {% if user.is_authenticated %}
-            <a class="pill" href="{% url 'frontend:account' %}">Minha conta</a>
+            <a class="pill" href="/profile/">Minha Conta</a>
 
             {% if user.is_staff or user.is_superuser %}
               {% url 'dashboard:home' as dash_url %}
               {% if dash_url %}
-                <a class="pill btn-primary" href="{{ dash_url }}">Admin</a>
+                <a href="{{ dash_url }}" class="pill btn-primary">Admin</a>
               {% endif %}
             {% endif %}
 
-            <button id="logoutBtn" class="pill" type="button">Sair</button>
+            <form class="logout-form" method="post" action="{% url 'frontend:logout' %}">
+              {% csrf_token %}
+              <button class="pill" type="submit">Sair</button>
+            </form>
           {% else %}
-            <a class="pill" href="{% url 'frontend:login' %}">Login</a>
+            <a class="pill" href="/login/">Login</a>
           {% endif %}
         </div>
 
-        <!-- hamburger mobile -->
-        <button class="pill hamburger" type="button" onclick="openDrawer()" aria-label="Menu">☰</button>
+        <!-- hamburger mobile (só abre ao clicar) -->
+        <button class="pill hamburger" type="button" onclick="openDrawer()" aria-label="Menu">
+          ☰
+        </button>
       </div>
 
       <!-- HERO CONTENT -->
@@ -501,8 +706,8 @@
           </div>
 
           <div class="hero-actions">
-            <a id="heroRead" class="pill btn-primary" href="#">Ler agora</a>
-            <button class="pill" type="button" onclick="scrollToCatalog()">Explorar catálogo ↓</button>
+            <a id="heroRead" class="btn btn-primary" href="#">Ler agora</a>
+            <button class="btn" type="button" onclick="scrollToCatalog()">Explorar catálogo ↓</button>
           </div>
         </div>
 
@@ -593,11 +798,12 @@
           <button class="x" type="button" onclick="closeDrawer(event)">✕</button>
         </div>
 
-        <a href="{% url 'frontend:categories' %}">Categoria <span>›</span></a>
-        <a href="{% url 'frontend:favorites' %}">Favoritos <span>›</span></a>
+        <a href="/">Início <span>›</span></a>
+        <a href="/categories/">Categoria <span>›</span></a>
+        <a href="/favorites/">Favoritos <span>›</span></a>
 
         {% if user.is_authenticated %}
-          <a href="{% url 'frontend:account' %}">Minha conta <span>›</span></a>
+          <a href="/profile/">Minha Conta <span>›</span></a>
 
           {% if user.is_staff or user.is_superuser %}
             {% url 'dashboard:home' as dash_url %}
@@ -606,10 +812,48 @@
             {% endif %}
           {% endif %}
 
-          <button id="logoutBtn2" type="button">Sair <span>›</span></button>
+          <form method="post" action="{% url 'frontend:logout' %}">
+            {% csrf_token %}
+            <button type="submit">Sair <span>›</span></button>
+          </form>
         {% else %}
-          <a href="{% url 'frontend:login' %}">Login <span>›</span></a>
+          <a href="/login/">Login <span>›</span></a>
         {% endif %}
+      </div>
+    </div>
+
+    <!-- MODAL -->
+    <div id="modalBackdrop" class="modal-backdrop" onclick="closeBookModal(event)">
+      <div class="modal-card" onclick="event.stopPropagation()">
+        <button class="modal-x" type="button" onclick="closeBookModal(event)" aria-label="Fechar">✕</button>
+
+        <div class="modal-left">
+          <div id="mTitle" class="text-3xl font-extrabold leading-tight"></div>
+          <div id="mAuthor" class="text-sm text-white/75 mt-1"></div>
+
+          <div class="flex gap-2 mt-4 items-center flex-wrap">
+            <span id="mGenre" class="badge"></span>
+            <span id="mType" class="badge"></span>
+            <span class="badge">
+              <span class="stars" id="mStars"></span>
+              <span id="mAvg" class="text-white/90"></span>
+              <span id="mCount" class="text-white/60"></span>
+            </span>
+          </div>
+
+          <p id="mDesc" class="mt-5 text-white/75 text-sm leading-relaxed"></p>
+
+          <div class="mt-6 flex gap-2 flex-wrap">
+            <a id="mRead" class="btn btn-primary">Ler</a>
+            <button class="btn" type="button" onclick="closeBookModal(event)">Fechar</button>
+          </div>
+        </div>
+
+        <div class="modal-right">
+          <div class="modal-cover">
+            <img id="mCover" src="" alt="Capa do livro" />
+          </div>
+        </div>
       </div>
     </div>
 
@@ -622,68 +866,154 @@
       if(e) e.stopPropagation();
       document.getElementById("drawerBackdrop").classList.remove("open");
     }
-    document.addEventListener("keydown", (e) => { if(e.key === "Escape") closeDrawer(); });
+    document.addEventListener("click", (e) => {
+      const a = e.target.closest("#drawerBackdrop a");
+      if(a) closeDrawer();
+    });
+    document.addEventListener("keydown", (e) => {
+      if(e.key === "Escape") closeDrawer();
+    });
 
     function scrollToCatalog(){
       document.getElementById("catalog").scrollIntoView({behavior:"smooth", block:"start"});
     }
 
-    /** ========= Cookies + CSRF + fetch ========= **/
-    function getCookie(name) {
-      const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
-      return m ? decodeURIComponent(m[2]) : null;
-    }
-    function isUnsafe(method) {
-      return ["POST","PUT","PATCH","DELETE"].includes((method || "GET").toUpperCase());
-    }
-    async function apiFetch(url, options = {}) {
-      const opts = { ...options };
-      opts.credentials = "include";
-      opts.headers = opts.headers || {};
-      opts.headers["Accept"] = "application/json";
-      if (isUnsafe(opts.method)) {
-        const csrf = getCookie("csrftoken");
-        if (csrf) opts.headers["X-CSRFToken"] = csrf;
-      }
-      return fetch(url, opts);
-    }
-    let CSRF_READY = false;
-    async function ensureCsrf(){
-      if (CSRF_READY) return;
-      const res = await apiFetch("/api/csrf/");
-      if (res.ok) CSRF_READY = true;
-    }
-
-    /** ========= Logout (backend) ========= **/
-    async function doLogout(){
-      await ensureCsrf();
-      await apiFetch("/api/auth/logout/", { method:"POST" });
-      window.location.href = "{% url 'frontend:login' %}";
-    }
-    const logoutBtn = document.getElementById("logoutBtn");
-    const logoutBtn2 = document.getElementById("logoutBtn2");
-    if (logoutBtn) logoutBtn.addEventListener("click", doLogout);
-    if (logoutBtn2) logoutBtn2.addEventListener("click", doLogout);
-
-    /** ========= RESTO do teu JS (livros) ========= **/
-    function safeText(s, fallback=""){ return (s===null || s===undefined || s==="") ? fallback : String(s); }
-    function shortDesc(text, max=180){
-      const t = safeText(text, "");
-      if(!t) return "Sem descrição disponível.";
-      return t.length > max ? (t.slice(0, max).trim() + "…") : t;
-    }
+    /** ========= Util ========= **/
     function renderStars(avg){
       const full = Math.floor(Number(avg || 0));
       let stars = "";
       for(let i=1;i<=5;i++) stars += (i <= full) ? "★" : "☆";
       return stars;
     }
+    function safeText(s, fallback=""){ return (s===null || s===undefined || s==="") ? fallback : String(s); }
+    function shortDesc(text, max=180){
+      const t = safeText(text, "");
+      if(!t) return "Sem descrição disponível.";
+      return t.length > max ? (t.slice(0, max).trim() + "…") : t;
+    }
 
-    let ALL_BOOKS = [];
+    /** ========= Hover blur ========= **/
+    function setHovering(on, activeEl=null) {
+      const grid = document.getElementById("books");
+      if (!grid) return;
+      if (on) {
+        grid.classList.add("is-hovering");
+        if (activeEl) activeEl.classList.add("is-active");
+      } else {
+        grid.classList.remove("is-hovering");
+        document.querySelectorAll(".book-tile.is-active").forEach(x => x.classList.remove("is-active"));
+      }
+    }
+
+    /** ========= Modal ========= **/
     const BOOKS_BY_ID = {};
+    let HERO_BOOK_ID = null;
     let PROGRESS_MAP = {};
     let FAV_SET = new Set();
-    let ME = null;
+
+    function openBookModalById(bookId, continuePage) {
+      const book = BOOKS_BY_ID[bookId];
+      if (!book) return;
+      document.getElementById("modalBackdrop").classList.add("open");
+
+      document.getElementById("mTitle").textContent = safeText(book.title, "Livro");
+      document.getElementById("mAuthor").textContent = book.author ? ("Autor: " + book.author) : "";
+
+      const premium = (book.book_type === "premium");
+      const typeEl = document.getElementById("mType");
+      typeEl.textContent = premium ? "Pago / Premium" : "Free";
+      typeEl.className = "badge " + (premium ? "badge-premium" : "badge-free");
+
+      document.getElementById("mGenre").textContent = safeText(book.genre, "Sem gênero");
+
+      const avg = Number(book.avg_rating ?? 0);
+      const rcount = book.ratings_count ?? 0;
+      document.getElementById("mStars").textContent = renderStars(avg);
+      document.getElementById("mAvg").textContent = " " + avg.toFixed(1) + "/5";
+      document.getElementById("mCount").textContent = " (" + rcount.toLocaleString() + " avaliações)";
+
+      document.getElementById("mDesc").textContent = safeText(book.description, "Sem descrição disponível.");
+
+      const cover = book.cover || "";
+      const mCover = document.getElementById("mCover");
+      mCover.src = cover || "";
+      mCover.style.opacity = cover ? "1" : "0";
+
+      document.getElementById("mRead").href = `/read/${book.id}/${continuePage}/`;
+    }
+    function closeBookModal(e) {
+      if (e) e.stopPropagation();
+      document.getElementById("modalBackdrop").classList.remove("open");
+    }
+
+    /** ========= Dados ========= **/
+    async function apiFetch(url, options = {}) {
+      const opts = { ...options };
+      opts.credentials = "include";
+      opts.headers = opts.headers || {};
+      opts.headers["Accept"] = "application/json";
+      return fetch(url, opts);
+    }
+
+    async function loadProgress(){
+      const res = await apiFetch("/api/progress/me/");
+      if(!res.ok) return {};
+      const arr = await res.json().catch(() => []);
+      const map = {};
+      for(const item of arr){ map[item.book_id] = item; }
+      return map;
+    }
+    async function loadFavorites(){
+      const res = await apiFetch("/api/favorites/me/");
+      if(!res.ok) return new Set();
+      const arr = await res.json().catch(() => []);
+      return new Set(arr.map(x => x.book_id));
+    }
+
+    /** ========= Favoritos / Avaliação ========= **/
+    async function toggleFavorite(bookId){
+      // se não tiver sessão, backend deve responder 403/401 e redirecionamos
+      const res = await apiFetch(`/api/favorites/toggle/${bookId}/`, { method:"POST" });
+      if(res.status === 401 || res.status === 403){
+        window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok){ alert(data.error || data.detail || "Erro ao favoritar."); return; }
+      await hydrateAndRender();
+    }
+
+    function rateStarsHTML(bookId){
+      return `
+        <div class="flex gap-1">
+          ${[1,2,3,4,5].map(s => `
+            <button type="button"
+              onclick="rateBook(${bookId}, ${s}); event.stopPropagation();"
+              class="text-lg text-yellow-500 hover:scale-110 transition"
+              title="Avaliar ${s} estrela(s)">
+              ★
+            </button>
+          `).join("")}
+        </div>
+      `;
+    }
+    async function rateBook(bookId, stars){
+      const res = await apiFetch(`/api/ratings/${bookId}/`, {
+        method:"POST",
+        headers: { "Content-Type":"application/json" },
+        body: JSON.stringify({ stars })
+      });
+      if(res.status === 401 || res.status === 403){
+        window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if(!res.ok){ alert(data.error || data.detail || "Erro ao avaliar."); return; }
+      await hydrateAndRender();
+    }
+
+    /** ========= Filtros ========= **/
+    let ALL_BOOKS = [];
 
     function normalizeGenre(g){
       const t = safeText(g,"").trim();
@@ -736,77 +1066,7 @@
       return arr;
     }
 
-    function setHovering(on, activeEl=null) {
-      const grid = document.getElementById("books");
-      if (!grid) return;
-      if (on) {
-        grid.classList.add("is-hovering");
-        if (activeEl) activeEl.classList.add("is-active");
-      } else {
-        grid.classList.remove("is-hovering");
-        document.querySelectorAll(".book-tile.is-active").forEach(x => x.classList.remove("is-active"));
-      }
-    }
-
-    async function loadProgress(){
-      // só tenta se estiver logado (endpoint deve devolver 401 se não)
-      const res = await apiFetch("/api/progress/me/");
-      if(!res.ok) return {};
-      const arr = await res.json().catch(() => []);
-      const map = {};
-      for(const item of arr){ map[item.book_id] = item; }
-      return map;
-    }
-    async function loadFavorites(){
-      const res = await apiFetch("/api/favorites/me/");
-      if(!res.ok) return new Set();
-      const arr = await res.json().catch(() => []);
-      return new Set(arr.map(x => x.book_id));
-    }
-
-    async function toggleFavorite(bookId){
-      // se não estiver logado, manda pro login
-      if (!({% if user.is_authenticated %}true{% else %}false{% endif %})) {
-        window.location.href = `{% url 'frontend:login' %}?next=${encodeURIComponent(window.location.pathname)}`;
-        return;
-      }
-      await ensureCsrf();
-      const res = await apiFetch(`/api/favorites/toggle/${bookId}/`, { method:"POST" });
-      const data = await res.json().catch(() => ({}));
-      if(!res.ok){ alert(data.error || data.detail || "Erro ao favoritar."); return; }
-      await hydrateAndRender();
-    }
-
-    function rateStarsHTML(bookId){
-      return `
-        <div class="flex gap-1">
-          ${[1,2,3,4,5].map(s => `
-            <button type="button"
-              onclick="rateBook(${bookId}, ${s}); event.stopPropagation();"
-              class="text-lg text-yellow-500 hover:scale-110 transition"
-              title="Avaliar ${s} estrela(s)">
-              ★
-            </button>
-          `).join("")}
-        </div>
-      `;
-    }
-    async function rateBook(bookId, stars){
-      if (!({% if user.is_authenticated %}true{% else %}false{% endif %})) {
-        window.location.href = `{% url 'frontend:login' %}?next=${encodeURIComponent(window.location.pathname)}`;
-        return;
-      }
-      await ensureCsrf();
-      const res = await apiFetch(`/api/ratings/${bookId}/`, {
-        method:"POST",
-        headers: { "Content-Type":"application/json" },
-        body: JSON.stringify({ stars })
-      });
-      const data = await res.json().catch(() => ({}));
-      if(!res.ok){ alert(data.error || data.detail || "Erro ao avaliar."); return; }
-      await hydrateAndRender();
-    }
-
+    /** ========= Render ========= **/
     function bookTileHTML(b){
       const p = PROGRESS_MAP[b.id];
       const continuePage = p?.last_page || 1;
@@ -819,7 +1079,6 @@
 
       const isFav = FAV_SET.has(b.id);
       const premium = (b.book_type === "premium");
-      const canRate = ({% if user.is_authenticated %}true{% else %}false{% endif %});
 
       return `
         <div class="book-tile"
@@ -877,20 +1136,23 @@
                 <span class="text-white/50">• ${rcount.toLocaleString()} avaliações</span>
               </div>
 
-              ${canRate ? rateStarsHTML(b.id) : `<div class="text-xs text-white/50">Faça login para avaliar.</div>`}
+              ${rateStarsHTML(b.id)}
 
               <div class="hp-stats">
                 <span class="text-white/60">Progresso</span>
                 <span class="text-white/85"><b>${percent}%</b></span>
               </div>
-
               <div class="progressbar"><div style="width:${percent}%"></div></div>
 
               <div class="hp-desc">${shortDesc(b.description, 220)}</div>
 
               <div class="hp-actions">
-                <a class="pill btn-primary" href="/read/${b.id}/${continuePage}/">Ler</a>
-                <a class="pill" href="/read/${b.id}/1/">Recomeçar</a>
+                <a class="btn btn-primary" href="/read/${b.id}/${continuePage}/">Ler</a>
+                <a class="btn" href="/read/${b.id}/1/">Recomeçar</a>
+                <button class="btn" type="button"
+                        onclick="openBookModalById(${b.id}, ${continuePage}); event.stopPropagation();">
+                  Descrição
+                </button>
               </div>
             </div>
           </div>
@@ -978,8 +1240,6 @@
     }
 
     async function init(){
-      await ensureCsrf();
-
       const res = await apiFetch("/api/books/");
       if(!res.ok){
         document.getElementById("heroTitle").textContent = "Erro ao carregar livros.";
