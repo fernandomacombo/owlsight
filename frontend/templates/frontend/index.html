@@ -658,20 +658,24 @@
           <a class="pill" href="/categories/">Categoria</a>
           <a class="pill" href="/favorites/">Favoritos</a>
 
-          {% if request.user.is_authenticated %}
-            <a class="pill" href="/profile/">Minha Conta</a>
+         {% if request.user.is_authenticated %}
+  <a class="pill" href="/profile/">Minha Conta</a>
 
-            {% if request.user.is_staff or request.user.is_superuser %}
-              {% url 'dashboard:home' as dash_url %}
-              {% if dash_url %}
-                <a href="{{ dash_url }}" class="pill btn-primary">Admin</a>
-              {% endif %}
-            {% endif %}
+  {% if request.user.is_staff or request.user.is_superuser %}
+    {% url 'dashboard:home' as dash_url %}
+    {% if dash_url %}
+      <a href="{{ dash_url }}" class="pill btn-primary">Admin</a>
+    {% endif %}
+  {% endif %}
 
-            <button id="logoutBtn" class="pill" type="button">Sair</button>
-          {% else %}
-            <a class="pill" href="/login/">Login</a>
-          {% endif %}
+  <!-- ✅ Logout seguro (POST + CSRF) -->
+  <form method="post" action="/logout/" class="inline-block">
+    {% csrf_token %}
+    <button class="pill" type="submit">Sair</button>
+  </form>
+{% else %}
+  <a class="pill" href="/login/">Login</a>
+{% endif %}
         </div>
 
         <!-- ✅ Mobile (abaixo de sm) -->
@@ -789,19 +793,23 @@
         <a href="/favorites/">Favoritos <span>›</span></a>
 
         {% if request.user.is_authenticated %}
-          <a href="/profile/">Minha Conta <span>›</span></a>
+  <a href="/profile/">Minha Conta <span>›</span></a>
 
-          {% if request.user.is_staff or request.user.is_superuser %}
-            {% url 'dashboard:home' as dash_url %}
-            {% if dash_url %}
-              <a href="{{ dash_url }}">Admin <span>›</span></a>
-            {% endif %}
-          {% endif %}
+  {% if request.user.is_staff or request.user.is_superuser %}
+    {% url 'dashboard:home' as dash_url %}
+    {% if dash_url %}
+      <a href="{{ dash_url }}">Admin <span>›</span></a>
+    {% endif %}
+  {% endif %}
 
-          <button id="logoutBtn2" type="button">Sair <span>›</span></button>
-        {% else %}
-          <a href="/login/">Login <span>›</span></a>
-        {% endif %}
+  <!-- ✅ Logout seguro no drawer -->
+  <form method="post" action="/logout/">
+    {% csrf_token %}
+    <button type="submit">Sair <span>›</span></button>
+  </form>
+{% else %}
+  <a href="/login/">Login <span>›</span></a>
+{% endif %}
       </div>
     </div>
 
