@@ -299,7 +299,7 @@
       z-index: 100;
       background: rgba(0,0,0,.62);
       backdrop-filter: blur(10px);
-      display:none; /* ✅ só aparece quando clicar */
+      display:none;
     }
     .drawer-backdrop.open{ display:block; }
 
@@ -630,7 +630,7 @@
     @media (max-width: 640px){
       .brand .tag{ display:none; }
       .hamburger{ display:inline-flex; }
-      .nav-links{ display:none; } /* ✅ menus SOMEM no mobile */
+      .nav-links{ display:none; }
       :root{ --hover-w: 330px; --hover-h: 270px; }
       .hover-panel{ grid-template-columns: 120px 1fr; }
       .tile-row .book-tile{ width: 140px; }
@@ -653,28 +653,33 @@
       <!-- NAV -->
       <div class="nav">
         <div class="brand">
-          <img src="{% static 'frontend/images/logo.png' %}" alt="BeOnline" />
+          <img src="{% static 'frontend/images/logo.png' %}" alt="Owlsight" />
           <div class="tag">Biblioteca premium • estilo streaming</div>
         </div>
 
         <!-- links desktop -->
         <div class="nav-links flex gap-2 items-center">
           <a class="pill" href="/">Início</a>
+
+          <!-- Sempre visíveis -->
           <a class="pill" href="/categories/">Categoria</a>
           <a class="pill" href="/favorites/">Favoritos</a>
-          <a class="pill" href="/profile/">Minha Conta</a>
 
+          <!-- Apenas logado -->
+          <a id="navMyAccount" class="pill hidden" href="/profile/">Minha Conta</a>
+
+          <!-- Apenas admin -->
           {% url 'dashboard:home' as dash_url %}
           {% if dash_url %}
-            <!-- ✅ começa hidden; JS só mostra se admin estiver logado -->
-            <a id="adminBtn" href="{{ dash_url }}" class="pill btn-primary hidden">Admin</a>
+            <a id="navAdmin" class="pill btn-primary hidden" href="{{ dash_url }}">Admin</a>
           {% endif %}
 
-          <button id="logoutBtn" class="pill hidden" type="button">Sair</button>
-          <a id="loginBtn" href="/login/" class="pill">Login</a>
+          <!-- Auth -->
+          <button id="navLogout" class="pill hidden" type="button">Sair</button>
+          <a id="navLogin" class="pill" href="/login/">Login</a>
         </div>
 
-        <!-- hamburger mobile (só abre ao clicar) -->
+        <!-- hamburger mobile -->
         <button class="pill hamburger" type="button" onclick="openDrawer()" aria-label="Menu">
           ☰
         </button>
@@ -695,7 +700,6 @@
 
           <div class="hero-actions">
             <a id="heroRead" class="btn btn-primary" href="#">Ler agora</a>
-            <!-- ✅ removido: botão "Ver descrição" -->
             <button class="btn" type="button" onclick="scrollToCatalog()">Explorar catálogo ↓</button>
           </div>
         </div>
@@ -788,22 +792,26 @@
         </div>
 
         <a href="/">Início <span>›</span></a>
+
+        <!-- Sempre visíveis -->
         <a href="/categories/">Categoria <span>›</span></a>
         <a href="/favorites/">Favoritos <span>›</span></a>
-        <a href="/profile/">Minha Conta <span>›</span></a>
 
-        {% url 'dashboard:home' as dash_url %}
+        <!-- Apenas logado -->
+        <a id="drawerMyAccount" class="hidden" href="/profile/">Minha Conta <span>›</span></a>
+
+        <!-- Apenas admin -->
         {% if dash_url %}
-          <!-- ✅ também começa hidden; JS só mostra se admin -->
-          <a id="adminBtn2" href="{{ dash_url }}" class="hidden">Admin <span>›</span></a>
+          <a id="drawerAdmin" class="hidden" href="{{ dash_url }}">Admin <span>›</span></a>
         {% endif %}
 
-        <button id="logoutBtn2" class="hidden" type="button">Sair <span>›</span></button>
-        <a id="loginBtn2" href="/login/">Login <span>›</span></a>
+        <!-- Auth -->
+        <button id="drawerLogout" class="hidden" type="button">Sair <span>›</span></button>
+        <a id="drawerLogin" href="/login/">Login <span>›</span></a>
       </div>
     </div>
 
-    <!-- MODAL (continua para usar no hover-panel "Descrição") -->
+    <!-- MODAL -->
     <div id="modalBackdrop" class="modal-backdrop" onclick="closeBookModal(event)">
       <div class="modal-card" onclick="event.stopPropagation()">
         <button class="modal-x" type="button" onclick="closeBookModal(event)" aria-label="Fechar">✕</button>
@@ -873,14 +881,6 @@
       if(e) e.stopPropagation();
       document.getElementById("drawerBackdrop").classList.remove("open");
     }
-
-    // ✅ fecha drawer ao trocar de rota
-    document.addEventListener("click", (e) => {
-      const a = e.target.closest("#drawerBackdrop a");
-      if(a) closeDrawer();
-    });
-
-    // ✅ fecha drawer com ESC
     document.addEventListener("keydown", (e) => {
       if(e.key === "Escape") closeDrawer();
     });
@@ -891,45 +891,44 @@
 
     /** ========= Auth ========= **/
     let ME = null;
+
     async function fetchMe(){
       const res = await apiFetch("/api/auth/me/");
       if(!res.ok) return null;
       return res.json();
     }
-    function setAuthUI(isLoggedIn){
-      const loginBtn = document.getElementById("loginBtn");
-      const logoutBtn = document.getElementById("logoutBtn");
-      const loginBtn2 = document.getElementById("loginBtn2");
-      const logoutBtn2 = document.getElementById("logoutBtn2");
 
-      if(isLoggedIn){
-        loginBtn.classList.add("hidden");
-        logoutBtn.classList.remove("hidden");
-        loginBtn2.classList.add("hidden");
-        logoutBtn2.classList.remove("hidden");
-
-        const doLogout = async () => {
-          await ensureCsrf();
-          await apiFetch("/api/auth/logout/", { method:"POST" });
-          window.location.reload();
-        };
-        logoutBtn.onclick = doLogout;
-        logoutBtn2.onclick = doLogout;
-      } else {
-        loginBtn.classList.remove("hidden");
-        logoutBtn.classList.add("hidden");
-        loginBtn2.classList.remove("hidden");
-        logoutBtn2.classList.add("hidden");
-      }
+    function show(el, yes=true){
+      if(!el) return;
+      el.classList.toggle("hidden", !yes);
     }
 
-    // ✅ Admin só aparece se admin estiver logado (staff ou superuser)
-    function setAdminUI(me){
-      const adminBtn = document.getElementById("adminBtn");
-      const adminBtn2 = document.getElementById("adminBtn2");
-      const show = !!(me && (me.is_staff || me.is_superuser));
-      if(adminBtn) adminBtn.classList.toggle("hidden", !show);
-      if(adminBtn2) adminBtn2.classList.toggle("hidden", !show);
+    function applyAuthNavbar(me){
+      const logged = !!me;
+      const isAdmin = !!(me && (me.is_staff || me.is_superuser));
+
+      // Desktop
+      show(document.getElementById("navLogin"), !logged);
+      show(document.getElementById("navLogout"), logged);
+      show(document.getElementById("navMyAccount"), logged);
+      show(document.getElementById("navAdmin"), logged && isAdmin);
+
+      // Drawer
+      show(document.getElementById("drawerLogin"), !logged);
+      show(document.getElementById("drawerLogout"), logged);
+      show(document.getElementById("drawerMyAccount"), logged);
+      show(document.getElementById("drawerAdmin"), logged && isAdmin);
+
+      const doLogout = async () => {
+        await ensureCsrf();
+        await apiFetch("/api/auth/logout/", { method:"POST" });
+        window.location.reload();
+      };
+
+      const navLogout = document.getElementById("navLogout");
+      const drawerLogout = document.getElementById("drawerLogout");
+      if(navLogout) navLogout.onclick = doLogout;
+      if(drawerLogout) drawerLogout.onclick = doLogout;
     }
 
     /** ========= Util ========= **/
@@ -1295,8 +1294,7 @@
       await ensureCsrf();
 
       ME = await fetchMe();
-      setAuthUI(!!ME);
-      setAdminUI(ME); // ✅ garante Admin só quando admin logado
+      applyAuthNavbar(ME);
 
       const res = await apiFetch("/api/books/");
       if(!res.ok){
