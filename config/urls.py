@@ -21,4 +21,6 @@ urlpatterns = [
     path("health/", health),
 
      path("api/", include("frontend.api_urls")),
+
+     path("dash/", include("dashboard.urls", namespace="dashboard")),
 ]
