@@ -657,23 +657,30 @@
           <div class="tag">Biblioteca premium • estilo streaming</div>
         </div>
 
-        <!-- links desktop -->
+        <!-- links desktop (md+). No mobile some e fica só hamburger -->
         <div class="nav-links flex gap-2 items-center">
+          <!-- Sempre -->
           <a class="pill" href="/categories/">Categoria</a>
           <a class="pill" href="/favorites/">Favoritos</a>
 
-          <!-- aparece só quando logado -->
-          <a id="myAccountBtn" class="pill hidden" href="/profile/">Minha Conta</a>
+          {% if request.user.is_authenticated %}
+            <!-- Logado (normal ou admin) -->
+            <a class="pill" href="/profile/">Minha Conta</a>
 
-          {% url 'dashboard:home' as dash_url %}
-          {% if dash_url %}
-            <!-- aparece só staff/superuser -->
-            <a id="adminBtn" href="{{ dash_url }}" class="pill btn-primary hidden">Admin</a>
+            {% if request.user.is_staff or request.user.is_superuser %}
+              {% url 'dashboard:home' as dash_url %}
+              {% if dash_url %}
+                <a href="{{ dash_url }}" class="pill btn-primary">Admin</a>
+              {% endif %}
+            {% endif %}
+
+            <!-- Sair -->
+            <button id="logoutBtn" class="pill" type="button">Sair</button>
+
+          {% else %}
+            <!-- Não logado -->
+            <a href="/login/" class="pill">Login</a>
           {% endif %}
-
-          <!-- auth -->
-          <button id="logoutBtn" class="pill hidden" type="button">Sair</button>
-          <a id="loginBtn" href="/login/" class="pill">Login</a>
         </div>
 
         <!-- hamburger mobile -->
@@ -786,22 +793,28 @@
           <button class="x" type="button" onclick="closeDrawer(event)">✕</button>
         </div>
 
-        <!-- sempre -->
+        <!-- Sempre -->
         <a href="/categories/">Categoria <span>›</span></a>
         <a href="/favorites/">Favoritos <span>›</span></a>
 
-        <!-- só logado -->
-        <a id="myAccountBtn2" class="hidden" href="/profile/">Minha Conta <span>›</span></a>
+        {% if request.user.is_authenticated %}
+          <!-- Logado -->
+          <a href="/profile/">Minha Conta <span>›</span></a>
 
-        {% url 'dashboard:home' as dash_url %}
-        {% if dash_url %}
-          <!-- só staff/superuser -->
-          <a id="adminBtn2" href="{{ dash_url }}" class="hidden">Admin <span>›</span></a>
+          {% if request.user.is_staff or request.user.is_superuser %}
+            {% url 'dashboard:home' as dash_url %}
+            {% if dash_url %}
+              <a href="{{ dash_url }}">Admin <span>›</span></a>
+            {% endif %}
+          {% endif %}
+
+          <!-- Sair -->
+          <button id="logoutBtn2" type="button">Sair <span>›</span></button>
+
+        {% else %}
+          <!-- Não logado -->
+          <a href="/login/">Login <span>›</span></a>
         {% endif %}
-
-        <!-- auth -->
-        <button id="logoutBtn2" class="hidden" type="button">Sair <span>›</span></button>
-        <a id="loginBtn2" href="/login/">Login <span>›</span></a>
       </div>
     </div>
 
@@ -887,54 +900,19 @@
       document.getElementById("catalog").scrollIntoView({behavior:"smooth", block:"start"});
     }
 
-    /** ========= Auth ========= **/
-    let ME = null;
-    async function fetchMe(){
-      const res = await apiFetch("/api/auth/me/");
-      if(!res.ok) return null;
-      return res.json();
+    /** ========= Logout (desktop + drawer) ========= **/
+    async function bindLogout(){
+      const b1 = document.getElementById("logoutBtn");
+      const b2 = document.getElementById("logoutBtn2");
+      const doLogout = async () => {
+        await ensureCsrf();
+        await apiFetch("/api/auth/logout/", { method:"POST" });
+        window.location.reload();
+      };
+      if (b1) b1.onclick = doLogout;
+      if (b2) b2.onclick = doLogout;
     }
-
-    function setAuthUI(me){
-      const isLoggedIn = !!me;
-      const isAdmin = !!(me && (me.is_staff || me.is_superuser));
-
-      const loginBtn = document.getElementById("loginBtn");
-      const logoutBtn = document.getElementById("logoutBtn");
-      const loginBtn2 = document.getElementById("loginBtn2");
-      const logoutBtn2 = document.getElementById("logoutBtn2");
-
-      const myAccountBtn = document.getElementById("myAccountBtn");
-      const myAccountBtn2 = document.getElementById("myAccountBtn2");
-
-      const adminBtn = document.getElementById("adminBtn");
-      const adminBtn2 = document.getElementById("adminBtn2");
-
-      // Não logado
-      loginBtn.classList.toggle("hidden", isLoggedIn);
-      loginBtn2.classList.toggle("hidden", isLoggedIn);
-
-      // Logado
-      logoutBtn.classList.toggle("hidden", !isLoggedIn);
-      logoutBtn2.classList.toggle("hidden", !isLoggedIn);
-
-      myAccountBtn.classList.toggle("hidden", !isLoggedIn);
-      myAccountBtn2.classList.toggle("hidden", !isLoggedIn);
-
-      // Admin (staff/superuser)
-      if(adminBtn) adminBtn.classList.toggle("hidden", !isAdmin);
-      if(adminBtn2) adminBtn2.classList.toggle("hidden", !isAdmin);
-
-      if(isLoggedIn){
-        const doLogout = async () => {
-          await ensureCsrf();
-          await apiFetch("/api/auth/logout/", { method:"POST" });
-          window.location.reload();
-        };
-        logoutBtn.onclick = doLogout;
-        logoutBtn2.onclick = doLogout;
-      }
-    }
+    bindLogout();
 
     /** ========= Util ========= **/
     function renderStars(avg){
@@ -968,6 +946,7 @@
     let HERO_BOOK_ID = null;
     let PROGRESS_MAP = {};
     let FAV_SET = new Set();
+    let ME = null;
 
     function openBookModalById(bookId, continuePage) {
       const book = BOOKS_BY_ID[bookId];
@@ -1005,6 +984,11 @@
     }
 
     /** ========= Dados ========= **/
+    async function fetchMe(){
+      const res = await apiFetch("/api/auth/me/");
+      if(!res.ok) return null;
+      return res.json();
+    }
     async function loadProgress(){
       if(!ME) return {};
       const res = await apiFetch("/api/progress/me/");
@@ -1296,8 +1280,8 @@
     async function init(){
       await ensureCsrf();
 
-      ME = await fetchMe();
-      setAuthUI(ME);
+      ME = await fetchMe(); // usado para rating/favoritos
+      // (Menu já está correto via Django template, então aqui não mexemos no menu)
 
       const res = await apiFetch("/api/books/");
       if(!res.ok){
