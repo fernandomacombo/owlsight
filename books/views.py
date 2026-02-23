@@ -1,56 +1,21 @@
 from datetime import timedelta
+import math
 
 import boto3
 from django.conf import settings
+from django.core.files.storage import default_storage
 from django.db.models import Avg, Count
 from django.http import JsonResponse
 from django.utils import timezone
-from django.views.decorators.http import require_GET
-from django.core.files.storage import default_storage
+from django.views.decorators.http import require_GET, require_POST, require_http_methods
 
-from .models import Book, BookPage, BookComment, BookAnnotation
+from .models import Book, BookPage, BookComment, BookAnnotation, UserSubscription, BookShareUnlock
 from reading.models import Rating, ReadingProgress
 
 
 # =========================================================
-# Helpers (B2 S3 + URL assinada)
+# Helpers
 # =========================================================
-def _s3_client():
-    endpoint = getattr(settings, "AWS_S3_ENDPOINT_URL", None)
-    region = getattr(settings, "AWS_S3_REGION_NAME", None) or "us-east-1"
-
-    return boto3.client(
-        "s3",
-        endpoint_url=endpoint,
-        aws_access_key_id=getattr(settings, "AWS_ACCESS_KEY_ID", None),
-        aws_secret_access_key=getattr(settings, "AWS_SECRET_ACCESS_KEY", None),
-        region_name=region,
-    )
-
-
-def _presign_get(key: str, expires: int = 900) -> str:
-    if not key:
-        return ""
-
-    bucket = getattr(settings, "AWS_STORAGE_BUCKET_NAME", "")
-    if not bucket:
-        return ""
-
-    s3 = _s3_client()
-    return s3.generate_presigned_url(
-        "get_object",
-        Params={"Bucket": bucket, "Key": key},
-        ExpiresIn=expires,
-    )
-
-
-def _filefield_key(filefield) -> str:
-    try:
-        return getattr(filefield, "name", "") or ""
-    except Exception:
-        return ""
-
-
 def _get_book_type(book: Book) -> str:
     if hasattr(book, "book_type") and getattr(book, "book_type"):
         return str(book.book_type)
@@ -61,8 +26,72 @@ def _get_book_type(book: Book) -> str:
     return "free"
 
 
+def _created_at_display(dt):
+    try:
+        # Africa/Maputo já está no settings TIME_ZONE
+        return dt.astimezone(timezone.get_current_timezone()).strftime("%Y-%m-%d %H:%M")
+    except Exception:
+        return ""
+
+
+def _user_label(user):
+    return getattr(user, "email", "") or getattr(user, "username", "") or str(user)
+
+
+def _has_active_subscription(user) -> bool:
+    if not user or not user.is_authenticated:
+        return False
+    now = timezone.now()
+    return UserSubscription.objects.filter(user=user, expires_at__gt=now).exists()
+
+
+def _has_share_unlock(user, book: Book) -> bool:
+    if not user or not user.is_authenticated:
+        return False
+    return BookShareUnlock.objects.filter(user=user, book=book).exists()
+
+
+def _allowed_until_page(book: Book, user) -> int:
+    """
+    Regras (B):
+    - premium:
+        - com plano ativo: total_pages
+        - sem plano: 10% do total (mínimo 1)
+    - free:
+        - com share unlock: total_pages
+        - sem unlock: 5% do total (mínimo 1)
+    """
+    total = int(getattr(book, "total_pages", 0) or 0)
+    if total <= 0:
+        # se não sabe total, deixa ler (ou ajusta depois)
+        return 999999
+
+    btype = _get_book_type(book)
+
+    if btype == "premium":
+        if _has_active_subscription(user):
+            return total
+        return max(1, math.ceil(total * 0.10))
+
+    # free
+    if _has_share_unlock(user, book):
+        return total
+    return max(1, math.ceil(total * 0.05))
+
+
+def _payment_offers():
+    # só dados para o frontend mostrar
+    return [
+        {"label": "1 semana", "price_mzn": 100, "days": 7},
+        {"label": "1 mês", "price_mzn": 200, "days": 30},
+        {"label": "3 meses", "price_mzn": 300, "days": 90},
+        {"label": "6 meses", "price_mzn": 500, "days": 180},
+        {"label": "1 ano", "price_mzn": 1000, "days": 365},
+    ]
+
+
 # =========================================================
-# APIs EXISTENTES
+# APIs
 # =========================================================
 @require_GET
 def books_list_api(request):
@@ -100,19 +129,12 @@ def books_list_api(request):
             cover_url = ""
 
         created_at = None
-        if hasattr(b, "created_at") and getattr(b, "created_at"):
-            try:
-                created_at = b.created_at.isoformat()
-            except Exception:
-                created_at = None
+        try:
+            created_at = b.created_at.isoformat() if getattr(b, "created_at", None) else None
+        except Exception:
+            created_at = None
 
         book_type = _get_book_type(b)
-
-        genre = ""
-        if hasattr(b, "genre") and getattr(b, "genre"):
-            genre = str(b.genre)
-        elif hasattr(b, "category") and getattr(b, "category"):
-            genre = str(b.category)
 
         r = rating_map.get(b.id, {})
         avg_rating = float(r.get("avg") or 0)
@@ -126,11 +148,10 @@ def books_list_api(request):
             "title": str(getattr(b, "title", "") or ""),
             "author": str(getattr(b, "author", "") or ""),
             "description": str(getattr(b, "description", "") or ""),
-            "genre": genre,
+            "genre": str(getattr(b, "genre", "") or ""),
             "book_type": book_type,
             "cover": cover_url,
             "created_at": created_at,
-
             "avg_rating": avg_rating,
             "ratings_count": ratings_count,
             "readers_count": readers_count,
@@ -148,6 +169,7 @@ def books_list(request):
 
 @require_GET
 def read_page_api(request, book_id: int, page_number: int):
+    # ✅ read SEMPRE exige login
     if not request.user.is_authenticated:
         return JsonResponse({"detail": "Auth required"}, status=401)
 
@@ -159,29 +181,31 @@ def read_page_api(request, book_id: int, page_number: int):
     book_type = _get_book_type(book)
     total_pages = int(getattr(book, "total_pages", 0) or 0)
 
-    if book_type == "premium":
-        allowed_until_page = 10
-    else:
-        allowed_until_page = total_pages if total_pages else 999999
+    allowed = _allowed_until_page(book, request.user)
 
-    if page_number > allowed_until_page:
-        return JsonResponse({
+    # ✅ bloqueio (premium -> pagar; free -> partilhar)
+    if page_number > allowed:
+        blocked_payload = {
             "blocked": True,
             "reason": "LIMIT_REACHED",
-            "allowed_until_page": allowed_until_page,
-            "total_pages": total_pages,
-        }, status=403)
+            "book_id": book.id,
+            "title": str(getattr(book, "title", "") or ""),
+            "book_type": book_type,
+            "page_number": int(page_number),
+            "total_pages": int(total_pages or 0),
+            "allowed_until_page": int(allowed),
+        }
 
-    if not BookPage.objects.filter(book=book).exists():
-        try:
-            from .page_build import build_pages_if_missing
-            build_pages_if_missing(book)
-        except Exception:
-            return JsonResponse({
-                "detail": "Páginas não foram geradas ainda. Crie o gerador on-demand em books/page_build.py.",
-                "hint": "Você precisa converter o PDF em imagens (BookPage) antes de conseguir ler."
-            }, status=409)
+        if book_type == "premium":
+            blocked_payload["gate"] = "PAY"
+            blocked_payload["offers"] = _payment_offers()
+        else:
+            blocked_payload["gate"] = "SHARE"
+            blocked_payload["share_required"] = True
 
+        return JsonResponse(blocked_payload, status=403)
+
+    # buscar página
     try:
         page = BookPage.objects.get(book=book, page_number=page_number)
     except BookPage.DoesNotExist:
@@ -206,119 +230,184 @@ def read_page_api(request, book_id: int, page_number: int):
         "title": str(getattr(book, "title", "") or ""),
         "book_type": book_type,
         "page_number": int(page.page_number),
-        "total_pages": int(getattr(book, "total_pages", 0) or 0),
-        "allowed_until_page": int(allowed_until_page),
+        "total_pages": int(total_pages or 0),
+        "allowed_until_page": int(allowed),
 
         "page_image": page_url,
         "cover_url": cover_url,
+
+        # extras úteis
+        "share_unlocked": bool(_has_share_unlock(request.user, book)),
+        "has_subscription": bool(_has_active_subscription(request.user)),
     })
 
 
 # =========================================================
-# ✅ DRF: COMMENTS + ANNOTATIONS (REAL)
+# Comentários
 # =========================================================
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework import status
-
-from .serializers import BookCommentSerializer, BookAnnotationSerializer
-
-
-@api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated])
+@require_http_methods(["GET", "POST"])
 def book_comments_api(request, book_id: int):
-    if not Book.objects.filter(id=book_id).exists():
-        return Response({"detail": "Livro não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+    if not request.user.is_authenticated:
+        return JsonResponse({"detail": "Auth required"}, status=401)
+
+    try:
+        book = Book.objects.get(id=book_id)
+    except Book.DoesNotExist:
+        return JsonResponse({"detail": "Book not found"}, status=404)
 
     if request.method == "GET":
-        page = request.query_params.get("page")
-        qs = BookComment.objects.filter(book_id=book_id)
-        if page is not None:
-            try:
-                qs = qs.filter(page_number=int(page))
-            except ValueError:
-                return Response({"detail": "page inválido."}, status=400)
-
-        qs = qs.order_by("-created_at")
-        return Response(BookCommentSerializer(qs, many=True).data)
+        page = int(request.GET.get("page") or 1)
+        qs = BookComment.objects.filter(book=book, page_number=page).select_related("user").order_by("-created_at")[:200]
+        out = []
+        for c in qs:
+            out.append({
+                "id": c.id,
+                "text": c.text,
+                "user_label": _user_label(c.user),
+                "created_at": c.created_at.isoformat(),
+                "created_at_display": _created_at_display(c.created_at),
+            })
+        return JsonResponse(out, safe=False)
 
     # POST
-    page_number = request.data.get("page_number")
-    text = (request.data.get("text") or "").strip()
+    try:
+        import json
+        body = json.loads(request.body.decode("utf-8") or "{}")
+    except Exception:
+        body = {}
 
-    if not page_number or not str(page_number).isdigit():
-        return Response({"detail": "page_number inválido."}, status=400)
+    page_number = int(body.get("page_number") or 1)
+    text = (body.get("text") or "").strip()
+
     if not text:
-        return Response({"detail": "text é obrigatório."}, status=400)
+        return JsonResponse({"detail": "text is required"}, status=400)
 
-    obj = BookComment.objects.create(
-        book_id=book_id,
-        page_number=int(page_number),
+    c = BookComment.objects.create(
+        book=book,
+        page_number=page_number,
         user=request.user,
-        text=text,
+        text=text
     )
-    return Response(BookCommentSerializer(obj).data, status=201)
+    return JsonResponse({
+        "id": c.id,
+        "text": c.text,
+        "user_label": _user_label(c.user),
+        "created_at": c.created_at.isoformat(),
+        "created_at_display": _created_at_display(c.created_at),
+    }, status=201)
 
 
-@api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated])
+# =========================================================
+# Anotações
+# =========================================================
+@require_http_methods(["GET", "POST"])
 def book_annotations_api(request, book_id: int):
-    if not Book.objects.filter(id=book_id).exists():
-        return Response({"detail": "Livro não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+    if not request.user.is_authenticated:
+        return JsonResponse({"detail": "Auth required"}, status=401)
+
+    try:
+        book = Book.objects.get(id=book_id)
+    except Book.DoesNotExist:
+        return JsonResponse({"detail": "Book not found"}, status=404)
 
     if request.method == "GET":
-        page = request.query_params.get("page")
-        qs = BookAnnotation.objects.filter(book_id=book_id)
-        if page is not None:
-            try:
-                qs = qs.filter(page_number=int(page))
-            except ValueError:
-                return Response({"detail": "page inválido."}, status=400)
-
-        qs = qs.order_by("-created_at")
-        return Response(BookAnnotationSerializer(qs, many=True).data)
+        page = int(request.GET.get("page") or 1)
+        qs = BookAnnotation.objects.filter(book=book, page_number=page).select_related("user").order_by("-created_at")[:500]
+        out = []
+        for a in qs:
+            out.append({
+                "id": a.id,
+                "text": a.text,
+                "x": float(a.x),
+                "y": float(a.y),
+                "user_label": _user_label(a.user),
+                "created_at": a.created_at.isoformat(),
+                "created_at_display": _created_at_display(a.created_at),
+                "mine": bool(a.user_id == request.user.id),
+            })
+        return JsonResponse(out, safe=False)
 
     # POST
-    page_number = request.data.get("page_number")
-    text = (request.data.get("text") or "").strip()
-    x = request.data.get("x")
-    y = request.data.get("y")
+    try:
+        import json
+        body = json.loads(request.body.decode("utf-8") or "{}")
+    except Exception:
+        body = {}
 
-    if not page_number or not str(page_number).isdigit():
-        return Response({"detail": "page_number inválido."}, status=400)
+    page_number = int(body.get("page_number") or 1)
+    text = (body.get("text") or "").strip()
+    x = body.get("x", None)
+    y = body.get("y", None)
+
     if not text:
-        return Response({"detail": "text é obrigatório."}, status=400)
+        return JsonResponse({"detail": "text is required"}, status=400)
+    if x is None or y is None:
+        return JsonResponse({"detail": "x and y are required"}, status=400)
 
     try:
         x = float(x)
         y = float(y)
-    except (TypeError, ValueError):
-        return Response({"detail": "x/y inválidos."}, status=400)
+    except Exception:
+        return JsonResponse({"detail": "x and y must be numbers"}, status=400)
 
-    if not (0 <= x <= 1 and 0 <= y <= 1):
-        return Response({"detail": "x/y devem estar entre 0 e 1."}, status=400)
+    # normaliza/clamp 0..1
+    x = max(0.0, min(1.0, x))
+    y = max(0.0, min(1.0, y))
 
-    obj = BookAnnotation.objects.create(
-        book_id=book_id,
-        page_number=int(page_number),
+    a = BookAnnotation.objects.create(
+        book=book,
+        page_number=page_number,
         user=request.user,
         text=text,
         x=x,
-        y=y,
+        y=y
     )
-    return Response(BookAnnotationSerializer(obj).data, status=201)
+    return JsonResponse({
+        "id": a.id,
+        "text": a.text,
+        "x": float(a.x),
+        "y": float(a.y),
+        "user_label": _user_label(a.user),
+        "created_at": a.created_at.isoformat(),
+        "created_at_display": _created_at_display(a.created_at),
+        "mine": True,
+    }, status=201)
 
 
-@api_view(["DELETE"])
-@permission_classes([IsAuthenticated])
+@require_http_methods(["DELETE"])
 def book_annotation_delete_api(request, annotation_id: int):
-    obj = BookAnnotation.objects.filter(id=annotation_id).first()
-    if not obj:
-        return Response({"detail": "Não encontrado."}, status=404)
+    if not request.user.is_authenticated:
+        return JsonResponse({"detail": "Auth required"}, status=401)
 
-    if obj.user_id != request.user.id:
-        return Response({"detail": "Sem permissão."}, status=403)
+    try:
+        a = BookAnnotation.objects.select_related("user").get(id=annotation_id)
+    except BookAnnotation.DoesNotExist:
+        return JsonResponse({"detail": "Not found"}, status=404)
 
-    obj.delete()
-    return Response(status=204)
+    if a.user_id != request.user.id:
+        return JsonResponse({"detail": "Forbidden"}, status=403)
+
+    a.delete()
+    return JsonResponse({"ok": True})
+
+
+# =========================================================
+# Unlock por share
+# =========================================================
+@require_POST
+def book_unlock_share_api(request, book_id: int):
+    if not request.user.is_authenticated:
+        return JsonResponse({"detail": "Auth required"}, status=401)
+
+    try:
+        book = Book.objects.get(id=book_id)
+    except Book.DoesNotExist:
+        return JsonResponse({"detail": "Book not found"}, status=404)
+
+    obj, created = BookShareUnlock.objects.get_or_create(user=request.user, book=book)
+    return JsonResponse({
+        "ok": True,
+        "created": bool(created),
+        "unlocked_at": obj.unlocked_at.isoformat(),
+        "message": "Livro desbloqueado por partilha ✅"
+    })

@@ -3,195 +3,240 @@
 
 {% block content %}
 <section class="fade-in">
-  <!-- Top bar (mobile): hamburger + nav + zoom -->
-  <div class="lg:hidden flex items-center justify-between gap-2 mb-3">
-    <button id="openDrawerBtn" class="btn px-4 py-2 rounded-xl text-sm">☰ Menu</button>
 
-    <div class="flex items-center gap-2">
-      <button id="prevBtn" class="btn px-3 py-2 rounded-xl text-sm">⟵</button>
-      <button id="nextBtn" class="btn-red px-3 py-2 rounded-xl text-sm font-semibold">⟶</button>
+  <!-- ✅ Navbar própria (max-w-7xl) -->
+  <header class="w-full">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2 select-none">
+        <div class="w-9 h-9 rounded-xl grid place-items-center"
+             style="background: rgba(225,6,0,.12); border:1px solid rgba(225,6,0,.25); color: rgba(255,255,255,.92);">
+          🦉
+        </div>
+        <div class="font-black tracking-tight text-white/90">Owlsight</div>
+      </a>
 
-      <button id="zoomOutTop" class="btn px-3 py-2 rounded-xl text-sm">−</button>
-      <button id="zoomInTop" class="btn px-3 py-2 rounded-xl text-sm">+</button>
-      <button id="resetTop" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
+      <!-- Desktop menu -->
+      <nav class="hidden md:flex items-center gap-2">
+        <a href="/" class="btn px-4 py-2 rounded-xl text-sm">Página inicial</a>
+        <a href="/profile/" class="btn px-4 py-2 rounded-xl text-sm">Conta</a>
+        <a href="/favorites/" class="btn px-4 py-2 rounded-xl text-sm">Favoritos</a>
+        <a href="/categories/" class="btn px-4 py-2 rounded-xl text-sm">Categoria</a>
+      </nav>
+
+      <!-- Mobile menu button -->
+      <button id="openDrawerBtn" class="md:hidden btn px-4 py-2 rounded-xl text-sm">
+        ☰ Menu
+      </button>
     </div>
-  </div>
+  </header>
 
-  <div class="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4">
-    <!-- LEFT (Desktop) -->
-    <aside class="hidden lg:block glass soft-shadow rounded-3xl p-4" id="leftPanelDesktop">
-      <div class="flex items-start justify-between gap-3">
-        <div id="header" class="flex gap-3 flex-1"></div>
-      </div>
+  <div class="max-w-7xl mx-auto px-4 pb-6">
+    <div class="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4">
 
-      <div class="mt-4 grid gap-2">
-        <p id="msg" class="text-sm" style="color: rgba(225,6,0,.92);"></p>
-
-        <div id="blocker" class="hidden rounded-2xl p-3"
-             style="background: rgba(225,6,0,.10); border:1px solid rgba(225,6,0,.26);"></div>
-
-        <!-- Comentários -->
-        <div class="mt-2 rounded-2xl p-3"
-             style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
-          <div class="flex items-center justify-between">
-            <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Comentários</div>
-            <span id="commentCount" class="text-xs" style="color: rgba(255,255,255,.55)">0</span>
-          </div>
-
-          <div id="commentsList" class="mt-2 grid gap-2"></div>
-
-          <textarea id="commentText" rows="3"
-            class="mt-3 w-full rounded-xl p-3 text-sm"
-            placeholder="Escreva um comentário…"
-            style="background: rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.10); color: rgba(255,255,255,.92)"></textarea>
-
-          <button id="addCommentBtn" class="btn-red mt-2 w-full px-4 py-2 rounded-xl text-sm font-semibold">
-            Publicar comentário
-          </button>
-        </div>
-
-        <!-- Debug -->
-        <details class="mt-2 rounded-2xl p-3"
-                 style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
-          <summary class="text-sm" style="color: rgba(255,255,255,.75)">Debug (resposta do servidor)</summary>
-          <pre id="debugBox" class="mt-2 text-xs whitespace-pre-wrap" style="color: rgba(255,255,255,.65)"></pre>
-        </details>
-      </div>
-    </aside>
-
-    <!-- Drawer (Mobile) -->
-    <div id="drawerOverlay" class="fixed inset-0 hidden lg:hidden" style="background: rgba(0,0,0,.55); z-index: 80;"></div>
-
-    <aside id="drawerPanel"
-           class="fixed top-0 left-0 h-full w-[92%] max-w-[420px] hidden lg:hidden p-4"
-           style="z-index: 90;">
-      <div class="glass soft-shadow rounded-3xl p-4 h-full overflow-auto">
+      <!-- LEFT (Desktop) -->
+      <aside class="hidden lg:block glass soft-shadow rounded-3xl p-4" id="leftPanelDesktop">
         <div class="flex items-start justify-between gap-3">
-          <div id="headerMobile" class="flex gap-3 flex-1"></div>
-          <button id="closeDrawerBtn" class="btn px-3 py-2 rounded-xl text-sm">✕</button>
-        </div>
-
-        <!-- ✅ Navegação: Página inicial SEMPRE -->
-        <div class="mt-4 rounded-2xl p-3"
-             style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
-          <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Navegação</div>
-          <div class="mt-2 grid gap-2">
-            <a href="/" class="btn px-4 py-2 rounded-xl text-sm">Página inicial</a>
-          </div>
+          <div id="header" class="flex gap-3 flex-1"></div>
         </div>
 
         <div class="mt-4 grid gap-2">
-          <div class="flex gap-2">
-            <button id="prevBtnM" class="btn px-4 py-2 rounded-xl w-1/2">Anterior</button>
-            <button id="nextBtnM" class="btn-red px-4 py-2 rounded-xl w-1/2 font-semibold">Próxima</button>
-          </div>
-
-          <p id="msgM" class="text-sm" style="color: rgba(225,6,0,.92);"></p>
-
-          <div id="blockerM" class="hidden rounded-2xl p-3"
-               style="background: rgba(225,6,0,.10); border:1px solid rgba(225,6,0,.26);"></div>
-
-          <!-- Zoom controls (Mobile) -->
-          <div class="mt-2 rounded-2xl p-3"
+          <!-- ✅ NEXT/PREV + ZOOM juntos -->
+          <div class="rounded-2xl p-3"
                style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
-            <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Zoom & Movimento</div>
-            <div class="mt-2 grid grid-cols-2 gap-2">
-              <button id="zoomOutBtnM" class="btn px-3 py-2 rounded-xl text-sm">Zoom −</button>
-              <button id="zoomInBtnM" class="btn px-3 py-2 rounded-xl text-sm">Zoom +</button>
-              <button id="resetBtnM" class="btn px-3 py-2 rounded-xl text-sm col-span-2">100%</button>
+            <div class="flex gap-2">
+              <button id="prevBtn" class="btn px-4 py-2 rounded-xl w-1/2">Anterior</button>
+              <button id="nextBtn" class="btn-red px-4 py-2 rounded-xl w-1/2 font-semibold">Próxima</button>
             </div>
-            <button id="panToggleBtnM" class="btn-red mt-2 w-full px-4 py-2 rounded-xl text-sm font-semibold">
-              Mão: OFF
-            </button>
-            <button id="annotateToggleBtnM" class="btn mt-2 w-full px-4 py-2 rounded-xl text-sm">
-              Anotar: OFF
-            </button>
-            <div class="text-xs mt-2" style="color: rgba(255,255,255,.60)">
-              “Anotar” = clique na página para criar um pin com texto.
+
+            <div class="mt-2 flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <button id="zoomOutBtn" class="btn px-3 py-2 rounded-xl text-sm">−</button>
+                <button id="zoomInBtn" class="btn px-3 py-2 rounded-xl text-sm">+</button>
+                <button id="resetBtn" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
+              </div>
+              <button id="panToggleBtn" class="btn px-4 py-2 rounded-xl text-sm">
+                Mão: OFF
+              </button>
             </div>
+
+            <div class="mt-2 flex items-center justify-between gap-2">
+              <button id="annotateToggleBtn" class="btn px-4 py-2 rounded-xl text-sm">Anotar: OFF</button>
+              <div class="text-xs" style="color: rgba(255,255,255,.55)">Clique na página para pin.</div>
+            </div>
+
+            <p id="msg" class="text-sm mt-2" style="color: rgba(225,6,0,.92);"></p>
           </div>
 
-          <!-- Comentários (Mobile) -->
+          <!-- Gate (pay/share) -->
+          <div id="gateBox" class="hidden rounded-2xl p-4"
+               style="background: rgba(225,6,0,.08); border:1px solid rgba(225,6,0,.22);">
+            <div class="text-lg font-black">Acesso limitado</div>
+            <div id="gateText" class="text-sm mt-1" style="color: rgba(255,255,255,.75)"></div>
+
+            <div id="gateActions" class="mt-3 grid gap-2"></div>
+          </div>
+
+          <!-- Comentários -->
           <div class="mt-2 rounded-2xl p-3"
                style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
             <div class="flex items-center justify-between">
               <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Comentários</div>
-              <span id="commentCountM" class="text-xs" style="color: rgba(255,255,255,.55)">0</span>
+              <span id="commentCount" class="text-xs" style="color: rgba(255,255,255,.55)">0</span>
             </div>
 
-            <div id="commentsListM" class="mt-2 grid gap-2"></div>
+            <div id="commentsList" class="mt-2 grid gap-2"></div>
 
-            <textarea id="commentTextM" rows="3"
+            <textarea id="commentText" rows="3"
               class="mt-3 w-full rounded-xl p-3 text-sm"
               placeholder="Escreva um comentário…"
               style="background: rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.10); color: rgba(255,255,255,.92)"></textarea>
 
-            <button id="addCommentBtnM" class="btn-red mt-2 w-full px-4 py-2 rounded-xl text-sm font-semibold">
+            <button id="addCommentBtn" class="btn-red mt-2 w-full px-4 py-2 rounded-xl text-sm font-semibold">
               Publicar comentário
             </button>
           </div>
 
-          <!-- Debug (Mobile) -->
+          <!-- Debug -->
           <details class="mt-2 rounded-2xl p-3"
                    style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
             <summary class="text-sm" style="color: rgba(255,255,255,.75)">Debug (resposta do servidor)</summary>
-            <pre id="debugBoxM" class="mt-2 text-xs whitespace-pre-wrap" style="color: rgba(255,255,255,.65)"></pre>
+            <pre id="debugBox" class="mt-2 text-xs whitespace-pre-wrap" style="color: rgba(255,255,255,.65)"></pre>
           </details>
         </div>
-      </div>
-    </aside>
+      </aside>
 
-    <!-- RIGHT -->
-    <section class="glass soft-shadow rounded-3xl p-0 lg:p-4" id="rightPanel">
-      <!-- Toolbar (Desktop inside right) -->
-      <div class="hidden lg:flex items-center justify-between px-4 p-4">
-        <div class="flex items-center gap-2">
-          <button id="prevBtnDesktop" class="btn px-4 py-2 rounded-xl text-sm">Anterior</button>
-          <button id="nextBtnDesktop" class="btn-red px-4 py-2 rounded-xl text-sm font-semibold">Próxima</button>
+      <!-- Drawer (Mobile) -->
+      <div id="drawerOverlay" class="fixed inset-0 hidden lg:hidden" style="background: rgba(0,0,0,.55); z-index: 80;"></div>
 
-          <button id="annotateToggleBtn" class="btn px-4 py-2 rounded-xl text-sm">
-            Anotar: OFF
-          </button>
+      <aside id="drawerPanel"
+             class="fixed top-0 left-0 h-full w-[92%] max-w-[420px] hidden lg:hidden p-4"
+             style="z-index: 90;">
+        <div class="glass soft-shadow rounded-3xl p-4 h-full overflow-auto">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <div class="w-9 h-9 rounded-xl grid place-items-center"
+                   style="background: rgba(225,6,0,.12); border:1px solid rgba(225,6,0,.25); color: rgba(255,255,255,.92);">
+                🦉
+              </div>
+              <div class="font-black text-white/90">Owlsight</div>
+            </div>
+            <button id="closeDrawerBtn" class="btn px-3 py-2 rounded-xl text-sm">✕</button>
+          </div>
+
+          <!-- Menu (Mobile) -->
+          <div class="mt-4 rounded-2xl p-3"
+               style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
+            <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Menu</div>
+            <div class="mt-2 grid gap-2">
+              <a href="/" class="btn px-4 py-2 rounded-xl text-sm">Página inicial</a>
+              <a href="/profile/" class="btn px-4 py-2 rounded-xl text-sm">Conta</a>
+              <a href="/favorites/" class="btn px-4 py-2 rounded-xl text-sm">Favoritos</a>
+              <a href="/categories/" class="btn px-4 py-2 rounded-xl text-sm">Categoria</a>
+            </div>
+          </div>
+
+          <div class="mt-4 grid gap-2">
+            <div class="rounded-2xl p-3"
+                 style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
+              <div id="headerMobile" class="flex gap-3"></div>
+
+              <div class="mt-3 flex gap-2">
+                <button id="prevBtnM" class="btn px-4 py-2 rounded-xl w-1/2">Anterior</button>
+                <button id="nextBtnM" class="btn-red px-4 py-2 rounded-xl w-1/2 font-semibold">Próxima</button>
+              </div>
+
+              <div class="mt-2 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <button id="zoomOutBtnM" class="btn px-3 py-2 rounded-xl text-sm">−</button>
+                  <button id="zoomInBtnM" class="btn px-3 py-2 rounded-xl text-sm">+</button>
+                  <button id="resetBtnM" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
+                </div>
+                <button id="panToggleBtnM" class="btn px-4 py-2 rounded-xl text-sm">Mão: OFF</button>
+              </div>
+
+              <div class="mt-2">
+                <button id="annotateToggleBtnM" class="btn w-full px-4 py-2 rounded-xl text-sm">Anotar: OFF</button>
+              </div>
+
+              <p id="msgM" class="text-sm mt-2" style="color: rgba(225,6,0,.92);"></p>
+            </div>
+
+            <!-- Gate (Mobile) -->
+            <div id="gateBoxM" class="hidden rounded-2xl p-4"
+                 style="background: rgba(225,6,0,.08); border:1px solid rgba(225,6,0,.22);">
+              <div class="text-lg font-black">Acesso limitado</div>
+              <div id="gateTextM" class="text-sm mt-1" style="color: rgba(255,255,255,.75)"></div>
+              <div id="gateActionsM" class="mt-3 grid gap-2"></div>
+            </div>
+
+            <!-- Comentários (Mobile) -->
+            <div class="mt-2 rounded-2xl p-3"
+                 style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
+              <div class="flex items-center justify-between">
+                <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Comentários</div>
+                <span id="commentCountM" class="text-xs" style="color: rgba(255,255,255,.55)">0</span>
+              </div>
+
+              <div id="commentsListM" class="mt-2 grid gap-2"></div>
+
+              <textarea id="commentTextM" rows="3"
+                class="mt-3 w-full rounded-xl p-3 text-sm"
+                placeholder="Escreva um comentário…"
+                style="background: rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.10); color: rgba(255,255,255,.92)"></textarea>
+
+              <button id="addCommentBtnM" class="btn-red mt-2 w-full px-4 py-2 rounded-xl text-sm font-semibold">
+                Publicar comentário
+              </button>
+            </div>
+
+            <!-- Debug (Mobile) -->
+            <details class="mt-2 rounded-2xl p-3"
+                     style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
+              <summary class="text-sm" style="color: rgba(255,255,255,.75)">Debug (resposta do servidor)</summary>
+              <pre id="debugBoxM" class="mt-2 text-xs whitespace-pre-wrap" style="color: rgba(255,255,255,.65)"></pre>
+            </details>
+          </div>
         </div>
+      </aside>
 
-        <div class="flex items-center gap-2">
-          <button id="zoomOutBtnR" class="btn px-3 py-2 rounded-xl text-sm">−</button>
-          <button id="zoomInBtnR" class="btn px-3 py-2 rounded-xl text-sm">+</button>
-          <button id="resetBtnR" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
-        </div>
-      </div>
+      <!-- RIGHT -->
+      <section class="glass soft-shadow rounded-3xl p-0 lg:p-4" id="rightPanel">
+        <div id="contentShell"
+             class="relative rounded-2xl overflow-hidden lg:overflow-auto"
+             style="max-height: calc(100vh - 2.5rem);">
 
-      <div id="contentShell"
-           class="relative rounded-2xl overflow-auto"
-           style="max-height: calc(100vh - 2.5rem);">
+          <div id="viewer" class="relative w-full h-full" style="z-index: 20;">
+            <div id="contentBox" class="rounded-2xl"></div>
+          </div>
 
-        <div id="viewer" class="relative w-full h-full">
-          <div id="contentBox" class="rounded-2xl"></div>
-        </div>
+          <!-- Watermark overlay -->
+          <div id="wmOverlay"
+               class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200"
+               style="z-index: 10;"></div>
 
-        <div id="wmOverlay"
-             class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200"></div>
-
-        <div id="privacyBlur"
-             class="hidden absolute inset-0 backdrop-blur-2xl"
-             style="background: rgba(0,0,0,.35);">
-          <div class="h-full w-full grid place-items-center">
-            <div class="text-center">
-              <div class="text-xl font-black">Conteúdo protegido</div>
-              <div class="text-sm mt-1" style="color: rgba(255,255,255,.70)">
-                Volte para a aba para continuar a leitura.
+          <!-- Blur ao trocar de aba -->
+          <div id="privacyBlur"
+               class="hidden absolute inset-0 backdrop-blur-2xl"
+               style="background: rgba(0,0,0,.35); z-index: 50;">
+            <div class="h-full w-full grid place-items-center">
+              <div class="text-center">
+                <div class="text-xl font-black">Conteúdo protegido</div>
+                <div class="text-sm mt-1" style="color: rgba(255,255,255,.70)">
+                  Volte para a aba para continuar a leitura.
+                </div>
               </div>
             </div>
           </div>
+
         </div>
+      </section>
 
-      </div>
-    </section>
-
+    </div>
   </div>
 </section>
 
 <style>
+  /* ✅ Esconde o menu do base SOMENTE nesta página */
   body > header,
   body > nav,
   #navbar, #topbar, #mainNav, #siteNav,
@@ -199,31 +244,23 @@
     display: none !important;
   }
 
-  html, body{
-    height: 100%;
-    overflow: hidden !important;
-  }
+  /* ✅ Desativa scroll normal da página */
+  html, body{ height:100%; overflow:hidden; }
 
+  /* Anti seleção/cópia (dificulta) */
   #contentShell, #contentShell *{ -webkit-user-select:none; user-select:none; }
   img{ -webkit-user-drag:none; user-drag:none; }
 
+  /* impede gesto do browser dentro do viewer */
   #contentShell{
+    touch-action: none;
     overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    touch-action: pan-y;
   }
 
-  /* ✅ Camadas: pins acima do watermark */
-  #viewer{ position: relative; z-index: 20; }
-  #wmOverlay{ position: absolute; inset: 0; z-index: 10; }
-
-  /* ✅ Importante: permitir labels “fora” do contentBox */
-  #contentBox{ position: relative; overflow: visible; }
-
-  /* Zoom/Pan */
   #contentBox{
     transform-origin: 0 0;
     will-change: transform;
+    position: relative;
   }
 
   #contentBox img{
@@ -241,7 +278,12 @@
   }
 
   /* Pins */
-  .pinWrap{ position:absolute; z-index: 9999; pointer-events:auto; }
+  .pinWrap{
+    position:absolute;
+    transform: translate(-50%,-50%);
+    pointer-events:auto;
+    z-index: 9999; /* ✅ acima de tudo */
+  }
   .pin{
     width: 14px;
     height: 14px;
@@ -249,25 +291,23 @@
     border: 2px solid rgba(255,255,255,.85);
     background: rgba(225,6,0,.92);
     box-shadow: 0 10px 30px rgba(0,0,0,.35);
-    transform: translate(-50%,-50%);
     cursor: pointer;
   }
 
-  /* ✅ Label agora pode receber eventos (não fica “morta”) */
   .pin-label{
     position:absolute;
-    transform: translate(10px,-18px);
+    left: 10px;
+    top: -18px;
     max-width: 240px;
     padding: 8px 10px;
     border-radius: 12px;
-    background: rgba(0,0,0,.86);
-    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(0,0,0,.78);
+    border: 1px solid rgba(255,255,255,.10);
     color: rgba(255,255,255,.92);
     font-size: 12px;
     line-height: 1.2;
     white-space: normal;
     word-break: break-word;
-    pointer-events: auto;
     z-index: 10000;
   }
 
@@ -283,7 +323,7 @@
 {% block extra_js %}
 <script>
 /* =========================
-   CSRF + fetch
+   CSRF + fetch helpers
    ========================= */
 function getCookie(name){
   const v = document.cookie.split(";").map(s=>s.trim());
@@ -292,75 +332,58 @@ function getCookie(name){
   }
   return null;
 }
-async function apiFetch(url, opts={}){
-  const headers = new Headers(opts.headers || {});
-  opts.credentials = "same-origin";
+function isUnsafe(method){
+  return ["POST","PUT","PATCH","DELETE"].includes((method || "GET").toUpperCase());
+}
+async function apiFetch(url, options = {}){
+  const opts = { ...options };
+  opts.credentials = "include";
+  opts.headers = opts.headers || {};
+  opts.headers["Accept"] = "application/json";
   const method = (opts.method || "GET").toUpperCase();
-  if(["POST","PUT","PATCH","DELETE"].includes(method)){
+  if(isUnsafe(method)){
     const csrf = getCookie("csrftoken");
-    if(csrf) headers.set("X-CSRFToken", csrf);
+    if(csrf) opts.headers["X-CSRFToken"] = csrf;
+    if(!opts.headers["Content-Type"]) opts.headers["Content-Type"] = "application/json";
   }
-  opts.headers = headers;
   return fetch(url, opts);
 }
-async function apiGetJson(url){
-  const res = await apiFetch(url);
-  const data = await res.json().catch(()=>null);
-  if(!res.ok) throw { status: res.status, data };
-  return data;
-}
-async function apiPostJson(url, body){
-  const res = await apiFetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  const data = await res.json().catch(()=>null);
-  if(!res.ok) throw { status: res.status, data };
-  return data;
-}
-async function apiDelete(url){
-  const res = await apiFetch(url, { method: "DELETE" });
-  if(!res.ok) throw { status: res.status, data: null };
-  return true;
+let CSRF_READY = false;
+async function ensureCsrf(){
+  if(CSRF_READY) return;
+  const res = await apiFetch("/api/csrf/");
+  if(res.ok) CSRF_READY = true;
 }
 
 /* =========================
-   Helpers UI
+   Anti-cópia (dificulta)
+   ========================= */
+(function harden(){
+  document.addEventListener("contextmenu", (e)=>{ if(e.target.closest("#contentShell")) e.preventDefault(); });
+  document.addEventListener("dragstart", (e)=>{ if(e.target.closest("#contentShell")) e.preventDefault(); });
+  document.addEventListener("keydown", (e)=>{
+    const key = (e.key||"").toLowerCase();
+    const ctrl = e.ctrlKey || e.metaKey;
+    if(key === "printscreen") e.preventDefault();
+    if(!ctrl) return;
+    if(["s","p","c","u"].includes(key)) e.preventDefault();
+    if(e.shiftKey && ["i","j","c"].includes(key)) e.preventDefault();
+  });
+  const blur = document.getElementById("privacyBlur");
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.hidden) blur.classList.remove("hidden");
+    else blur.classList.add("hidden");
+  });
+})();
+
+/* =========================
+   Watermark
    ========================= */
 function escapeHtml(s){
   return String(s ?? "").replace(/[&<>"']/g, (m) => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
   }[m]));
 }
-function pick(data, keys, fallback=null){
-  for(const k of keys){
-    if(data && data[k] !== undefined && data[k] !== null && data[k] !== "") return data[k];
-  }
-  return fallback;
-}
-function nowStamp(){
-  const d = new Date();
-  const pad = (n)=> String(n).padStart(2,"0");
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-function setMsg(text){
-  const msg = document.getElementById("msg");
-  const msgM = document.getElementById("msgM");
-  if(msg) msg.textContent = text || "";
-  if(msgM) msgM.textContent = text || "";
-}
-function setDebug(obj){
-  const debugBox = document.getElementById("debugBox");
-  const debugBoxM = document.getElementById("debugBoxM");
-  const txt = JSON.stringify(obj, null, 2);
-  if(debugBox) debugBox.textContent = txt;
-  if(debugBoxM) debugBoxM.textContent = txt;
-}
-
-/* =========================
-   Watermark
-   ========================= */
 function setWatermarkOverlay({ bookTitle, pageNum, userLabel }){
   const overlay = document.getElementById("wmOverlay");
   const text = `${bookTitle} • ${userLabel} • p.${pageNum} • Owlsight`;
@@ -406,7 +429,7 @@ if(closeDrawerBtn) closeDrawerBtn.addEventListener("click", closeDrawer);
 if(drawerOverlay) drawerOverlay.addEventListener("click", closeDrawer);
 
 /* =========================
-   Zoom/Pan
+   Zoom/Pan state
    ========================= */
 const contentShell = document.getElementById("contentShell");
 const contentBox = document.getElementById("contentBox");
@@ -422,13 +445,6 @@ let annotateEnabled = false;
 function applyTransform(){
   contentBox.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
 }
-function setRightScrollMode(mode){
-  if(!contentShell) return;
-  if(mode === "lock") contentShell.style.touchAction = "none";
-  else contentShell.style.touchAction = "pan-y";
-}
-setRightScrollMode("scroll");
-
 function zoomBy(factor){
   const prev = zoom;
   let next = zoom * factor;
@@ -445,22 +461,22 @@ function zoomBy(factor){
   applyTransform();
 }
 function resetZoom(){
-  zoom = 1; tx = 0; ty = 0;
+  zoom = 1;
+  tx = 0;
+  ty = 0;
   applyTransform();
 }
 function setPan(enabled){
   panEnabled = enabled;
   const txt = enabled ? "Mão: ON" : "Mão: OFF";
-  const btn = document.getElementById("panToggleBtnM");
-  if(btn) btn.textContent = txt;
-  setRightScrollMode((panEnabled || annotateEnabled) ? "lock" : "scroll");
+  [document.getElementById("panToggleBtn"), document.getElementById("panToggleBtnM")]
+    .filter(Boolean).forEach(b => b.textContent = txt);
 }
 function setAnnotate(enabled){
   annotateEnabled = enabled;
   const txt = enabled ? "Anotar: ON" : "Anotar: OFF";
-  const btns = [document.getElementById("annotateToggleBtn"), document.getElementById("annotateToggleBtnM")].filter(Boolean);
-  btns.forEach(b => b.textContent = txt);
-  setRightScrollMode((panEnabled || annotateEnabled) ? "lock" : "scroll");
+  [document.getElementById("annotateToggleBtn"), document.getElementById("annotateToggleBtnM")]
+    .filter(Boolean).forEach(b => b.textContent = txt);
 }
 setPan(false);
 setAnnotate(false);
@@ -469,43 +485,37 @@ function bindClick(id, fn){
   const el = document.getElementById(id);
   if(el) el.addEventListener("click", fn);
 }
-bindClick("zoomInBtnR", ()=>zoomBy(1.15));
-bindClick("zoomOutBtnR", ()=>zoomBy(1/1.15));
-bindClick("resetBtnR", resetZoom);
-
-bindClick("zoomInTop", ()=>zoomBy(1.15));
-bindClick("zoomOutTop", ()=>zoomBy(1/1.15));
-bindClick("resetTop", resetZoom);
+bindClick("zoomInBtn", ()=>zoomBy(1.15));
+bindClick("zoomOutBtn", ()=>zoomBy(1/1.15));
+bindClick("resetBtn", resetZoom);
+bindClick("panToggleBtn", ()=>setPan(!panEnabled));
+bindClick("annotateToggleBtn", ()=>setAnnotate(!annotateEnabled));
 
 bindClick("zoomInBtnM", ()=>zoomBy(1.15));
 bindClick("zoomOutBtnM", ()=>zoomBy(1/1.15));
 bindClick("resetBtnM", resetZoom);
-
-bindClick("annotateToggleBtn", ()=>setAnnotate(!annotateEnabled));
-bindClick("annotateToggleBtnM", ()=>setAnnotate(!annotateEnabled));
 bindClick("panToggleBtnM", ()=>setPan(!panEnabled));
+bindClick("annotateToggleBtnM", ()=>setAnnotate(!annotateEnabled));
 
 /* =========================
-   Pointer: Pan + Pinch Zoom
+   ✅ Mobile Pan + Pinch
    ========================= */
 const pointers = new Map();
 let lastPinchDist = null;
 let lastPinchCenter = null;
 
 let isDragging = false;
-let dragStartX = 0, dragStartY = 0;
-let dragStartTX = 0, dragStartTY = 0;
+let dragStartX = 0, dragStartY = 0, dragStartTX = 0, dragStartTY = 0;
 
 function _dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
 function _center(a,b){ return { x:(a.x+b.x)/2, y:(a.y+b.y)/2 }; }
 
 function onPointerDown(e){
-  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  e.preventDefault();
   contentShell.setPointerCapture?.(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
   if(pointers.size === 2){
-    e.preventDefault();
-    setRightScrollMode("lock");
     isDragging = false;
     const pts = Array.from(pointers.values());
     lastPinchDist = _dist(pts[0], pts[1]);
@@ -516,9 +526,6 @@ function onPointerDown(e){
   if(pointers.size === 1){
     if(annotateEnabled) return;
     if(!panEnabled) return;
-    e.preventDefault();
-    setRightScrollMode("lock");
-
     isDragging = true;
     dragStartX = e.clientX;
     dragStartY = e.clientY;
@@ -528,10 +535,10 @@ function onPointerDown(e){
 }
 function onPointerMove(e){
   if(!pointers.has(e.pointerId)) return;
+  e.preventDefault();
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
   if(pointers.size === 2){
-    e.preventDefault();
     const pts = Array.from(pointers.values());
     const d = _dist(pts[0], pts[1]);
     const c = _center(pts[0], pts[1]);
@@ -556,14 +563,12 @@ function onPointerMove(e){
       zoom = next;
       applyTransform();
     }
-
     lastPinchDist = d;
     lastPinchCenter = c;
     return;
   }
 
   if(pointers.size === 1 && isDragging){
-    e.preventDefault();
     const dx = e.clientX - dragStartX;
     const dy = e.clientY - dragStartY;
     tx = dragStartTX + dx;
@@ -572,6 +577,7 @@ function onPointerMove(e){
   }
 }
 function onPointerUp(e){
+  e.preventDefault();
   pointers.delete(e.pointerId);
   if(pointers.size < 2){
     lastPinchDist = null;
@@ -579,51 +585,79 @@ function onPointerUp(e){
   }
   if(pointers.size === 0){
     isDragging = false;
-    setRightScrollMode((panEnabled || annotateEnabled) ? "lock" : "scroll");
   }
 }
+
 contentShell.addEventListener("pointerdown", onPointerDown, { passive:false });
 contentShell.addEventListener("pointermove", onPointerMove, { passive:false });
 contentShell.addEventListener("pointerup", onPointerUp, { passive:false });
 contentShell.addEventListener("pointercancel", onPointerUp, { passive:false });
 
 /* =========================
-   IDs do livro / página
+   Gate UI
    ========================= */
-const bookId = Number("{{ book_id }}");
-let page = Number("{{ page_number }}");
-let maxPages = 1;
+function showGate(payload){
+  const box = document.getElementById("gateBox");
+  const text = document.getElementById("gateText");
+  const actions = document.getElementById("gateActions");
+
+  const boxM = document.getElementById("gateBoxM");
+  const textM = document.getElementById("gateTextM");
+  const actionsM = document.getElementById("gateActionsM");
+
+  const msg = payload?.gate === "PAY"
+    ? `Este livro é Premium. Você pode ler até ${payload.allowed_until_page} páginas. Para continuar, faça pagamento.`
+    : `Este livro é Free limitado. Você pode ler até ${payload.allowed_until_page} páginas. Para continuar, partilhe o link.`;
+
+  if(text) text.textContent = msg;
+  if(textM) textM.textContent = msg;
+
+  const buildActions = () => {
+    if(payload?.gate === "PAY"){
+      const offers = payload?.offers || [];
+      const html = offers.map(o => `
+        <button class="btn-red px-4 py-2 rounded-xl text-sm font-semibold"
+                onclick="alert('Pagamento: ${o.label} (${o.price_mzn} MZN) — vamos ligar isso no próximo passo.');">
+          Pagar ${o.label} — ${o.price_mzn} MZN
+        </button>
+      `).join("");
+      return html + `<div class="text-xs text-white/60">*Pagamento real vamos integrar no próximo passo.</div>`;
+    }
+
+    // SHARE
+    return `
+      <button class="btn-red px-4 py-2 rounded-xl text-sm font-semibold" onclick="doShareUnlock()">
+        Partilhar e desbloquear
+      </button>
+      <div class="text-xs text-white/60">
+        Após partilhar, o sistema desbloqueia e você continua do mesmo ponto.
+      </div>
+    `;
+  };
+
+  const html = buildActions();
+  if(actions) actions.innerHTML = html;
+  if(actionsM) actionsM.innerHTML = html;
+
+  if(box) box.classList.remove("hidden");
+  if(boxM) boxM.classList.remove("hidden");
+}
+function hideGate(){
+  ["gateBox","gateBoxM"].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.classList.add("hidden");
+  });
+}
 
 /* =========================
-   API: auth
+   Comments + Annotations (API)
    ========================= */
+let currentUserLabel = "user";
+
 async function fetchMe(){
   const res = await apiFetch("/api/auth/me/");
   if(!res.ok) return null;
   return res.json().catch(()=>null);
-}
-let currentUserLabel = "user";
-
-/* =========================
-   Comentários + Anotações (API first + UI instant)
-   ========================= */
-function normalizeComment(c){
-  return {
-    id: c?.id ?? null,
-    text: c?.text ?? "",
-    user: c?.user_label ?? c?.user ?? currentUserLabel,
-    at: c?.created_at_display ?? c?.at ?? nowStamp(),
-  };
-}
-function normalizeAnno(a){
-  return {
-    id: a?.id ?? null,
-    x: Number(a?.x ?? 0),
-    y: Number(a?.y ?? 0),
-    text: a?.text ?? "",
-    user: a?.user_label ?? a?.user ?? currentUserLabel,
-    at: a?.created_at_display ?? a?.at ?? nowStamp(),
-  };
 }
 
 function renderCommentsUI(arr){
@@ -632,34 +666,27 @@ function renderCommentsUI(arr){
   const count = document.getElementById("commentCount");
   const countM = document.getElementById("commentCountM");
 
-  const normalized = (arr || []).map(normalizeComment);
-
-  const html = normalized.map(c => `
+  const html = (arr || []).map(c => `
     <div class="c-item">
-      <div class="text-xs" style="color: rgba(255,255,255,.65)">${escapeHtml(c.at)} • ${escapeHtml(c.user)}</div>
+      <div class="text-xs" style="color: rgba(255,255,255,.65)">${escapeHtml(c.created_at_display)} • ${escapeHtml(c.user_label)}</div>
       <div class="text-sm mt-1" style="color: rgba(255,255,255,.92)">${escapeHtml(c.text)}</div>
     </div>
   `).join("");
 
-  if(list) list.innerHTML = html || `<div class="text-xs" style="color: rgba(255,255,255,.55)">Sem comentários ainda.</div>`;
-  if(listM) listM.innerHTML = html || `<div class="text-xs" style="color: rgba(255,255,255,.55)">Sem comentários ainda.</div>`;
-  if(count) count.textContent = String(normalized.length);
-  if(countM) countM.textContent = String(normalized.length);
+  const empty = `<div class="text-xs" style="color: rgba(255,255,255,.55)">Sem comentários ainda.</div>`;
+  if(list) list.innerHTML = html || empty;
+  if(listM) listM.innerHTML = html || empty;
+  if(count) count.textContent = String((arr||[]).length);
+  if(countM) countM.textContent = String((arr||[]).length);
 }
 
 function renderAnnos(arr){
-  const img = contentBox.querySelector("img");
-  if(!img) return;
-
-  const normalized = (arr || []).map(normalizeAnno);
-
   contentBox.querySelectorAll(".pinWrap").forEach(n=>n.remove());
-
-  normalized.forEach((a)=>{
+  (arr || []).forEach((a)=>{
     const wrap = document.createElement("div");
     wrap.className = "pinWrap";
     wrap.style.left = (a.x * 100) + "%";
-    wrap.style.top = (a.y * 100) + "%";
+    wrap.style.top  = (a.y * 100) + "%";
 
     const pin = document.createElement("div");
     pin.className = "pin";
@@ -669,7 +696,12 @@ function renderAnnos(arr){
     label.style.display = "none";
     label.innerHTML = `
       <div style="font-weight:800">${escapeHtml(a.text)}</div>
-      <div style="margin-top:4px;color:rgba(255,255,255,.65)">${escapeHtml(a.at)} • ${escapeHtml(a.user)}</div>
+      <div style="margin-top:4px;color:rgba(255,255,255,.65)">${escapeHtml(a.created_at_display)} • ${escapeHtml(a.user_label)}</div>
+      ${
+        a.mine
+          ? `<div style="margin-top:6px;color:rgba(255,255,255,.55)">(duplo clique para apagar)</div>`
+          : ``
+      }
     `;
 
     pin.addEventListener("click", (e)=>{
@@ -677,11 +709,18 @@ function renderAnnos(arr){
       label.style.display = (label.style.display === "none") ? "block" : "none";
     });
 
-    // clicar na label também fecha (opcional)
-    label.addEventListener("click", (e)=>{
-      e.stopPropagation();
-      label.style.display = "none";
-    });
+    if(a.mine){
+      pin.addEventListener("dblclick", async (e)=>{
+        e.stopPropagation();
+        try{
+          await ensureCsrf();
+          const res = await apiFetch(`/api/books/annotations/${a.id}/`, { method:"DELETE" });
+          if(res.ok){
+            await loadAnnotations();
+          }
+        }catch(err){}
+      });
+    }
 
     wrap.appendChild(pin);
     wrap.appendChild(label);
@@ -690,96 +729,91 @@ function renderAnnos(arr){
 }
 
 async function loadComments(){
-  try{
-    const arr = await apiGetJson(`/api/books/${bookId}/comments/?page=${page}`);
-    return Array.isArray(arr) ? arr : [];
-  }catch(err){
-    setMsg(`Falha ao carregar comentários (HTTP ${err?.status || "?"}).`);
-    return [];
-  }
+  const res = await apiFetch(`/api/books/${bookId}/comments/?page=${page}`);
+  if(!res.ok) return [];
+  const data = await res.json().catch(()=>[]);
+  return Array.isArray(data) ? data : [];
 }
-async function loadAnnos(){
-  try{
-    const arr = await apiGetJson(`/api/books/${bookId}/annotations/?page=${page}`);
-    return Array.isArray(arr) ? arr : [];
-  }catch(err){
-    setMsg(`Falha ao carregar anotações (HTTP ${err?.status || "?"}).`);
-    return [];
+async function postComment(text){
+  await ensureCsrf();
+  const res = await apiFetch(`/api/books/${bookId}/comments/`, {
+    method:"POST",
+    body: JSON.stringify({ page_number: page, text })
+  });
+  if(!res.ok){
+    const d = await res.json().catch(()=>null);
+    throw new Error(d?.detail || `HTTP ${res.status}`);
   }
-}
-
-async function addComment(text){
-  const t = (text || "").trim();
-  if(!t) return;
-
-  // ✅ mostra na UI já
-  const current = await loadComments().catch(()=>[]);
-  renderCommentsUI([{ text:t, user_label: currentUserLabel, created_at_display: nowStamp() }, ...current]);
-
-  try{
-    await apiPostJson(`/api/books/${bookId}/comments/`, { page_number: page, text: t });
-    const fresh = await loadComments();
-    renderCommentsUI(fresh);
-    setMsg("");
-  }catch(err){
-    setMsg(`Não foi possível guardar comentário (HTTP ${err?.status || "?"}).`);
-  }
+  return res.json().catch(()=>null);
 }
 
-async function addAnno(x, y, text){
-  const t = (text || "").trim();
-  if(!t) return;
-
-  // ✅ mostra já
-  const current = await loadAnnos().catch(()=>[]);
-  renderAnnos([{ x, y, text:t, user_label: currentUserLabel, created_at_display: nowStamp() }, ...current]);
-
-  try{
-    await apiPostJson(`/api/books/${bookId}/annotations/`, { page_number: page, x, y, text: t });
-    const fresh = await loadAnnos();
-    renderAnnos(fresh);
-    setMsg("");
-  }catch(err){
-    setMsg(`Não foi possível guardar anotação (HTTP ${err?.status || "?"}).`);
+async function loadAnnotations(){
+  const res = await apiFetch(`/api/books/${bookId}/annotations/?page=${page}`);
+  if(!res.ok) return [];
+  const data = await res.json().catch(()=>[]);
+  const arr = Array.isArray(data) ? data : [];
+  renderAnnos(arr);
+  return arr;
+}
+async function postAnno(x, y, text){
+  await ensureCsrf();
+  const res = await apiFetch(`/api/books/${bookId}/annotations/`, {
+    method:"POST",
+    body: JSON.stringify({ page_number: page, x, y, text })
+  });
+  if(!res.ok){
+    const d = await res.json().catch(()=>null);
+    throw new Error(d?.detail || `HTTP ${res.status}`);
   }
+  return res.json().catch(()=>null);
 }
 
-/* Botões comentários */
 function bindCommentButtons(){
   const btn = document.getElementById("addCommentBtn");
   const txt = document.getElementById("commentText");
   if(btn && txt){
-    btn.onclick = async ()=>{ await addComment(txt.value); txt.value=""; };
+    btn.onclick = async ()=>{
+      const t = (txt.value||"").trim();
+      if(!t) return;
+      try{
+        await postComment(t);
+        txt.value = "";
+        const arr = await loadComments();
+        renderCommentsUI(arr);
+      }catch(err){
+        // mostra no msg, sem alert do browser
+        const m = document.getElementById("msg");
+        if(m) m.textContent = String(err.message || err);
+      }
+    };
   }
+
   const btnM = document.getElementById("addCommentBtnM");
   const txtM = document.getElementById("commentTextM");
   if(btnM && txtM){
-    btnM.onclick = async ()=>{ await addComment(txtM.value); txtM.value=""; };
+    btnM.onclick = async ()=>{
+      const t = (txtM.value||"").trim();
+      if(!t) return;
+      try{
+        await postComment(t);
+        txtM.value = "";
+        const arr = await loadComments();
+        renderCommentsUI(arr);
+      }catch(err){
+        const m = document.getElementById("msgM");
+        if(m) m.textContent = String(err.message || err);
+      }
+    };
   }
 }
 
-/* Clique para criar pin */
-contentShell.addEventListener("click", async (e)=>{
-  if(!annotateEnabled) return;
-
-  const img = contentBox.querySelector("img");
-  if(!img) return;
-
-  const boxRect = contentBox.getBoundingClientRect();
-  const x = (e.clientX - boxRect.left) / boxRect.width;
-  const y = (e.clientY - boxRect.top) / boxRect.height;
-
-  if(x < 0 || x > 1 || y < 0 || y > 1) return;
-
-  const note = prompt("Texto da anotação:");
-  if(note === null) return;
-
-  await addAnno(x, y, note);
-});
-
 /* =========================
-   Render da página (imagem)
+   Read logic
    ========================= */
+const bookId = Number("{{ book_id }}");
+let page = Number("{{ page_number }}");
+let maxPages = 1;
+
 function coverHtml(coverUrl){
   if(!coverUrl){
     return `<div class="w-full h-full grid place-items-center text-xs" style="color: rgba(255,255,255,.45)">Sem capa</div>`;
@@ -793,6 +827,7 @@ function coverHtml(coverUrl){
     />
   `;
 }
+
 function renderHeader(whereId, bookTitle, bookType, coverUrl, totalPages, limitPage){
   const el = document.getElementById(whereId);
   if(!el) return;
@@ -824,10 +859,9 @@ function renderPageImageOrError(pageImg, bookTitle){
   img.onload = async () => {
     contentBox.innerHTML = "";
     contentBox.appendChild(img);
-    resetZoom();
 
-    const annos = await loadAnnos();
-    renderAnnos(annos);
+    resetZoom();
+    await loadAnnotations();
   };
 
   img.onerror = () => {
@@ -849,11 +883,44 @@ function renderPageImageOrError(pageImg, bookTitle){
   contentBox.innerHTML = `<div class="p-10 text-center" style="color: rgba(255,255,255,.65)">Carregando imagem...</div>`;
 }
 
-/* =========================
-   Load Page (principal)
-   ========================= */
+async function doShareUnlock(){
+  try{
+    // tenta share nativo
+    const url = window.location.origin + window.location.pathname;
+    if(navigator.share){
+      await navigator.share({ title:"Owlsight", text:"Veja este livro na Owlsight", url });
+    } else {
+      // fallback: copiar
+      await navigator.clipboard.writeText(url);
+    }
+  }catch(e){
+    // se falhar, ainda desbloqueia (não queremos alert do browser)
+  }
+
+  try{
+    await ensureCsrf();
+    const res = await apiFetch(`/api/books/${bookId}/unlock-share/`, { method:"POST" });
+    const data = await res.json().catch(()=>null);
+    // fecha gate e recarrega página atual
+    hideGate();
+    await loadPage();
+    const m = document.getElementById("msg");
+    const m2 = document.getElementById("msgM");
+    const t = data?.message || "Desbloqueado ✅";
+    if(m) m.textContent = t;
+    if(m2) m2.textContent = t;
+  }catch(e){}
+}
+
 async function loadPage(){
-  setMsg("");
+  const debugBox = document.getElementById("debugBox");
+  const debugBoxM = document.getElementById("debugBoxM");
+  const msg = document.getElementById("msg");
+  const msgM = document.getElementById("msgM");
+
+  if(msg) msg.textContent = "";
+  if(msgM) msgM.textContent = "";
+  hideGate();
 
   const me = await fetchMe();
   if(!me){
@@ -865,15 +932,43 @@ async function loadPage(){
   const res = await apiFetch(`/api/read/${bookId}/${page}/`);
   const data = await res.json().catch(()=>({}));
 
-  setDebug({ status: res.status, data });
+  const dbg = JSON.stringify({ status: res.status, data }, null, 2);
+  if(debugBox) debugBox.textContent = dbg;
+  if(debugBoxM) debugBoxM.textContent = dbg;
 
-  const totalPages = Number(pick(data, ["total_pages","totalPages","pages_total","pages","total"], 0)) || 0;
-  const limitPage  = Number(pick(data, ["allowed_until_page","limit_until_page","allowedUntilPage","limitPage","allowed_until","limit_until"], 0)) || 0;
+  // bloqueado?
+  if(res.status === 403 && data && data.blocked){
+    // atualiza header mesmo bloqueado
+    renderHeader("header", data.title || "Livro", data.book_type || "", data.cover_url || "", data.total_pages || 0, data.allowed_until_page || 0);
+    renderHeader("headerMobile", data.title || "Livro", data.book_type || "", data.cover_url || "", data.total_pages || 0, data.allowed_until_page || 0);
 
-  const bookTitle = pick(data, ["title","book_title","name","book"], "Livro");
-  const bookType  = pick(data, ["book_type","type","tier"], "");
-  const coverUrl = pick(data, ["cover_url","cover","coverUrl","book_cover","cover_image"], "");
-  const pageImg = pick(data, ["page_image","pageImage","image","image_url","url","page_url"], "");
+    showGate(data);
+
+    // mantém imagem atual (se já tiver) ou mostra placeholder
+    contentBox.innerHTML = `
+      <div class="p-10 text-center">
+        <div class="text-lg font-black">Leitura bloqueada</div>
+        <div class="text-sm mt-2" style="color: rgba(255,255,255,.65)">
+          Você atingiu o limite gratuito. Use o painel à esquerda para desbloquear.
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // auth error -> redireciona
+  if(res.status === 401){
+    window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
+    return;
+  }
+
+  const totalPages = Number(data.total_pages || 0) || 0;
+  const limitPage  = Number(data.allowed_until_page || 0) || 0;
+
+  const bookTitle = data.title || "Livro";
+  const bookType  = data.book_type || "";
+  const coverUrl  = data.cover_url || "";
+  const pageImg   = data.page_image || "";
 
   if(totalPages > 0) maxPages = totalPages;
 
@@ -886,6 +981,7 @@ async function loadPage(){
         <div class="text-lg font-black">Não veio a imagem da página</div>
         <div class="text-sm mt-2" style="color: rgba(255,255,255,.65)">
           O backend precisa enviar <b>page_image</b>.
+          Veja no Debug acima quais campos estão vindo.
         </div>
       </div>
     `;
@@ -904,15 +1000,45 @@ async function loadPage(){
 function goPrev(){ if(page > 1){ page--; loadPage(); } }
 function goNext(){
   if(page < maxPages){ page++; loadPage(); }
-  else alert("Você chegou ao final do livro.");
 }
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+if(prevBtn) prevBtn.onclick = goPrev;
+if(nextBtn) nextBtn.onclick = goNext;
 
-document.getElementById("prevBtn")?.addEventListener("click", goPrev);
-document.getElementById("nextBtn")?.addEventListener("click", goNext);
-document.getElementById("prevBtnDesktop")?.addEventListener("click", goPrev);
-document.getElementById("nextBtnDesktop")?.addEventListener("click", goNext);
-document.getElementById("prevBtnM")?.addEventListener("click", goPrev);
-document.getElementById("nextBtnM")?.addEventListener("click", goNext);
+const prevBtnM = document.getElementById("prevBtnM");
+const nextBtnM = document.getElementById("nextBtnM");
+if(prevBtnM) prevBtnM.onclick = goPrev;
+if(nextBtnM) nextBtnM.onclick = goNext;
+
+/* Create annotation */
+contentShell.addEventListener("click", async (e)=>{
+  if(!annotateEnabled) return;
+
+  const img = contentBox.querySelector("img");
+  if(!img) return;
+
+  const rect = contentBox.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / rect.width;
+  const y = (e.clientY - rect.top) / rect.height;
+  if(x < 0 || x > 1 || y < 0 || y > 1) return;
+
+  const note = prompt("Texto da anotação:");
+  if(note === null) return;
+  const t = (note || "").trim();
+  if(!t) return;
+
+  try{
+    await postAnno(x, y, t);
+    await loadAnnotations();
+  }catch(err){
+    const m = document.getElementById("msg");
+    const m2 = document.getElementById("msgM");
+    const txt = String(err.message || err);
+    if(m) m.textContent = txt;
+    if(m2) m2.textContent = txt;
+  }
+});
 
 /* Start */
 bindCommentButtons();

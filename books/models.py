@@ -1,5 +1,6 @@
-from django.db import models
 from django.conf import settings
+from django.db import models
+from django.utils import timezone
 
 
 class Tag(models.Model):
@@ -65,39 +66,84 @@ class BookPage(models.Model):
 
 
 # =========================================================
-# ✅ COMENTÁRIOS / ANOTAÇÕES (DB)
+# SUBSCRIÇÃO (Plano de leitura)
 # =========================================================
-class BookComment(models.Model):
-    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="comments")
-    page_number = models.PositiveIntegerField(db_index=True)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="book_comments")
-    text = models.TextField()
+class UserSubscription(models.Model):
+    """
+    Simples: se o user tem um plano ativo, Premium abre tudo.
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="subscriptions")
+    starts_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        ordering = ["-expires_at"]
+
+    @property
+    def is_active(self) -> bool:
+        return bool(self.expires_at and self.expires_at > timezone.now())
+
+    def __str__(self):
+        return f"{self.user} até {self.expires_at}"
+
+
+# =========================================================
+# UNLOCK por PARTILHA (free abre tudo após partilhar)
+# =========================================================
+class BookShareUnlock(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="share_unlocks")
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="share_unlocks")
+    unlocked_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "book")
+        ordering = ["-unlocked_at"]
+
+    def __str__(self):
+        return f"{self.user} unlocked {self.book_id}"
+
+
+# =========================================================
+# COMENTÁRIOS
+# =========================================================
+class BookComment(models.Model):
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="comments")
+    page_number = models.PositiveIntegerField()
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="book_comments")
+    text = models.TextField()
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["book", "page_number", "-created_at"]),
         ]
-        ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Comment book={self.book_id} page={self.page_number} user={self.user_id}"
+        return f"Comment {self.book_id} p{self.page_number} by {self.user_id}"
 
 
+# =========================================================
+# ANOTAÇÕES (Pins)
+# =========================================================
 class BookAnnotation(models.Model):
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="annotations")
-    page_number = models.PositiveIntegerField(db_index=True)
+    page_number = models.PositiveIntegerField()
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="book_annotations")
     text = models.TextField()
     x = models.FloatField()  # 0..1
     y = models.FloatField()  # 0..1
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        ordering = ["-created_at"]
         indexes = [
             models.Index(fields=["book", "page_number", "-created_at"]),
         ]
-        ordering = ["-created_at"]
 
     def __str__(self):
-        return f"Anno book={self.book_id} page={self.page_number} user={self.user_id}"
+        return f"Anno {self.book_id} p{self.page_number} by {self.user_id}"
