@@ -3,10 +3,23 @@
 
 {% block content %}
 <section class="fade-in">
+  <!-- Top bar (mobile): hamburger + quick actions -->
+  <div class="lg:hidden flex items-center justify-between mb-3">
+    <button id="openDrawerBtn" class="btn px-4 py-2 rounded-xl text-sm">
+      ☰ Menu
+    </button>
+
+    <div class="flex items-center gap-2">
+      <button id="zoomOutTop" class="btn px-3 py-2 rounded-xl text-sm">−</button>
+      <button id="zoomInTop" class="btn px-3 py-2 rounded-xl text-sm">+</button>
+      <button id="fitTop" class="btn px-3 py-2 rounded-xl text-sm">Ajustar</button>
+    </div>
+  </div>
+
   <div class="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4">
 
-    <!-- LEFT -->
-    <aside class="glass soft-shadow rounded-3xl p-4">
+    <!-- LEFT (Desktop) -->
+    <aside class="hidden lg:block glass soft-shadow rounded-3xl p-4" id="leftPanelDesktop">
       <div class="flex items-start justify-between gap-3">
         <div id="header" class="flex gap-3 flex-1"></div>
       </div>
@@ -22,6 +35,44 @@
         <div id="blocker" class="hidden rounded-2xl p-3"
              style="background: rgba(225,6,0,.10); border:1px solid rgba(225,6,0,.26);"></div>
 
+        <!-- Zoom controls (Desktop) -->
+        <div class="mt-2 rounded-2xl p-3"
+             style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
+          <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Zoom & Movimento</div>
+          <div class="mt-2 grid grid-cols-2 gap-2">
+            <button id="zoomOutBtn" class="btn px-3 py-2 rounded-xl text-sm">Zoom −</button>
+            <button id="zoomInBtn" class="btn px-3 py-2 rounded-xl text-sm">Zoom +</button>
+            <button id="fitBtn" class="btn px-3 py-2 rounded-xl text-sm">Ajustar</button>
+            <button id="resetBtn" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
+          </div>
+          <button id="panToggleBtn" class="btn-red mt-2 w-full px-4 py-2 rounded-xl text-sm font-semibold">
+            Mão: OFF
+          </button>
+          <div class="text-xs mt-2" style="color: rgba(255,255,255,.60)">
+            Dica: ative “Mão” e arraste a página (mouse ou toque).
+          </div>
+        </div>
+
+        <!-- Comentários -->
+        <div class="mt-2 rounded-2xl p-3"
+             style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
+          <div class="flex items-center justify-between">
+            <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Comentários</div>
+            <span id="commentCount" class="text-xs" style="color: rgba(255,255,255,.55)">0</span>
+          </div>
+
+          <div id="commentsList" class="mt-2 grid gap-2"></div>
+
+          <textarea id="commentText" rows="3"
+            class="mt-3 w-full rounded-xl p-3 text-sm"
+            placeholder="Escreva um comentário…"
+            style="background: rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.10); color: rgba(255,255,255,.92)"></textarea>
+
+          <button id="addCommentBtn" class="btn-red mt-2 w-full px-4 py-2 rounded-xl text-sm font-semibold">
+            Publicar comentário
+          </button>
+        </div>
+
         <!-- Debug -->
         <details class="mt-2 rounded-2xl p-3"
                  style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
@@ -31,13 +82,109 @@
       </div>
     </aside>
 
+    <!-- Drawer (Mobile) -->
+    <div id="drawerOverlay" class="fixed inset-0 hidden lg:hidden" style="background: rgba(0,0,0,.55); z-index: 80;"></div>
+
+    <aside id="drawerPanel"
+           class="fixed top-0 left-0 h-full w-[92%] max-w-[420px] hidden lg:hidden p-4"
+           style="z-index: 90;">
+      <div class="glass soft-shadow rounded-3xl p-4 h-full overflow-auto">
+        <div class="flex items-start justify-between gap-3">
+          <div id="headerMobile" class="flex gap-3 flex-1"></div>
+          <button id="closeDrawerBtn" class="btn px-3 py-2 rounded-xl text-sm">✕</button>
+        </div>
+
+        <div class="mt-4 grid gap-2">
+          <div class="flex gap-2">
+            <button id="prevBtnM" class="btn px-4 py-2 rounded-xl w-1/2">Anterior</button>
+            <button id="nextBtnM" class="btn-red px-4 py-2 rounded-xl w-1/2 font-semibold">Próxima</button>
+          </div>
+
+          <p id="msgM" class="text-sm" style="color: rgba(225,6,0,.92);"></p>
+
+          <div id="blockerM" class="hidden rounded-2xl p-3"
+               style="background: rgba(225,6,0,.10); border:1px solid rgba(225,6,0,.26);"></div>
+
+          <!-- Zoom controls (Mobile) -->
+          <div class="mt-2 rounded-2xl p-3"
+               style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
+            <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Zoom & Movimento</div>
+            <div class="mt-2 grid grid-cols-2 gap-2">
+              <button id="zoomOutBtnM" class="btn px-3 py-2 rounded-xl text-sm">Zoom −</button>
+              <button id="zoomInBtnM" class="btn px-3 py-2 rounded-xl text-sm">Zoom +</button>
+              <button id="fitBtnM" class="btn px-3 py-2 rounded-xl text-sm">Ajustar</button>
+              <button id="resetBtnM" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
+            </div>
+            <button id="panToggleBtnM" class="btn-red mt-2 w-full px-4 py-2 rounded-xl text-sm font-semibold">
+              Mão: OFF
+            </button>
+            <button id="annotateToggleBtnM" class="btn mt-2 w-full px-4 py-2 rounded-xl text-sm">
+              Anotar: OFF
+            </button>
+            <div class="text-xs mt-2" style="color: rgba(255,255,255,.60)">
+              “Anotar” = clique na página para criar um pin com texto.
+            </div>
+          </div>
+
+          <!-- Comentários (Mobile) -->
+          <div class="mt-2 rounded-2xl p-3"
+               style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
+            <div class="flex items-center justify-between">
+              <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Comentários</div>
+              <span id="commentCountM" class="text-xs" style="color: rgba(255,255,255,.55)">0</span>
+            </div>
+
+            <div id="commentsListM" class="mt-2 grid gap-2"></div>
+
+            <textarea id="commentTextM" rows="3"
+              class="mt-3 w-full rounded-xl p-3 text-sm"
+              placeholder="Escreva um comentário…"
+              style="background: rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.10); color: rgba(255,255,255,.92)"></textarea>
+
+            <button id="addCommentBtnM" class="btn-red mt-2 w-full px-4 py-2 rounded-xl text-sm font-semibold">
+              Publicar comentário
+            </button>
+          </div>
+
+          <!-- Debug (Mobile) -->
+          <details class="mt-2 rounded-2xl p-3"
+                   style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
+            <summary class="text-sm" style="color: rgba(255,255,255,.75)">Debug (resposta do servidor)</summary>
+            <pre id="debugBoxM" class="mt-2 text-xs whitespace-pre-wrap" style="color: rgba(255,255,255,.65)"></pre>
+          </details>
+        </div>
+      </div>
+    </aside>
+
     <!-- RIGHT -->
-    <section class="glass soft-shadow rounded-3xl p-4">
+    <section class="glass soft-shadow rounded-3xl p-0 lg:p-4" id="rightPanel">
+      <!-- Toolbar (Desktop inside right) -->
+      <div class="hidden lg:flex items-center justify-between px-4 pt-4">
+        <div class="flex items-center gap-2">
+          <button id="annotateToggleBtn" class="btn px-4 py-2 rounded-xl text-sm">
+            Anotar: OFF
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="zoomOutBtnR" class="btn px-3 py-2 rounded-xl text-sm">−</button>
+          <button id="zoomInBtnR" class="btn px-3 py-2 rounded-xl text-sm">+</button>
+          <button id="fitBtnR" class="btn px-3 py-2 rounded-xl text-sm">Ajustar</button>
+          <button id="resetBtnR" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
+        </div>
+      </div>
+
       <div id="contentShell"
-           class="relative rounded-2xl overflow-auto"
+           class="relative rounded-2xl overflow-hidden lg:overflow-auto"
            style="max-height: calc(100vh - 2.5rem);">
 
-        <div id="contentBox" class="rounded-2xl"></div>
+        <!-- Viewer layer -->
+        <div id="viewer" class="relative w-full h-full">
+          <div id="contentBox" class="rounded-2xl"></div>
+
+          <!-- Annotations overlay (pins) -->
+          <div id="annoLayer" class="absolute inset-0 pointer-events-none"></div>
+        </div>
 
         <!-- Watermark overlay -->
         <div id="wmOverlay"
@@ -68,11 +215,18 @@
   #contentShell, #contentShell *{ -webkit-user-select:none; user-select:none; }
   img{ -webkit-user-drag:none; user-drag:none; }
 
-  /* Página sempre inteira (sem cortar/esticar) */
+  /* Viewer: imagem controlada por transform (zoom/pan) */
+  #contentBox{
+    transform-origin: 0 0;
+    will-change: transform;
+  }
+
+  /* A imagem (página) fica responsiva dentro do viewer */
   #contentBox img{
     display:block;
     width:100%;
     height:auto;
+    pointer-events: none; /* evita “arrastar imagem” no browser */
   }
 
   /* Caixa de erro quando imagem falha */
@@ -81,6 +235,49 @@
     background: rgba(225,6,0,.08);
     border-radius: 16px;
     padding: 16px;
+  }
+
+  /* Drawer animation (simples) */
+  #drawerPanel{
+    transform: translateX(-10px);
+    opacity: .98;
+  }
+
+  /* Pins de anotação */
+  .pin{
+    width: 14px;
+    height: 14px;
+    border-radius: 999px;
+    border: 2px solid rgba(255,255,255,.85);
+    background: rgba(225,6,0,.92);
+    box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    position: absolute;
+    transform: translate(-50%,-50%);
+  }
+  .pin:hover{ filter: brightness(1.08); }
+
+  .pin-label{
+    position:absolute;
+    transform: translate(10px,-18px);
+    max-width: 220px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: rgba(0,0,0,.78);
+    border: 1px solid rgba(255,255,255,.10);
+    color: rgba(255,255,255,.92);
+    font-size: 12px;
+    line-height: 1.2;
+    white-space: normal;
+    word-break: break-word;
+    pointer-events: none;
+  }
+
+  /* Comentário item */
+  .c-item{
+    border:1px solid rgba(255,255,255,.10);
+    background: rgba(0,0,0,.22);
+    border-radius: 14px;
+    padding: 10px 12px;
   }
 </style>
 {% endblock %}
@@ -172,6 +369,367 @@ function pick(data, keys, fallback=null){
   return fallback;
 }
 
+function nowStamp(){
+  // yyyy-mm-dd hh:mm
+  const d = new Date();
+  const pad = (n)=> String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function lsKeyComments(bookId, page){
+  return `owlsight:comments:${bookId}:${page}`;
+}
+function lsKeyAnnos(bookId, page){
+  return `owlsight:annos:${bookId}:${page}`;
+}
+
+/* =========================
+   Drawer (Mobile)
+   ========================= */
+const drawerOverlay = document.getElementById("drawerOverlay");
+const drawerPanel = document.getElementById("drawerPanel");
+const openDrawerBtn = document.getElementById("openDrawerBtn");
+const closeDrawerBtn = document.getElementById("closeDrawerBtn");
+
+function openDrawer(){
+  drawerOverlay.classList.remove("hidden");
+  drawerPanel.classList.remove("hidden");
+}
+function closeDrawer(){
+  drawerOverlay.classList.add("hidden");
+  drawerPanel.classList.add("hidden");
+}
+if(openDrawerBtn) openDrawerBtn.addEventListener("click", openDrawer);
+if(closeDrawerBtn) closeDrawerBtn.addEventListener("click", closeDrawer);
+if(drawerOverlay) drawerOverlay.addEventListener("click", closeDrawer);
+
+/* =========================
+   Zoom/Pan state
+   ========================= */
+const contentShell = document.getElementById("contentShell");
+const contentBox = document.getElementById("contentBox");
+const viewer = document.getElementById("viewer");
+
+let zoom = 1;
+let minZoom = 0.5;
+let maxZoom = 4;
+let tx = 0;
+let ty = 0;
+let panEnabled = false;
+let annotateEnabled = false;
+
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let dragStartTX = 0;
+let dragStartTY = 0;
+
+// apply transform
+function applyTransform(){
+  contentBox.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
+  // annotations must follow same transform → we put pins relative to image and attach to annoLayer using same transform via parent (contentBox)
+}
+
+// fit to width intelligently
+function fitToWidth(){
+  const img = contentBox.querySelector("img");
+  if(!img) return;
+
+  const shellW = contentShell.clientWidth;
+  const imgW = img.naturalWidth || img.width || shellW;
+
+  // Fit to width with a little padding feeling
+  let target = shellW / imgW;
+  target = Math.max(minZoom, Math.min(maxZoom, target));
+
+  zoom = target;
+  tx = 0;
+  ty = 0;
+  applyTransform();
+}
+
+function zoomBy(factor){
+  const prev = zoom;
+  let next = zoom * factor;
+  next = Math.max(minZoom, Math.min(maxZoom, next));
+
+  // zoom around center of viewport
+  const rect = contentShell.getBoundingClientRect();
+  const cx = rect.width / 2;
+  const cy = rect.height / 2;
+
+  // adjust translation to keep center stable
+  tx = cx - (cx - tx) * (next / prev);
+  ty = cy - (cy - ty) * (next / prev);
+
+  zoom = next;
+  applyTransform();
+}
+
+function resetZoom(){
+  zoom = 1;
+  tx = 0;
+  ty = 0;
+  applyTransform();
+}
+
+// pan interactions
+function setPan(enabled){
+  panEnabled = enabled;
+  const txt = enabled ? "Mão: ON" : "Mão: OFF";
+  const btns = [document.getElementById("panToggleBtn"), document.getElementById("panToggleBtnM")].filter(Boolean);
+  btns.forEach(b => b.textContent = txt);
+
+  // cursor feedback
+  contentShell.style.cursor = enabled ? "grab" : "default";
+}
+setPan(false);
+
+function setAnnotate(enabled){
+  annotateEnabled = enabled;
+  const txt = enabled ? "Anotar: ON" : "Anotar: OFF";
+  const btns = [document.getElementById("annotateToggleBtn"), document.getElementById("annotateToggleBtnM")].filter(Boolean);
+  btns.forEach(b => b.textContent = txt);
+
+  // When annotate is on, we want clicks to place pins
+  if(enabled){
+    contentShell.style.cursor = "crosshair";
+  }else{
+    contentShell.style.cursor = panEnabled ? "grab" : "default";
+  }
+}
+setAnnotate(false);
+
+function onPointerDown(e){
+  // annotate mode: click to place pin (no drag)
+  if(annotateEnabled) return;
+
+  if(!panEnabled) return;
+  isDragging = true;
+  contentShell.style.cursor = "grabbing";
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  dragStartTX = tx;
+  dragStartTY = ty;
+}
+function onPointerMove(e){
+  if(!isDragging) return;
+  const dx = e.clientX - dragStartX;
+  const dy = e.clientY - dragStartY;
+  tx = dragStartTX + dx;
+  ty = dragStartTY + dy;
+  applyTransform();
+}
+function onPointerUp(){
+  if(!isDragging) return;
+  isDragging = false;
+  contentShell.style.cursor = panEnabled ? "grab" : "default";
+}
+contentShell.addEventListener("pointerdown", onPointerDown);
+window.addEventListener("pointermove", onPointerMove);
+window.addEventListener("pointerup", onPointerUp);
+
+// double click to fit (nice)
+contentShell.addEventListener("dblclick", (e)=>{
+  e.preventDefault();
+  fitToWidth();
+});
+
+// bind zoom buttons (desktop + mobile + top)
+function bindClick(id, fn){
+  const el = document.getElementById(id);
+  if(el) el.addEventListener("click", fn);
+}
+bindClick("zoomInBtn", ()=>zoomBy(1.15));
+bindClick("zoomOutBtn", ()=>zoomBy(1/1.15));
+bindClick("fitBtn", fitToWidth);
+bindClick("resetBtn", resetZoom);
+bindClick("panToggleBtn", ()=>setPan(!panEnabled));
+
+bindClick("zoomInBtnM", ()=>zoomBy(1.15));
+bindClick("zoomOutBtnM", ()=>zoomBy(1/1.15));
+bindClick("fitBtnM", fitToWidth);
+bindClick("resetBtnM", resetZoom);
+bindClick("panToggleBtnM", ()=>setPan(!panEnabled));
+
+bindClick("zoomInBtnR", ()=>zoomBy(1.15));
+bindClick("zoomOutBtnR", ()=>zoomBy(1/1.15));
+bindClick("fitBtnR", fitToWidth);
+bindClick("resetBtnR", resetZoom);
+
+bindClick("zoomInTop", ()=>zoomBy(1.15));
+bindClick("zoomOutTop", ()=>zoomBy(1/1.15));
+bindClick("fitTop", fitToWidth);
+
+bindClick("annotateToggleBtn", ()=>setAnnotate(!annotateEnabled));
+bindClick("annotateToggleBtnM", ()=>setAnnotate(!annotateEnabled));
+
+/* =========================
+   Comments + Annotations (localStorage)
+   ========================= */
+let currentBookTitle = "Livro";
+let currentUserLabel = "user";
+
+function loadComments(bookId, page){
+  try{
+    const raw = localStorage.getItem(lsKeyComments(bookId, page));
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){
+    return [];
+  }
+}
+function saveComments(bookId, page, arr){
+  localStorage.setItem(lsKeyComments(bookId, page), JSON.stringify(arr));
+}
+function renderCommentsUI(arr){
+  const list = document.getElementById("commentsList");
+  const listM = document.getElementById("commentsListM");
+  const count = document.getElementById("commentCount");
+  const countM = document.getElementById("commentCountM");
+
+  const html = arr.map(c => `
+    <div class="c-item">
+      <div class="text-xs" style="color: rgba(255,255,255,.65)">${escapeHtml(c.at)} • ${escapeHtml(c.user)}</div>
+      <div class="text-sm mt-1" style="color: rgba(255,255,255,.92)">${escapeHtml(c.text)}</div>
+    </div>
+  `).join("");
+
+  if(list) list.innerHTML = html || `<div class="text-xs" style="color: rgba(255,255,255,.55)">Sem comentários ainda.</div>`;
+  if(listM) listM.innerHTML = html || `<div class="text-xs" style="color: rgba(255,255,255,.55)">Sem comentários ainda.</div>`;
+  if(count) count.textContent = String(arr.length);
+  if(countM) countM.textContent = String(arr.length);
+}
+
+function addComment(bookId, page, text){
+  const t = (text || "").trim();
+  if(!t) return;
+  const arr = loadComments(bookId, page);
+  arr.unshift({ text: t, at: nowStamp(), user: currentUserLabel });
+  saveComments(bookId, page, arr);
+  renderCommentsUI(arr);
+}
+
+function bindCommentButtons(){
+  const btn = document.getElementById("addCommentBtn");
+  const txt = document.getElementById("commentText");
+  if(btn && txt){
+    btn.onclick = ()=>{ addComment(bookId, page, txt.value); txt.value = ""; };
+  }
+  const btnM = document.getElementById("addCommentBtnM");
+  const txtM = document.getElementById("commentTextM");
+  if(btnM && txtM){
+    btnM.onclick = ()=>{ addComment(bookId, page, txtM.value); txtM.value = ""; };
+  }
+}
+
+/* Annotations */
+function loadAnnos(bookId, page){
+  try{
+    const raw = localStorage.getItem(lsKeyAnnos(bookId, page));
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  }catch(e){
+    return [];
+  }
+}
+function saveAnnos(bookId, page, arr){
+  localStorage.setItem(lsKeyAnnos(bookId, page), JSON.stringify(arr));
+}
+
+const annoLayer = document.getElementById("annoLayer");
+
+function clearAnnos(){
+  if(annoLayer) annoLayer.innerHTML = "";
+}
+
+function renderAnnos(arr){
+  clearAnnos();
+  // We place pins relative to the visible image box (contentBox)
+  // We'll create pins inside contentBox (so it transforms together)
+  const img = contentBox.querySelector("img");
+  if(!img) return;
+
+  // ensure contentBox is position relative
+  contentBox.style.position = "relative";
+
+  // remove old pins if any
+  contentBox.querySelectorAll(".pinWrap").forEach(n=>n.remove());
+
+  arr.forEach((a, idx)=>{
+    const wrap = document.createElement("div");
+    wrap.className = "pinWrap";
+    wrap.style.position = "absolute";
+    wrap.style.left = (a.x * 100) + "%";
+    wrap.style.top = (a.y * 100) + "%";
+    wrap.style.pointerEvents = "auto";
+
+    const pin = document.createElement("div");
+    pin.className = "pin";
+
+    const label = document.createElement("div");
+    label.className = "pin-label";
+    label.innerHTML = `<div style="font-weight:700">${escapeHtml(a.text)}</div>
+      <div style="margin-top:4px;color:rgba(255,255,255,.65)">${escapeHtml(a.at)} • ${escapeHtml(a.user)}</div>
+      <div style="margin-top:6px;color:rgba(255,255,255,.55)">(duplo clique para apagar)</div>`;
+
+    label.style.display = "none";
+
+    pin.addEventListener("click", (e)=>{
+      e.stopPropagation();
+      label.style.display = (label.style.display === "none") ? "block" : "none";
+    });
+
+    // remove annotation by dblclick on pin
+    pin.addEventListener("dblclick", (e)=>{
+      e.stopPropagation();
+      const all = loadAnnos(bookId, page).filter((_, i)=>i !== idx);
+      saveAnnos(bookId, page, all);
+      renderAnnos(all);
+    });
+
+    wrap.appendChild(pin);
+    wrap.appendChild(label);
+    contentBox.appendChild(wrap);
+  });
+}
+
+function addAnnoAt(bookId, page, xNorm, yNorm, text){
+  const t = (text || "").trim();
+  if(!t) return;
+
+  const arr = loadAnnos(bookId, page);
+  arr.unshift({ x: xNorm, y: yNorm, text: t, at: nowStamp(), user: currentUserLabel });
+  saveAnnos(bookId, page, arr);
+  renderAnnos(arr);
+}
+
+// Click in contentShell when annotate is ON
+contentShell.addEventListener("click", (e)=>{
+  if(!annotateEnabled) return;
+
+  const img = contentBox.querySelector("img");
+  if(!img) return;
+
+  // get position relative to image box (contentBox)
+  const boxRect = contentBox.getBoundingClientRect();
+
+  // click position in viewport
+  const cx = e.clientX;
+  const cy = e.clientY;
+
+  // normalized 0..1
+  const x = (cx - boxRect.left) / boxRect.width;
+  const y = (cy - boxRect.top) / boxRect.height;
+
+  if(x < 0 || x > 1 || y < 0 || y > 1) return;
+
+  const note = prompt("Texto da anotação:");
+  if(note === null) return;
+
+  addAnnoAt(bookId, page, x, y, note);
+});
+
 /* =========================
    Leitura
    ========================= */
@@ -186,8 +744,6 @@ async function fetchMe(){
 }
 
 function renderPageImageOrError(pageImg, bookTitle){
-  const contentBox = document.getElementById("contentBox");
-
   const img = new Image();
   img.src = pageImg;
   img.className = "w-full rounded-2xl";
@@ -196,6 +752,13 @@ function renderPageImageOrError(pageImg, bookTitle){
   img.onload = () => {
     contentBox.innerHTML = "";
     contentBox.appendChild(img);
+
+    // after image loads, apply fit on first load
+    setTimeout(()=>fitToWidth(), 0);
+
+    // load annotations
+    const annos = loadAnnos(bookId, page);
+    renderAnnos(annos);
   };
 
   img.onerror = () => {
@@ -228,7 +791,6 @@ function renderPageImageOrError(pageImg, bookTitle){
 }
 
 function coverHtml(coverUrl){
-  // ✅ fallback elegante se capa falhar
   if(!coverUrl){
     return `<div class="w-full h-full grid place-items-center text-xs" style="color: rgba(255,255,255,.45)">Sem capa</div>`;
   }
@@ -242,51 +804,11 @@ function coverHtml(coverUrl){
   `;
 }
 
-async function loadPage(){
-  const debugBox = document.getElementById("debugBox");
-  const msg = document.getElementById("msg");
-  const blocker = document.getElementById("blocker");
+function renderHeader(whereId, bookTitle, bookType, coverUrl, totalPages, limitPage){
+  const el = document.getElementById(whereId);
+  if(!el) return;
 
-  msg.textContent = "";
-  blocker.classList.add("hidden");
-
-  const me = await fetchMe();
-  if(!me){
-    window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
-    return;
-  }
-
-  const res = await apiFetch(`/api/read/${bookId}/${page}/`);
-  const data = await res.json().catch(()=>({}));
-
-  debugBox.textContent = JSON.stringify({ status: res.status, data }, null, 2);
-
-  const totalPages = Number(pick(data, ["total_pages","totalPages","pages_total","pages","total"], 0)) || 0;
-  const limitPage  = Number(pick(data, ["allowed_until_page","limit_until_page","allowedUntilPage","limitPage","allowed_until","limit_until"], 0)) || 0;
-
-  const bookTitle = pick(data, ["title","book_title","name","book"], "Livro");
-  const bookType  = pick(data, ["book_type","type","tier"], "");
-
-  // ✅ capa: aceita vários nomes
-  const coverUrl = pick(data, [
-    "cover_url",
-    "cover",
-    "coverUrl",
-    "coverURL",
-    "book_cover",
-    "bookCover",
-    "coverImage",
-    "cover_image",
-    "coverKey",
-    "cover_key"
-  ], "");
-
-  const pageImg = pick(data, ["page_image","pageImage","image","image_url","img","url","page_url"], "");
-
-  if(totalPages > 0) maxPages = totalPages;
-
-  // Header (com fallback de capa)
-  document.getElementById("header").innerHTML = `
+  el.innerHTML = `
     <div class="w-24 aspect-[3/4] rounded-2xl overflow-hidden poster" style="border:1px solid rgba(255,255,255,.10)">
       ${coverHtml(coverUrl)}
     </div>
@@ -302,10 +824,56 @@ async function loadPage(){
       </div>
     </div>
   `;
+}
 
-  // Bloqueio
+async function loadPage(){
+  const debugBox = document.getElementById("debugBox");
+  const debugBoxM = document.getElementById("debugBoxM");
+  const msg = document.getElementById("msg");
+  const msgM = document.getElementById("msgM");
+  const blocker = document.getElementById("blocker");
+  const blockerM = document.getElementById("blockerM");
+
+  if(msg) msg.textContent = "";
+  if(msgM) msgM.textContent = "";
+  if(blocker) blocker.classList.add("hidden");
+  if(blockerM) blockerM.classList.add("hidden");
+
+  const me = await fetchMe();
+  if(!me){
+    window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
+    return;
+  }
+  currentUserLabel = (me.email || me.username || me.user || me.name || "user");
+
+  const res = await apiFetch(`/api/read/${bookId}/${page}/`);
+  const data = await res.json().catch(()=>({}));
+
+  const dbg = JSON.stringify({ status: res.status, data }, null, 2);
+  if(debugBox) debugBox.textContent = dbg;
+  if(debugBoxM) debugBoxM.textContent = dbg;
+
+  const totalPages = Number(pick(data, ["total_pages","totalPages","pages_total","pages","total"], 0)) || 0;
+  const limitPage  = Number(pick(data, ["allowed_until_page","limit_until_page","allowedUntilPage","limitPage","allowed_until","limit_until"], 0)) || 0;
+
+  const bookTitle = pick(data, ["title","book_title","name","book"], "Livro");
+  currentBookTitle = bookTitle;
+
+  const bookType  = pick(data, ["book_type","type","tier"], "");
+  const coverUrl = pick(data, [
+    "cover_url","cover","coverUrl","coverURL","book_cover","bookCover","coverImage","cover_image","coverKey","cover_key"
+  ], "");
+  const pageImg = pick(data, ["page_image","pageImage","image","image_url","img","url","page_url"], "");
+
+  if(totalPages > 0) maxPages = totalPages;
+
+  // headers (desktop + mobile drawer)
+  renderHeader("header", bookTitle, bookType, coverUrl, totalPages, limitPage);
+  renderHeader("headerMobile", bookTitle, bookType, coverUrl, totalPages, limitPage);
+
+  // blocked
   if(res.status === 403 && data.blocked){
-    document.getElementById("contentBox").innerHTML = `
+    const blockedHtml = `
       <div class="p-10 text-center">
         <div class="text-xl font-black">Conteúdo bloqueado</div>
         <div class="text-sm mt-2" style="color: rgba(255,255,255,.62)">
@@ -313,23 +881,22 @@ async function loadPage(){
         </div>
       </div>
     `;
-    blocker.innerHTML = `
+    contentBox.innerHTML = blockedHtml;
+
+    const blockerHtml = `
       <div class="font-bold">Para continuar:</div>
       <div class="text-sm mt-1" style="color: rgba(255,255,255,.72)">${escapeHtml(data.message || "")}</div>
       <button class="btn-red mt-3 w-full px-4 py-2 rounded-xl font-semibold" onclick="share()">Partilhar link</button>
     `;
-    blocker.classList.remove("hidden");
+    if(blocker){ blocker.innerHTML = blockerHtml; blocker.classList.remove("hidden"); }
+    if(blockerM){ blockerM.innerHTML = blockerHtml; blockerM.classList.remove("hidden"); }
 
-    setWatermarkOverlay({
-      bookTitle,
-      pageNum: page,
-      userLabel: (me.email || me.username || me.user || me.name || "user")
-    });
+    setWatermarkOverlay({ bookTitle, pageNum: page, userLabel: currentUserLabel });
     return;
   }
 
   if(!pageImg){
-    document.getElementById("contentBox").innerHTML = `
+    contentBox.innerHTML = `
       <div class="p-10 text-center">
         <div class="text-lg font-black">Não veio a imagem da página</div>
         <div class="text-sm mt-2" style="color: rgba(255,255,255,.65)">
@@ -341,23 +908,38 @@ async function loadPage(){
     return;
   }
 
-  // ✅ renderiza página (com erro detalhado)
+  // page image
   renderPageImageOrError(pageImg, bookTitle);
 
-  setWatermarkOverlay({
-    bookTitle,
-    pageNum: page,
-    userLabel: (me.email || me.username || me.user || me.name || "user")
-  });
+  // comments for this page
+  const comments = loadComments(bookId, page);
+  renderCommentsUI(comments);
+
+  setWatermarkOverlay({ bookTitle, pageNum: page, userLabel: currentUserLabel });
 }
 
-// Navegação
-document.getElementById("prevBtn").onclick = () => { if(page > 1){ page--; loadPage(); } };
-document.getElementById("nextBtn").onclick = () => {
+/* =========================
+   Navigation bind (desktop + mobile)
+   ========================= */
+function goPrev(){ if(page > 1){ page--; loadPage(); } }
+function goNext(){
   if(page < maxPages){ page++; loadPage(); }
   else alert("Você chegou ao final do livro.");
-};
+}
 
+const prevBtn = document.getElementById("prevBtn");
+const nextBtn = document.getElementById("nextBtn");
+if(prevBtn) prevBtn.onclick = goPrev;
+if(nextBtn) nextBtn.onclick = goNext;
+
+const prevBtnM = document.getElementById("prevBtnM");
+const nextBtnM = document.getElementById("nextBtnM");
+if(prevBtnM) prevBtnM.onclick = goPrev;
+if(nextBtnM) nextBtnM.onclick = goNext;
+
+/* =========================
+   Share
+   ========================= */
 async function share(){
   const url = window.location.href;
   try{ await navigator.clipboard.writeText(url); }catch(e){ prompt("Copie o link:", url); }
@@ -367,7 +949,21 @@ async function share(){
   loadPage();
 }
 
-// Start
+/* =========================
+   Bind comments buttons
+   ========================= */
+bindCommentButtons();
+
+/* =========================
+   Start
+   ========================= */
 loadPage();
+
+// refit on resize (inteligente)
+let resizeTimer = null;
+window.addEventListener("resize", ()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(()=>{ fitToWidth(); }, 120);
+});
 </script>
 {% endblock %}
