@@ -2,14 +2,33 @@
 {% block title %}Owlsight — Leitura{% endblock %}
 
 {% block content %}
-<section class="fade-in">
-  <div class="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4">
+<section class="fade-in h-[100dvh] overflow-hidden">
 
-    <!-- LEFT -->
-    <aside class="glass soft-shadow rounded-3xl p-4">
-      <div class="flex items-start justify-between gap-3">
-        <div id="header" class="flex gap-3 flex-1"></div>
+  <!-- MOBILE TOP BAR -->
+  <div class="lg:hidden flex items-center justify-between p-3">
+    <button id="openDrawer" class="btn px-3 py-2 rounded-xl">☰</button>
+    <div class="font-bold">Leitura</div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4 h-full">
+
+    <!-- LEFT DRAWER -->
+    <aside id="drawer"
+           class="glass soft-shadow rounded-3xl p-4
+                  fixed lg:relative
+                  inset-y-0 left-0
+                  w-[300px] lg:w-auto
+                  z-50
+                  transform -translate-x-full lg:translate-x-0
+                  transition-transform duration-300
+                  overflow-y-auto">
+
+      <div class="flex justify-between items-center mb-3 lg:hidden">
+        <div class="font-bold">Menu</div>
+        <button id="closeDrawer" class="btn px-2 py-1 rounded-xl">✕</button>
       </div>
+
+      <div id="header" class="flex gap-3"></div>
 
       <div class="mt-4 grid gap-2">
         <div class="flex gap-2">
@@ -17,357 +36,158 @@
           <button id="nextBtn" class="btn-red px-4 py-2 rounded-xl w-1/2 font-semibold">Próxima</button>
         </div>
 
-        <p id="msg" class="text-sm" style="color: rgba(225,6,0,.92);"></p>
-
-        <div id="blocker" class="hidden rounded-2xl p-3"
-             style="background: rgba(225,6,0,.10); border:1px solid rgba(225,6,0,.26);"></div>
-
-        <!-- Debug -->
         <details class="mt-2 rounded-2xl p-3"
                  style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
-          <summary class="text-sm" style="color: rgba(255,255,255,.75)">Debug (resposta do servidor)</summary>
-          <pre id="debugBox" class="mt-2 text-xs whitespace-pre-wrap" style="color: rgba(255,255,255,.65)"></pre>
+          <summary class="text-sm">Debug</summary>
+          <pre id="debugBox" class="text-xs"></pre>
         </details>
       </div>
     </aside>
 
     <!-- RIGHT -->
-    <section class="glass soft-shadow rounded-3xl p-4">
+    <section class="glass soft-shadow rounded-3xl p-4 h-full">
+
       <div id="contentShell"
-           class="relative rounded-2xl overflow-auto"
-           style="max-height: calc(100vh - 2.5rem);">
+           class="relative w-full h-full overflow-hidden rounded-2xl">
 
-        <div id="contentBox" class="rounded-2xl"></div>
-
-        <!-- Watermark overlay -->
-        <div id="wmOverlay"
-             class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200"></div>
-
-        <!-- Blur ao trocar de aba -->
-        <div id="privacyBlur"
-             class="hidden absolute inset-0 backdrop-blur-2xl"
-             style="background: rgba(0,0,0,.35);">
-          <div class="h-full w-full grid place-items-center">
-            <div class="text-center">
-              <div class="text-xl font-black">Conteúdo protegido</div>
-              <div class="text-sm mt-1" style="color: rgba(255,255,255,.70)">
-                Volte para a aba para continuar a leitura.
-              </div>
-            </div>
-          </div>
+        <div id="contentBox"
+             class="w-full h-full flex items-center justify-center cursor-grab active:cursor-grabbing">
         </div>
 
       </div>
-    </section>
 
+    </section>
   </div>
 </section>
 
 <style>
-  /* Anti seleção/cópia (dificulta) */
-  #contentShell, #contentShell *{ -webkit-user-select:none; user-select:none; }
-  img{ -webkit-user-drag:none; user-drag:none; }
-
-  /* Página sempre inteira (sem cortar/esticar) */
-  #contentBox img{
-    display:block;
-    width:100%;
-    height:auto;
-  }
-
-  /* Caixa de erro quando imagem falha */
-  .img-error{
-    border:1px solid rgba(225,6,0,.28);
-    background: rgba(225,6,0,.08);
-    border-radius: 16px;
-    padding: 16px;
-  }
+#contentBox img{
+  max-width:none;
+  max-height:none;
+  user-select:none;
+  -webkit-user-drag:none;
+  transform-origin:center center;
+}
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 /* =========================
-   CSRF + fetch
-   ========================= */
-function getCookie(name){
-  const v = document.cookie.split(";").map(s=>s.trim());
-  for(const c of v){
-    if(c.startsWith(name+"=")) return decodeURIComponent(c.slice(name.length+1));
-  }
-  return null;
-}
-async function apiFetch(url, opts={}){
-  const headers = new Headers(opts.headers || {});
-  opts.credentials = "same-origin";
-  const method = (opts.method || "GET").toUpperCase();
-  if(["POST","PUT","PATCH","DELETE"].includes(method)){
-    const csrf = getCookie("csrftoken");
-    if(csrf) headers.set("X-CSRFToken", csrf);
-  }
-  opts.headers = headers;
-  return fetch(url, opts);
-}
+   Drawer mobile
+========================= */
+const drawer = document.getElementById("drawer")
+document.getElementById("openDrawer")?.addEventListener("click",()=>{
+  drawer.classList.remove("-translate-x-full")
+})
+document.getElementById("closeDrawer")?.addEventListener("click",()=>{
+  drawer.classList.add("-translate-x-full")
+})
 
 /* =========================
-   Anti-cópia (dificulta)
-   ========================= */
-(function harden(){
-  document.addEventListener("contextmenu", (e)=>{ if(e.target.closest("#contentShell")) e.preventDefault(); });
-  document.addEventListener("dragstart", (e)=>{ if(e.target.closest("#contentShell")) e.preventDefault(); });
-  document.addEventListener("keydown", (e)=>{
-    const key = (e.key||"").toLowerCase();
-    const ctrl = e.ctrlKey || e.metaKey;
-    if(key === "printscreen") e.preventDefault();
-    if(!ctrl) return;
-    if(["s","p","c","u"].includes(key)) e.preventDefault();
-    if(e.shiftKey && ["i","j","c"].includes(key)) e.preventDefault();
-  });
-  const blur = document.getElementById("privacyBlur");
-  document.addEventListener("visibilitychange", ()=>{
-    if(document.hidden) blur.classList.remove("hidden");
-    else blur.classList.add("hidden");
-  });
-})();
+   Zoom Inteligente
+========================= */
+let scale = 1
+let posX = 0
+let posY = 0
+let isDragging = false
+let startX = 0
+let startY = 0
 
-/* =========================
-   Watermark
-   ========================= */
-function escapeHtml(s){
-  return String(s ?? "").replace(/[&<>"']/g, (m) => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-  }[m]));
-}
-function setWatermarkOverlay({ bookTitle, pageNum, userLabel }){
-  const overlay = document.getElementById("wmOverlay");
-  const text = `${bookTitle} • ${userLabel} • p.${pageNum} • Owlsight`;
-  const safe = escapeHtml(text);
+const contentBox = document.getElementById("contentBox")
 
-  const svg = `
-  <svg xmlns="http://www.w3.org/2000/svg" width="640" height="420">
-    <defs><style>
-      .t{font-family: Arial, sans-serif; font-size: 18px; fill: rgba(255,255,255,0.12);}
-    </style></defs>
-    <g transform="translate(40,250) rotate(-24)">
-      <text x="0" y="0" class="t">${safe}</text>
-      <text x="0" y="42" class="t">${safe}</text>
-      <text x="0" y="84" class="t">${safe}</text>
-    </g>
-  </svg>`.trim();
-
-  const dataUrl = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
-  overlay.style.backgroundImage = `url("${dataUrl}")`;
-  overlay.style.backgroundRepeat = "repeat";
-  overlay.style.backgroundSize = "640px 420px";
-  overlay.style.opacity = "1";
+function applyTransform(){
+  const img = contentBox.querySelector("img")
+  if(!img) return
+  img.style.transform = `translate(${posX}px, ${posY}px) scale(${scale})`
 }
 
-/* =========================
-   Helpers
-   ========================= */
-function pick(data, keys, fallback=null){
-  for(const k of keys){
-    if(data && data[k] !== undefined && data[k] !== null && data[k] !== "") return data[k];
-  }
-  return fallback;
+function enableZoom(img){
+
+  // mouse wheel zoom
+  img.addEventListener("wheel",(e)=>{
+    e.preventDefault()
+    const delta = e.deltaY < 0 ? 0.1 : -0.1
+    scale = Math.min(Math.max(1, scale + delta), 4)
+    applyTransform()
+  })
+
+  // drag
+  img.addEventListener("mousedown",(e)=>{
+    isDragging = true
+    startX = e.clientX - posX
+    startY = e.clientY - posY
+  })
+
+  window.addEventListener("mouseup",()=> isDragging = false)
+
+  window.addEventListener("mousemove",(e)=>{
+    if(!isDragging) return
+    posX = e.clientX - startX
+    posY = e.clientY - startY
+    applyTransform()
+  })
+
+  // touch drag
+  img.addEventListener("touchstart",(e)=>{
+    if(e.touches.length === 1){
+      isDragging = true
+      startX = e.touches[0].clientX - posX
+      startY = e.touches[0].clientY - posY
+    }
+  })
+
+  img.addEventListener("touchmove",(e)=>{
+    if(e.touches.length === 1 && isDragging){
+      posX = e.touches[0].clientX - startX
+      posY = e.touches[0].clientY - startY
+      applyTransform()
+    }
+  })
+
+  img.addEventListener("touchend",()=> isDragging = false)
+
+  // double click reset
+  img.addEventListener("dblclick",()=>{
+    scale = 1
+    posX = 0
+    posY = 0
+    applyTransform()
+  })
 }
 
 /* =========================
    Leitura
-   ========================= */
-const bookId = Number("{{ book_id }}");
-let page = Number("{{ page_number }}");
-let maxPages = 1;
-
-async function fetchMe(){
-  const res = await apiFetch("/api/auth/me/");
-  if(!res.ok) return null;
-  return res.json().catch(()=>null);
-}
-
-function renderPageImageOrError(pageImg, bookTitle){
-  const contentBox = document.getElementById("contentBox");
-
-  const img = new Image();
-  img.src = pageImg;
-  img.className = "w-full rounded-2xl";
-  img.draggable = false;
-
-  img.onload = () => {
-    contentBox.innerHTML = "";
-    contentBox.appendChild(img);
-  };
-
-  img.onerror = () => {
-    contentBox.innerHTML = `
-      <div class="img-error">
-        <div class="text-lg font-black">A imagem da página falhou carregar</div>
-        <div class="text-sm mt-2" style="color: rgba(255,255,255,.75)">
-          O link da imagem (page_image) está inválido/expirado ou sem permissão.
-        </div>
-
-        <div class="text-xs mt-3" style="color: rgba(255,255,255,.70)">
-          <div><b>Livro:</b> ${escapeHtml(bookTitle)}</div>
-          <div class="mt-1"><b>URL:</b></div>
-          <div class="mt-1" style="word-break: break-all; color: rgba(255,255,255,.60)">${escapeHtml(pageImg)}</div>
-        </div>
-
-        <div class="mt-3 flex flex-wrap gap-2">
-          <a class="btn px-4 py-2 rounded-xl text-sm" href="${pageImg}" target="_blank" rel="noopener">
-            Abrir imagem (nova aba)
-          </a>
-          <button class="btn-red px-4 py-2 rounded-xl text-sm font-semibold" onclick="loadPage()">
-            Recarregar
-          </button>
-        </div>
-      </div>
-    `;
-  };
-
-  contentBox.innerHTML = `<div class="p-10 text-center" style="color: rgba(255,255,255,.65)">Carregando imagem...</div>`;
-}
-
-function coverHtml(coverUrl){
-  // ✅ fallback elegante se capa falhar
-  if(!coverUrl){
-    return `<div class="w-full h-full grid place-items-center text-xs" style="color: rgba(255,255,255,.45)">Sem capa</div>`;
-  }
-  return `
-    <img
-      src="${coverUrl}"
-      class="w-full h-full object-cover"
-      draggable="false"
-      onerror="this.outerHTML='<div class=&quot;w-full h-full grid place-items-center text-xs&quot; style=&quot;color: rgba(255,255,255,.45)&quot;>Capa indisponível</div>'"
-    />
-  `;
-}
+========================= */
+const bookId = Number("{{ book_id }}")
+let page = Number("{{ page_number }}")
 
 async function loadPage(){
-  const debugBox = document.getElementById("debugBox");
-  const msg = document.getElementById("msg");
-  const blocker = document.getElementById("blocker");
+  const res = await fetch(`/api/read/${bookId}/${page}/`)
+  const data = await res.json()
 
-  msg.textContent = "";
-  blocker.classList.add("hidden");
+  document.getElementById("debugBox").textContent =
+    JSON.stringify(data,null,2)
 
-  const me = await fetchMe();
-  if(!me){
-    window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
-    return;
+  const img = new Image()
+  img.src = data.page_image
+  img.className = "rounded-2xl"
+
+  img.onload = ()=>{
+    contentBox.innerHTML = ""
+    contentBox.appendChild(img)
+    enableZoom(img)
   }
-
-  const res = await apiFetch(`/api/read/${bookId}/${page}/`);
-  const data = await res.json().catch(()=>({}));
-
-  debugBox.textContent = JSON.stringify({ status: res.status, data }, null, 2);
-
-  const totalPages = Number(pick(data, ["total_pages","totalPages","pages_total","pages","total"], 0)) || 0;
-  const limitPage  = Number(pick(data, ["allowed_until_page","limit_until_page","allowedUntilPage","limitPage","allowed_until","limit_until"], 0)) || 0;
-
-  const bookTitle = pick(data, ["title","book_title","name","book"], "Livro");
-  const bookType  = pick(data, ["book_type","type","tier"], "");
-
-  // ✅ capa: aceita vários nomes
-  const coverUrl = pick(data, [
-    "cover_url",
-    "cover",
-    "coverUrl",
-    "coverURL",
-    "book_cover",
-    "bookCover",
-    "coverImage",
-    "cover_image",
-    "coverKey",
-    "cover_key"
-  ], "");
-
-  const pageImg = pick(data, ["page_image","pageImage","image","image_url","img","url","page_url"], "");
-
-  if(totalPages > 0) maxPages = totalPages;
-
-  // Header (com fallback de capa)
-  document.getElementById("header").innerHTML = `
-    <div class="w-24 aspect-[3/4] rounded-2xl overflow-hidden poster" style="border:1px solid rgba(255,255,255,.10)">
-      ${coverHtml(coverUrl)}
-    </div>
-    <div class="flex-1">
-      <div class="font-black text-lg leading-tight">${escapeHtml(bookTitle)}</div>
-      <div class="text-xs mt-1" style="color: rgba(255,255,255,.65)">
-        Tipo: <b>${escapeHtml(String(bookType).toUpperCase())}</b>
-      </div>
-      <div class="text-xs mt-2" style="color: rgba(255,255,255,.60)">
-        Folha <b>${page}</b>
-        • Limite: <b>${limitPage || "-"}</b>
-        • Total: <b>${totalPages || "-"}</b>
-      </div>
-    </div>
-  `;
-
-  // Bloqueio
-  if(res.status === 403 && data.blocked){
-    document.getElementById("contentBox").innerHTML = `
-      <div class="p-10 text-center">
-        <div class="text-xl font-black">Conteúdo bloqueado</div>
-        <div class="text-sm mt-2" style="color: rgba(255,255,255,.62)">
-          ${escapeHtml(data.message || "Acesso limitado.")}
-        </div>
-      </div>
-    `;
-    blocker.innerHTML = `
-      <div class="font-bold">Para continuar:</div>
-      <div class="text-sm mt-1" style="color: rgba(255,255,255,.72)">${escapeHtml(data.message || "")}</div>
-      <button class="btn-red mt-3 w-full px-4 py-2 rounded-xl font-semibold" onclick="share()">Partilhar link</button>
-    `;
-    blocker.classList.remove("hidden");
-
-    setWatermarkOverlay({
-      bookTitle,
-      pageNum: page,
-      userLabel: (me.email || me.username || me.user || me.name || "user")
-    });
-    return;
-  }
-
-  if(!pageImg){
-    document.getElementById("contentBox").innerHTML = `
-      <div class="p-10 text-center">
-        <div class="text-lg font-black">Não veio a imagem da página</div>
-        <div class="text-sm mt-2" style="color: rgba(255,255,255,.65)">
-          O backend precisa enviar <b>page_image</b>.
-          Veja no Debug acima quais campos estão vindo.
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  // ✅ renderiza página (com erro detalhado)
-  renderPageImageOrError(pageImg, bookTitle);
-
-  setWatermarkOverlay({
-    bookTitle,
-    pageNum: page,
-    userLabel: (me.email || me.username || me.user || me.name || "user")
-  });
 }
 
-// Navegação
-document.getElementById("prevBtn").onclick = () => { if(page > 1){ page--; loadPage(); } };
-document.getElementById("nextBtn").onclick = () => {
-  if(page < maxPages){ page++; loadPage(); }
-  else alert("Você chegou ao final do livro.");
-};
-
-async function share(){
-  const url = window.location.href;
-  try{ await navigator.clipboard.writeText(url); }catch(e){ prompt("Copie o link:", url); }
-  const res = await apiFetch(`/api/unlock/share/${bookId}/`, { method:"POST" });
-  const data = await res.json().catch(()=>({}));
-  alert(data.message || "Partilha registrada!");
-  loadPage();
+document.getElementById("prevBtn").onclick = ()=>{
+  if(page>1){ page--; loadPage() }
 }
 
-// Start
-loadPage();
+document.getElementById("nextBtn").onclick = ()=>{
+  page++; loadPage()
+}
+
+loadPage()
 </script>
 {% endblock %}
