@@ -5,11 +5,8 @@
 <section class="fade-in">
   <!-- Top bar (mobile): hamburger + nav + zoom -->
   <div class="lg:hidden flex items-center justify-between gap-2 mb-3">
-    <button id="openDrawerBtn" class="btn px-4 py-2 rounded-xl text-sm">
-      ☰ Menu
-    </button>
+    <button id="openDrawerBtn" class="btn px-4 py-2 rounded-xl text-sm">☰ Menu</button>
 
-    <!-- ✅ Prev/Next junto do zoom (mobile) -->
     <div class="flex items-center gap-2">
       <button id="prevBtn" class="btn px-3 py-2 rounded-xl text-sm">⟵</button>
       <button id="nextBtn" class="btn-red px-3 py-2 rounded-xl text-sm font-semibold">⟶</button>
@@ -21,7 +18,6 @@
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-4">
-
     <!-- LEFT (Desktop) -->
     <aside class="hidden lg:block glass soft-shadow rounded-3xl p-4" id="leftPanelDesktop">
       <div class="flex items-start justify-between gap-3">
@@ -75,7 +71,7 @@
           <button id="closeDrawerBtn" class="btn px-3 py-2 rounded-xl text-sm">✕</button>
         </div>
 
-        <!-- ✅ Menu do leitor: só Página inicial -->
+        <!-- ✅ Navegação: Página inicial SEMPRE -->
         <div class="mt-4 rounded-2xl p-3"
              style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
           <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Navegação</div>
@@ -156,7 +152,6 @@
           <button id="annotateToggleBtn" class="btn px-4 py-2 rounded-xl text-sm">
             Anotar: OFF
           </button>
-          <!-- ✅ removido botão Sair -->
         </div>
 
         <div class="flex items-center gap-2">
@@ -172,7 +167,6 @@
 
         <div id="viewer" class="relative w-full h-full">
           <div id="contentBox" class="rounded-2xl"></div>
-          <div id="annoLayer" class="absolute inset-0 pointer-events-none"></div>
         </div>
 
         <div id="wmOverlay"
@@ -219,13 +213,14 @@
     touch-action: pan-y;
   }
 
-  /* ✅ CAMADAS (corrige clique no pin e label invisível) */
+  /* ✅ Camadas: pins acima do watermark */
   #viewer{ position: relative; z-index: 20; }
   #wmOverlay{ position: absolute; inset: 0; z-index: 10; }
-  .pinWrap{ z-index: 40; }
-  .pin{ z-index: 41; }
-  .pin-label{ z-index: 42; }
 
+  /* ✅ Importante: permitir labels “fora” do contentBox */
+  #contentBox{ position: relative; overflow: visible; }
+
+  /* Zoom/Pan */
   #contentBox{
     transform-origin: 0 0;
     will-change: transform;
@@ -245,6 +240,8 @@
     padding: 16px;
   }
 
+  /* Pins */
+  .pinWrap{ position:absolute; z-index: 9999; pointer-events:auto; }
   .pin{
     width: 14px;
     height: 14px;
@@ -252,25 +249,26 @@
     border: 2px solid rgba(255,255,255,.85);
     background: rgba(225,6,0,.92);
     box-shadow: 0 10px 30px rgba(0,0,0,.35);
-    position: absolute;
     transform: translate(-50%,-50%);
+    cursor: pointer;
   }
-  .pin:hover{ filter: brightness(1.08); }
 
+  /* ✅ Label agora pode receber eventos (não fica “morta”) */
   .pin-label{
     position:absolute;
     transform: translate(10px,-18px);
-    max-width: 220px;
+    max-width: 240px;
     padding: 8px 10px;
     border-radius: 12px;
-    background: rgba(0,0,0,.78);
-    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(0,0,0,.86);
+    border: 1px solid rgba(255,255,255,.12);
     color: rgba(255,255,255,.92);
     font-size: 12px;
     line-height: 1.2;
     white-space: normal;
     word-break: break-word;
-    pointer-events: none;
+    pointer-events: auto;
+    z-index: 10000;
   }
 
   .c-item{
@@ -305,13 +303,12 @@ async function apiFetch(url, opts={}){
   opts.headers = headers;
   return fetch(url, opts);
 }
-
 async function apiGetJson(url){
   const res = await apiFetch(url);
-  if(!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
-  return res.json();
+  const data = await res.json().catch(()=>null);
+  if(!res.ok) throw { status: res.status, data };
+  return data;
 }
-
 async function apiPostJson(url, body){
   const res = await apiFetch(url, {
     method: "POST",
@@ -319,45 +316,51 @@ async function apiPostJson(url, body){
     body: JSON.stringify(body),
   });
   const data = await res.json().catch(()=>null);
-  if(!res.ok) throw new Error(`POST ${url} -> ${res.status} ${JSON.stringify(data)}`);
+  if(!res.ok) throw { status: res.status, data };
   return data;
 }
-
 async function apiDelete(url){
   const res = await apiFetch(url, { method: "DELETE" });
-  if(!res.ok) throw new Error(`DELETE ${url} -> ${res.status}`);
+  if(!res.ok) throw { status: res.status, data: null };
   return true;
 }
 
 /* =========================
-   Anti-cópia (dificulta)
-   ========================= */
-(function harden(){
-  document.addEventListener("contextmenu", (e)=>{ if(e.target.closest("#contentShell")) e.preventDefault(); });
-  document.addEventListener("dragstart", (e)=>{ if(e.target.closest("#contentShell")) e.preventDefault(); });
-  document.addEventListener("keydown", (e)=>{
-    const key = (e.key||"").toLowerCase();
-    const ctrl = e.ctrlKey || e.metaKey;
-    if(key === "printscreen") e.preventDefault();
-    if(!ctrl) return;
-    if(["s","p","c","u"].includes(key)) e.preventDefault();
-    if(e.shiftKey && ["i","j","c"].includes(key)) e.preventDefault();
-  });
-  const blur = document.getElementById("privacyBlur");
-  document.addEventListener("visibilitychange", ()=>{
-    if(document.hidden) blur.classList.remove("hidden");
-    else blur.classList.add("hidden");
-  });
-})();
-
-/* =========================
-   Watermark
+   Helpers UI
    ========================= */
 function escapeHtml(s){
   return String(s ?? "").replace(/[&<>"']/g, (m) => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
   }[m]));
 }
+function pick(data, keys, fallback=null){
+  for(const k of keys){
+    if(data && data[k] !== undefined && data[k] !== null && data[k] !== "") return data[k];
+  }
+  return fallback;
+}
+function nowStamp(){
+  const d = new Date();
+  const pad = (n)=> String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function setMsg(text){
+  const msg = document.getElementById("msg");
+  const msgM = document.getElementById("msgM");
+  if(msg) msg.textContent = text || "";
+  if(msgM) msgM.textContent = text || "";
+}
+function setDebug(obj){
+  const debugBox = document.getElementById("debugBox");
+  const debugBoxM = document.getElementById("debugBoxM");
+  const txt = JSON.stringify(obj, null, 2);
+  if(debugBox) debugBox.textContent = txt;
+  if(debugBoxM) debugBoxM.textContent = txt;
+}
+
+/* =========================
+   Watermark
+   ========================= */
 function setWatermarkOverlay({ bookTitle, pageNum, userLabel }){
   const overlay = document.getElementById("wmOverlay");
   const text = `${bookTitle} • ${userLabel} • p.${pageNum} • Owlsight`;
@@ -380,27 +383,6 @@ function setWatermarkOverlay({ bookTitle, pageNum, userLabel }){
   overlay.style.backgroundRepeat = "repeat";
   overlay.style.backgroundSize = "640px 420px";
   overlay.style.opacity = "1";
-}
-
-/* =========================
-   Helpers
-   ========================= */
-function pick(data, keys, fallback=null){
-  for(const k of keys){
-    if(data && data[k] !== undefined && data[k] !== null && data[k] !== "") return data[k];
-  }
-  return fallback;
-}
-function nowStamp(){
-  const d = new Date();
-  const pad = (n)=> String(n).padStart(2,"0");
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-function lsKeyComments(bookId, page){
-  return `owlsight:comments:${bookId}:${page}`;
-}
-function lsKeyAnnos(bookId, page){
-  return `owlsight:annos:${bookId}:${page}`;
 }
 
 /* =========================
@@ -440,7 +422,6 @@ let annotateEnabled = false;
 function applyTransform(){
   contentBox.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
 }
-
 function setRightScrollMode(mode){
   if(!contentShell) return;
   if(mode === "lock") contentShell.style.touchAction = "none";
@@ -463,23 +444,17 @@ function zoomBy(factor){
   zoom = next;
   applyTransform();
 }
-
 function resetZoom(){
-  zoom = 1;
-  tx = 0;
-  ty = 0;
+  zoom = 1; tx = 0; ty = 0;
   applyTransform();
 }
-
 function setPan(enabled){
   panEnabled = enabled;
   const txt = enabled ? "Mão: ON" : "Mão: OFF";
-  const btns = [document.getElementById("panToggleBtnM")].filter(Boolean);
-  btns.forEach(b => b.textContent = txt);
+  const btn = document.getElementById("panToggleBtnM");
+  if(btn) btn.textContent = txt;
   setRightScrollMode((panEnabled || annotateEnabled) ? "lock" : "scroll");
 }
-setPan(false);
-
 function setAnnotate(enabled){
   annotateEnabled = enabled;
   const txt = enabled ? "Anotar: ON" : "Anotar: OFF";
@@ -487,13 +462,13 @@ function setAnnotate(enabled){
   btns.forEach(b => b.textContent = txt);
   setRightScrollMode((panEnabled || annotateEnabled) ? "lock" : "scroll");
 }
+setPan(false);
 setAnnotate(false);
 
 function bindClick(id, fn){
   const el = document.getElementById(id);
   if(el) el.addEventListener("click", fn);
 }
-
 bindClick("zoomInBtnR", ()=>zoomBy(1.15));
 bindClick("zoomOutBtnR", ()=>zoomBy(1/1.15));
 bindClick("resetBtnR", resetZoom);
@@ -510,25 +485,19 @@ bindClick("annotateToggleBtn", ()=>setAnnotate(!annotateEnabled));
 bindClick("annotateToggleBtnM", ()=>setAnnotate(!annotateEnabled));
 bindClick("panToggleBtnM", ()=>setPan(!panEnabled));
 
-/* Pointer: Pan + Pinch Zoom */
+/* =========================
+   Pointer: Pan + Pinch Zoom
+   ========================= */
 const pointers = new Map();
 let lastPinchDist = null;
 let lastPinchCenter = null;
 
 let isDragging = false;
-let dragStartX = 0;
-let dragStartY = 0;
-let dragStartTX = 0;
-let dragStartTY = 0;
+let dragStartX = 0, dragStartY = 0;
+let dragStartTX = 0, dragStartTY = 0;
 
-function _dist(a,b){
-  const dx = a.x - b.x;
-  const dy = a.y - b.y;
-  return Math.hypot(dx, dy);
-}
-function _center(a,b){
-  return { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
-}
+function _dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+function _center(a,b){ return { x:(a.x+b.x)/2, y:(a.y+b.y)/2 }; }
 
 function onPointerDown(e){
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -557,7 +526,6 @@ function onPointerDown(e){
     dragStartTY = ty;
   }
 }
-
 function onPointerMove(e){
   if(!pointers.has(e.pointerId)) return;
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -603,10 +571,8 @@ function onPointerMove(e){
     applyTransform();
   }
 }
-
 function onPointerUp(e){
   pointers.delete(e.pointerId);
-
   if(pointers.size < 2){
     lastPinchDist = null;
     lastPinchCenter = null;
@@ -616,25 +582,37 @@ function onPointerUp(e){
     setRightScrollMode((panEnabled || annotateEnabled) ? "lock" : "scroll");
   }
 }
-
 contentShell.addEventListener("pointerdown", onPointerDown, { passive:false });
 contentShell.addEventListener("pointermove", onPointerMove, { passive:false });
 contentShell.addEventListener("pointerup", onPointerUp, { passive:false });
 contentShell.addEventListener("pointercancel", onPointerUp, { passive:false });
 
 /* =========================
-   Comments + Annotations
-   - API first
-   - localStorage fallback
+   IDs do livro / página
    ========================= */
+const bookId = Number("{{ book_id }}");
+let page = Number("{{ page_number }}");
+let maxPages = 1;
+
+/* =========================
+   API: auth
+   ========================= */
+async function fetchMe(){
+  const res = await apiFetch("/api/auth/me/");
+  if(!res.ok) return null;
+  return res.json().catch(()=>null);
+}
 let currentUserLabel = "user";
 
+/* =========================
+   Comentários + Anotações (API first + UI instant)
+   ========================= */
 function normalizeComment(c){
   return {
     id: c?.id ?? null,
     text: c?.text ?? "",
-    user: c?.user_label ?? c?.user ?? "user",
-    at: c?.created_at_display ?? c?.at ?? "",
+    user: c?.user_label ?? c?.user ?? currentUserLabel,
+    at: c?.created_at_display ?? c?.at ?? nowStamp(),
   };
 }
 function normalizeAnno(a){
@@ -643,38 +621,11 @@ function normalizeAnno(a){
     x: Number(a?.x ?? 0),
     y: Number(a?.y ?? 0),
     text: a?.text ?? "",
-    user: a?.user_label ?? a?.user ?? "user",
-    at: a?.created_at_display ?? a?.at ?? "",
+    user: a?.user_label ?? a?.user ?? currentUserLabel,
+    at: a?.created_at_display ?? a?.at ?? nowStamp(),
   };
 }
 
-/* localStorage fallback */
-function loadCommentsLS(bookId, page){
-  try{
-    const raw = localStorage.getItem(lsKeyComments(bookId, page));
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  }catch(e){
-    return [];
-  }
-}
-function saveCommentsLS(bookId, page, arr){
-  localStorage.setItem(lsKeyComments(bookId, page), JSON.stringify(arr));
-}
-function loadAnnosLS(bookId, page){
-  try{
-    const raw = localStorage.getItem(lsKeyAnnos(bookId, page));
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  }catch(e){
-    return [];
-  }
-}
-function saveAnnosLS(bookId, page, arr){
-  localStorage.setItem(lsKeyAnnos(bookId, page), JSON.stringify(arr));
-}
-
-/* UI */
 function renderCommentsUI(arr){
   const list = document.getElementById("commentsList");
   const listM = document.getElementById("commentsListM");
@@ -702,50 +653,34 @@ function renderAnnos(arr){
 
   const normalized = (arr || []).map(normalizeAnno);
 
-  contentBox.style.position = "relative";
   contentBox.querySelectorAll(".pinWrap").forEach(n=>n.remove());
 
-  normalized.forEach((a, idx)=>{
+  normalized.forEach((a)=>{
     const wrap = document.createElement("div");
     wrap.className = "pinWrap";
-    wrap.style.position = "absolute";
     wrap.style.left = (a.x * 100) + "%";
     wrap.style.top = (a.y * 100) + "%";
-    wrap.style.pointerEvents = "auto";
-    wrap.style.zIndex = "50"; /* ✅ garante acima do watermark */
 
     const pin = document.createElement("div");
     pin.className = "pin";
 
     const label = document.createElement("div");
     label.className = "pin-label";
-    label.innerHTML = `<div style="font-weight:700">${escapeHtml(a.text)}</div>
-      <div style="margin-top:4px;color:rgba(255,255,255,.65)">${escapeHtml(a.at)} • ${escapeHtml(a.user)}</div>
-      <div style="margin-top:6px;color:rgba(255,255,255,.55)">(duplo clique para apagar)</div>`;
     label.style.display = "none";
+    label.innerHTML = `
+      <div style="font-weight:800">${escapeHtml(a.text)}</div>
+      <div style="margin-top:4px;color:rgba(255,255,255,.65)">${escapeHtml(a.at)} • ${escapeHtml(a.user)}</div>
+    `;
 
     pin.addEventListener("click", (e)=>{
       e.stopPropagation();
       label.style.display = (label.style.display === "none") ? "block" : "none";
     });
 
-    pin.addEventListener("dblclick", async (e)=>{
+    // clicar na label também fecha (opcional)
+    label.addEventListener("click", (e)=>{
       e.stopPropagation();
-
-      if(a.id){
-        try{
-          await apiDelete(`/api/books/annotations/${a.id}/`);
-          const fresh = await loadAnnosReal(bookId, page);
-          renderAnnos(fresh);
-          return;
-        }catch(err){
-          // fallback LS
-        }
-      }
-
-      const all = loadAnnosLS(bookId, page).filter((_, i)=>i !== idx);
-      saveAnnosLS(bookId, page, all);
-      renderAnnos(all);
+      label.style.display = "none";
     });
 
     wrap.appendChild(pin);
@@ -754,80 +689,76 @@ function renderAnnos(arr){
   });
 }
 
-/* API-first loaders */
-async function loadCommentsReal(bookId, page){
+async function loadComments(){
   try{
     const arr = await apiGetJson(`/api/books/${bookId}/comments/?page=${page}`);
-    if(Array.isArray(arr)) return arr;
+    return Array.isArray(arr) ? arr : [];
+  }catch(err){
+    setMsg(`Falha ao carregar comentários (HTTP ${err?.status || "?"}).`);
     return [];
-  }catch(e){
-    return loadCommentsLS(bookId, page);
+  }
+}
+async function loadAnnos(){
+  try{
+    const arr = await apiGetJson(`/api/books/${bookId}/annotations/?page=${page}`);
+    return Array.isArray(arr) ? arr : [];
+  }catch(err){
+    setMsg(`Falha ao carregar anotações (HTTP ${err?.status || "?"}).`);
+    return [];
   }
 }
 
-async function addCommentReal(bookId, page, text){
+async function addComment(text){
   const t = (text || "").trim();
   if(!t) return;
+
+  // ✅ mostra na UI já
+  const current = await loadComments().catch(()=>[]);
+  renderCommentsUI([{ text:t, user_label: currentUserLabel, created_at_display: nowStamp() }, ...current]);
 
   try{
     await apiPostJson(`/api/books/${bookId}/comments/`, { page_number: page, text: t });
-    const fresh = await loadCommentsReal(bookId, page);
+    const fresh = await loadComments();
     renderCommentsUI(fresh);
-  }catch(e){
-    const arr = loadCommentsLS(bookId, page);
-    arr.unshift({ text: t, at: nowStamp(), user: currentUserLabel });
-    saveCommentsLS(bookId, page, arr);
-    renderCommentsUI(arr);
+    setMsg("");
+  }catch(err){
+    setMsg(`Não foi possível guardar comentário (HTTP ${err?.status || "?"}).`);
   }
 }
 
-async function loadAnnosReal(bookId, page){
-  try{
-    const arr = await apiGetJson(`/api/books/${bookId}/annotations/?page=${page}`);
-    if(Array.isArray(arr)) return arr;
-    return [];
-  }catch(e){
-    return loadAnnosLS(bookId, page);
-  }
-}
-
-async function addAnnoAtReal(bookId, page, xNorm, yNorm, text){
+async function addAnno(x, y, text){
   const t = (text || "").trim();
   if(!t) return;
 
+  // ✅ mostra já
+  const current = await loadAnnos().catch(()=>[]);
+  renderAnnos([{ x, y, text:t, user_label: currentUserLabel, created_at_display: nowStamp() }, ...current]);
+
   try{
-    await apiPostJson(`/api/books/${bookId}/annotations/`, {
-      page_number: page,
-      x: xNorm,
-      y: yNorm,
-      text: t,
-    });
-    const fresh = await loadAnnosReal(bookId, page);
+    await apiPostJson(`/api/books/${bookId}/annotations/`, { page_number: page, x, y, text: t });
+    const fresh = await loadAnnos();
     renderAnnos(fresh);
-  }catch(e){
-    const arr = loadAnnosLS(bookId, page);
-    arr.unshift({ x: xNorm, y: yNorm, text: t, at: nowStamp(), user: currentUserLabel });
-    saveAnnosLS(bookId, page, arr);
-    renderAnnos(arr);
+    setMsg("");
+  }catch(err){
+    setMsg(`Não foi possível guardar anotação (HTTP ${err?.status || "?"}).`);
   }
 }
 
+/* Botões comentários */
 function bindCommentButtons(){
   const btn = document.getElementById("addCommentBtn");
   const txt = document.getElementById("commentText");
   if(btn && txt){
-    btn.onclick = async ()=>{ await addCommentReal(bookId, page, txt.value); txt.value = ""; };
+    btn.onclick = async ()=>{ await addComment(txt.value); txt.value=""; };
   }
   const btnM = document.getElementById("addCommentBtnM");
   const txtM = document.getElementById("commentTextM");
   if(btnM && txtM){
-    btnM.onclick = async ()=>{ await addCommentReal(bookId, page, txtM.value); txtM.value = ""; };
+    btnM.onclick = async ()=>{ await addComment(txtM.value); txtM.value=""; };
   }
 }
 
-/* =========================
-   Anotar (clique)
-   ========================= */
+/* Clique para criar pin */
 contentShell.addEventListener("click", async (e)=>{
   if(!annotateEnabled) return;
 
@@ -843,55 +774,12 @@ contentShell.addEventListener("click", async (e)=>{
   const note = prompt("Texto da anotação:");
   if(note === null) return;
 
-  await addAnnoAtReal(bookId, page, x, y, note);
+  await addAnno(x, y, note);
 });
 
 /* =========================
-   Leitura
+   Render da página (imagem)
    ========================= */
-const bookId = Number("{{ book_id }}");
-let page = Number("{{ page_number }}");
-let maxPages = 1;
-
-async function fetchMe(){
-  const res = await apiFetch("/api/auth/me/");
-  if(!res.ok) return null;
-  return res.json().catch(()=>null);
-}
-
-function renderPageImageOrError(pageImg, bookTitle){
-  const img = new Image();
-  img.src = pageImg;
-  img.className = "w-full rounded-2xl";
-  img.draggable = false;
-
-  img.onload = () => {
-    contentBox.innerHTML = "";
-    contentBox.appendChild(img);
-    resetZoom();
-
-    loadAnnosReal(bookId, page).then(renderAnnos).catch(()=>renderAnnos(loadAnnosLS(bookId, page)));
-  };
-
-  img.onerror = () => {
-    contentBox.innerHTML = `
-      <div class="img-error">
-        <div class="text-lg font-black">A imagem da página falhou carregar</div>
-        <div class="text-sm mt-2" style="color: rgba(255,255,255,.75)">
-          O link da imagem (page_image) está inválido/expirado ou sem permissão.
-        </div>
-        <div class="text-xs mt-3" style="color: rgba(255,255,255,.70)">
-          <div><b>Livro:</b> ${escapeHtml(bookTitle)}</div>
-          <div class="mt-1"><b>URL:</b></div>
-          <div class="mt-1" style="word-break: break-all; color: rgba(255,255,255,.60)">${escapeHtml(pageImg)}</div>
-        </div>
-      </div>
-    `;
-  };
-
-  contentBox.innerHTML = `<div class="p-10 text-center" style="color: rgba(255,255,255,.65)">Carregando imagem...</div>`;
-}
-
 function coverHtml(coverUrl){
   if(!coverUrl){
     return `<div class="w-full h-full grid place-items-center text-xs" style="color: rgba(255,255,255,.45)">Sem capa</div>`;
@@ -905,7 +793,6 @@ function coverHtml(coverUrl){
     />
   `;
 }
-
 function renderHeader(whereId, bookTitle, bookType, coverUrl, totalPages, limitPage){
   const el = document.getElementById(whereId);
   if(!el) return;
@@ -928,9 +815,45 @@ function renderHeader(whereId, bookTitle, bookType, coverUrl, totalPages, limitP
   `;
 }
 
+function renderPageImageOrError(pageImg, bookTitle){
+  const img = new Image();
+  img.src = pageImg;
+  img.className = "w-full rounded-2xl";
+  img.draggable = false;
+
+  img.onload = async () => {
+    contentBox.innerHTML = "";
+    contentBox.appendChild(img);
+    resetZoom();
+
+    const annos = await loadAnnos();
+    renderAnnos(annos);
+  };
+
+  img.onerror = () => {
+    contentBox.innerHTML = `
+      <div class="img-error">
+        <div class="text-lg font-black">A imagem da página falhou carregar</div>
+        <div class="text-sm mt-2" style="color: rgba(255,255,255,.75)">
+          O link da imagem (page_image) está inválido/expirado ou sem permissão.
+        </div>
+        <div class="text-xs mt-3" style="color: rgba(255,255,255,.70)">
+          <div><b>Livro:</b> ${escapeHtml(bookTitle)}</div>
+          <div class="mt-1"><b>URL:</b></div>
+          <div class="mt-1" style="word-break: break-all; color: rgba(255,255,255,.60)">${escapeHtml(pageImg)}</div>
+        </div>
+      </div>
+    `;
+  };
+
+  contentBox.innerHTML = `<div class="p-10 text-center" style="color: rgba(255,255,255,.65)">Carregando imagem...</div>`;
+}
+
+/* =========================
+   Load Page (principal)
+   ========================= */
 async function loadPage(){
-  const debugBox = document.getElementById("debugBox");
-  const debugBoxM = document.getElementById("debugBoxM");
+  setMsg("");
 
   const me = await fetchMe();
   if(!me){
@@ -942,19 +865,15 @@ async function loadPage(){
   const res = await apiFetch(`/api/read/${bookId}/${page}/`);
   const data = await res.json().catch(()=>({}));
 
-  const dbg = JSON.stringify({ status: res.status, data }, null, 2);
-  if(debugBox) debugBox.textContent = dbg;
-  if(debugBoxM) debugBoxM.textContent = dbg;
+  setDebug({ status: res.status, data });
 
   const totalPages = Number(pick(data, ["total_pages","totalPages","pages_total","pages","total"], 0)) || 0;
   const limitPage  = Number(pick(data, ["allowed_until_page","limit_until_page","allowedUntilPage","limitPage","allowed_until","limit_until"], 0)) || 0;
 
   const bookTitle = pick(data, ["title","book_title","name","book"], "Livro");
   const bookType  = pick(data, ["book_type","type","tier"], "");
-  const coverUrl = pick(data, [
-    "cover_url","cover","coverUrl","coverURL","book_cover","bookCover","coverImage","cover_image","coverKey","cover_key"
-  ], "");
-  const pageImg = pick(data, ["page_image","pageImage","image","image_url","img","url","page_url"], "");
+  const coverUrl = pick(data, ["cover_url","cover","coverUrl","book_cover","cover_image"], "");
+  const pageImg = pick(data, ["page_image","pageImage","image","image_url","url","page_url"], "");
 
   if(totalPages > 0) maxPages = totalPages;
 
@@ -967,7 +886,6 @@ async function loadPage(){
         <div class="text-lg font-black">Não veio a imagem da página</div>
         <div class="text-sm mt-2" style="color: rgba(255,255,255,.65)">
           O backend precisa enviar <b>page_image</b>.
-          Veja no Debug acima quais campos estão vindo.
         </div>
       </div>
     `;
@@ -976,7 +894,7 @@ async function loadPage(){
 
   renderPageImageOrError(pageImg, bookTitle);
 
-  const comments = await loadCommentsReal(bookId, page);
+  const comments = await loadComments();
   renderCommentsUI(comments);
 
   setWatermarkOverlay({ bookTitle, pageNum: page, userLabel: currentUserLabel });
@@ -989,21 +907,12 @@ function goNext(){
   else alert("Você chegou ao final do livro.");
 }
 
-/* Botões */
-const prevBtn = document.getElementById("prevBtn");
-const nextBtn = document.getElementById("nextBtn");
-if(prevBtn) prevBtn.onclick = goPrev;
-if(nextBtn) nextBtn.onclick = goNext;
-
-const prevBtnDesktop = document.getElementById("prevBtnDesktop");
-const nextBtnDesktop = document.getElementById("nextBtnDesktop");
-if(prevBtnDesktop) prevBtnDesktop.onclick = goPrev;
-if(nextBtnDesktop) nextBtnDesktop.onclick = goNext;
-
-const prevBtnM = document.getElementById("prevBtnM");
-const nextBtnM = document.getElementById("nextBtnM");
-if(prevBtnM) prevBtnM.onclick = goPrev;
-if(nextBtnM) nextBtnM.onclick = goNext;
+document.getElementById("prevBtn")?.addEventListener("click", goPrev);
+document.getElementById("nextBtn")?.addEventListener("click", goNext);
+document.getElementById("prevBtnDesktop")?.addEventListener("click", goPrev);
+document.getElementById("nextBtnDesktop")?.addEventListener("click", goNext);
+document.getElementById("prevBtnM")?.addEventListener("click", goPrev);
+document.getElementById("nextBtnM")?.addEventListener("click", goNext);
 
 /* Start */
 bindCommentButtons();
