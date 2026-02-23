@@ -1,7 +1,7 @@
 import io
 from django.conf import settings
 from django.db import transaction
-from PIL import Image
+from PIL import Image  # pillow
 import boto3
 import pypdfium2 as pdfium
 
@@ -25,6 +25,18 @@ def _bucket():
     return getattr(settings, "AWS_STORAGE_BUCKET_NAME", "")
 
 
+def _key_prefix() -> str:
+    """
+    Se você usa AWS_LOCATION="media", então os arquivos devem ir para:
+      media/pages/<book_id>/0001.webp
+
+    Se AWS_LOCATION estiver vazio, vai para:
+      pages/<book_id>/0001.webp
+    """
+    location = (getattr(settings, "AWS_LOCATION", "") or "").strip("/")
+    return f"{location}/" if location else ""
+
+
 # =========================================================
 # PDF -> WEBP bytes
 # =========================================================
@@ -33,8 +45,11 @@ def _render_pdf_pages(pdf_bytes: bytes, scale: float = 2.0, quality: int = 80):
     Yields: (page_number, webp_bytes, width, height)
     """
     doc = pdfium.PdfDocument(pdf_bytes)
+
     for i in range(len(doc)):
         page = doc[i]
+
+        # Render básico (se algum PDF vier rodado, depois ajustamos com rotation)
         bitmap = page.render(scale=scale)
         img = bitmap.to_pil()
 
@@ -44,6 +59,7 @@ def _render_pdf_pages(pdf_bytes: bytes, scale: float = 2.0, quality: int = 80):
         buf = io.BytesIO()
         img.save(buf, format="WEBP", quality=quality, method=6)
         w, h = img.size
+
         yield (i + 1, buf.getvalue(), w, h)
 
 
@@ -57,16 +73,14 @@ def build_pages_if_missing(book: Book) -> int:
 
     Retorna total_pages.
     """
-    # Já existem páginas? então não faz nada
     existing = BookPage.objects.filter(book=book).count()
     if existing > 0:
         return existing
 
-    # precisa de PDF
     if not book.pdf_file:
         raise ValueError("Este livro não tem pdf_file.")
 
-    # lê bytes do PDF pelo storage do Django
+    # lê bytes do PDF pelo storage do Django (B2)
     with book.pdf_file.open("rb") as f:
         pdf_bytes = f.read()
 
@@ -75,12 +89,12 @@ def build_pages_if_missing(book: Book) -> int:
     if not bucket:
         raise ValueError("AWS_STORAGE_BUCKET_NAME não definido.")
 
+    prefix = _key_prefix()
     created = 0
 
-    # Transação: ou cria tudo, ou nada (evita DB meio preenchido)
     with transaction.atomic():
         for page_number, webp_bytes, w, h in _render_pdf_pages(pdf_bytes, scale=2.0, quality=80):
-            key = f"pages/{book.id}/{page_number:04d}.webp"
+            key = f"{prefix}pages/{book.id}/{page_number:04d}.webp"
 
             s3.put_object(
                 Bucket=bucket,
@@ -99,7 +113,6 @@ def build_pages_if_missing(book: Book) -> int:
             )
             created += 1
 
-        # grava total_pages
         book.total_pages = created
         book.save(update_fields=["total_pages"])
 
