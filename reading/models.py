@@ -1,6 +1,5 @@
 from django.conf import settings
 from django.db import models
-from django.utils import timezone
 
 User = settings.AUTH_USER_MODEL
 
@@ -9,14 +8,11 @@ class ReadingProgress(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reading_progress")
     book = models.ForeignKey("books.Book", on_delete=models.CASCADE, related_name="progress")
     last_page = models.PositiveIntegerField(default=1)
-    progress_percent = models.PositiveIntegerField(default=0)  # 0..100
+    progress_percent = models.PositiveIntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ("user", "book")
-
-    def __str__(self):
-        return f"{self.user} • {self.book} • {self.progress_percent}%"
 
 
 class Favorite(models.Model):
@@ -27,18 +23,27 @@ class Favorite(models.Model):
     class Meta:
         unique_together = ("user", "book")
 
-    def __str__(self):
-        return f"{self.user} ❤️ {self.book}"
-
 
 class Rating(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="ratings")
     book = models.ForeignKey("books.Book", on_delete=models.CASCADE, related_name="ratings")
-    stars = models.PositiveSmallIntegerField()  # 1..5
+    stars = models.PositiveSmallIntegerField()
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         unique_together = ("user", "book")
 
+
+# ✅ NOVO: cada página como imagem (vai para o mesmo storage do Django: Backblaze)
+class BookPageImage(models.Model):
+    book = models.ForeignKey("books.Book", on_delete=models.CASCADE, related_name="page_images")
+    page_number = models.PositiveIntegerField()
+    image = models.ImageField(upload_to="pages/", blank=True, null=True)  # ✅ permitir null
+
+    class Meta:
+        unique_together = ("book", "page_number")
+        indexes = [models.Index(fields=["book", "page_number"])]
+
     def __str__(self):
-        return f"{self.user} ⭐ {self.stars} • {self.book}"
+        return f"{self.book_id} p.{self.page_number}"
+    

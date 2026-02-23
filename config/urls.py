@@ -8,11 +8,10 @@ def health(request):
 urlpatterns = [
     path("admin/", admin.site.urls),
 
-    # ✅ API Auth (csrf / me / login / logout)
-    path("api/", include("frontend.api_urls")),
-
-    # ✅ API Books: /api/books/
-    path("api/", include("books.urls")),
+    # ✅ API (tudo aqui dentro)
+    path("api/", include("frontend.api_urls")),  # csrf/me/login/logout
+    path("api/", include("books.urls")),         # /api/books/...
+    path("api/", include("reading.urls")),       # /api/read/<book>/<page>/  ✅ (vamos criar já abaixo)
 
     # ✅ Dashboard
     path("dash/", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
@@ -21,6 +20,4 @@ urlpatterns = [
     path("", include("frontend.urls")),
 
     path("health/", health),
-
-    path("api/", include("reading.urls")),
 ]
