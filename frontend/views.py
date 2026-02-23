@@ -88,13 +88,11 @@ def reset_password_view(request):
 
 
 @never_cache
-def read_view(request, book_id, page_number):
-    # ✅ Busca real do livro no DB (se não existir dá 404)
-    book = get_object_or_404(Book, id=book_id)
+def read_view(request, book_id: int, page_number: int = 1):
+    # ✅ garante que o template recebe book_id e page_number
     return render(request, "frontend/read.html", {
-        "book": book,
-        "book_id": book.id,
-        "page_number": page_number
+        "book_id": book_id,
+        "page_number": page_number,
     })
 
 
