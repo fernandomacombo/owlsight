@@ -6,6 +6,7 @@ from django.db.models import Avg, Count
 from django.http import JsonResponse
 from django.utils import timezone
 from django.views.decorators.http import require_GET
+from django.core.files.storage import default_storage
 
 from .models import Book
 
@@ -252,7 +253,8 @@ def read_page_api(request, book_id: int, page_number: int):
         }, status=404)
 
     # --- URL assinada curta para a página ---
-    page_url = _presign_get(page.image_key, expires=900)  # 15 min
+
+    page_url = default_storage.url(page.image_key)
 
     # --- capa (opcional): também assina se quiseres ---
     cover_url = ""
