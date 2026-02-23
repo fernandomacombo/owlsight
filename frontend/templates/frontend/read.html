@@ -164,12 +164,8 @@ function setWatermarkOverlay({ bookTitle, pageNum, userLabel }){
 }
 
 /* =========================
-   Leitura
+   Helpers
    ========================= */
-const bookId = Number("{{ book_id }}");
-let page = Number("{{ page_number }}");
-let maxPages = 1;
-
 function pick(data, keys, fallback=null){
   for(const k of keys){
     if(data && data[k] !== undefined && data[k] !== null && data[k] !== "") return data[k];
@@ -177,34 +173,38 @@ function pick(data, keys, fallback=null){
   return fallback;
 }
 
+/* =========================
+   Leitura
+   ========================= */
+const bookId = Number("{{ book_id }}");
+let page = Number("{{ page_number }}");
+let maxPages = 1;
+
 async function fetchMe(){
   const res = await apiFetch("/api/auth/me/");
   if(!res.ok) return null;
   return res.json().catch(()=>null);
 }
 
-function renderImageOrError(pageImg, bookTitle){
+function renderPageImageOrError(pageImg, bookTitle){
   const contentBox = document.getElementById("contentBox");
 
-  // cria IMG
   const img = new Image();
   img.src = pageImg;
   img.className = "w-full rounded-2xl";
   img.draggable = false;
 
-  // quando carregar ok
   img.onload = () => {
     contentBox.innerHTML = "";
     contentBox.appendChild(img);
   };
 
-  // quando falhar carregar (isto é o que vai te dizer o real problema)
   img.onerror = () => {
     contentBox.innerHTML = `
       <div class="img-error">
         <div class="text-lg font-black">A imagem da página falhou carregar</div>
         <div class="text-sm mt-2" style="color: rgba(255,255,255,.75)">
-          Isso não é “layout”. É o link da imagem (page_image) que está inválido/expirado ou sem permissão.
+          O link da imagem (page_image) está inválido/expirado ou sem permissão.
         </div>
 
         <div class="text-xs mt-3" style="color: rgba(255,255,255,.70)">
@@ -221,16 +221,26 @@ function renderImageOrError(pageImg, bookTitle){
             Recarregar
           </button>
         </div>
-
-        <div class="text-xs mt-3" style="color: rgba(255,255,255,.55)">
-          Se ao abrir em nova aba der <b>AccessDenied</b> ou <b>ExpiredToken</b>, então a assinatura está errada/expirada.
-        </div>
       </div>
     `;
   };
 
-  // enquanto carrega
   contentBox.innerHTML = `<div class="p-10 text-center" style="color: rgba(255,255,255,.65)">Carregando imagem...</div>`;
+}
+
+function coverHtml(coverUrl){
+  // ✅ fallback elegante se capa falhar
+  if(!coverUrl){
+    return `<div class="w-full h-full grid place-items-center text-xs" style="color: rgba(255,255,255,.45)">Sem capa</div>`;
+  }
+  return `
+    <img
+      src="${coverUrl}"
+      class="w-full h-full object-cover"
+      draggable="false"
+      onerror="this.outerHTML='<div class=&quot;w-full h-full grid place-items-center text-xs&quot; style=&quot;color: rgba(255,255,255,.45)&quot;>Capa indisponível</div>'"
+    />
+  `;
 }
 
 async function loadPage(){
@@ -257,27 +267,29 @@ async function loadPage(){
 
   const bookTitle = pick(data, ["title","book_title","name","book"], "Livro");
   const bookType  = pick(data, ["book_type","type","tier"], "");
+
+  // ✅ capa: aceita vários nomes
   const coverUrl = pick(data, [
-  "cover_url",
-  "cover",
-  "coverUrl",
-  "coverURL",
-  "book_cover",
-  "bookCover",
-  "coverImage",
-  "cover_image",
-  "coverKey",
-  "cover_key"
-], "");
-  const pageImg   = pick(data, ["page_image","pageImage","image","image_url","img","url","page_url"], "");
+    "cover_url",
+    "cover",
+    "coverUrl",
+    "coverURL",
+    "book_cover",
+    "bookCover",
+    "coverImage",
+    "cover_image",
+    "coverKey",
+    "cover_key"
+  ], "");
+
+  const pageImg = pick(data, ["page_image","pageImage","image","image_url","img","url","page_url"], "");
 
   if(totalPages > 0) maxPages = totalPages;
 
-  // Header
+  // Header (com fallback de capa)
   document.getElementById("header").innerHTML = `
     <div class="w-24 aspect-[3/4] rounded-2xl overflow-hidden poster" style="border:1px solid rgba(255,255,255,.10)">
-      ${coverUrl ? `<img src="${coverUrl}" class="w-full h-full object-cover" draggable="false" />`
-                 : `<div class="w-full h-full grid place-items-center text-xs" style="color: rgba(255,255,255,.45)">Sem capa</div>`}
+      ${coverHtml(coverUrl)}
     </div>
     <div class="flex-1">
       <div class="font-black text-lg leading-tight">${escapeHtml(bookTitle)}</div>
@@ -330,8 +342,8 @@ async function loadPage(){
     return;
   }
 
-  // ✅ tenta renderizar e mostra erro real se falhar
-  renderImageOrError(pageImg, bookTitle);
+  // ✅ renderiza página (com erro detalhado)
+  renderPageImageOrError(pageImg, bookTitle);
 
   setWatermarkOverlay({
     bookTitle,
