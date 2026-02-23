@@ -42,6 +42,7 @@
           <div class="mt-2 grid grid-cols-2 gap-2">
             <button id="zoomOutBtn" class="btn px-3 py-2 rounded-xl text-sm">Zoom −</button>
             <button id="zoomInBtn" class="btn px-3 py-2 rounded-xl text-sm">Zoom +</button>
+            <button id="fitBtn" class="btn px-3 py-2 rounded-xl text-sm">Ajustar</button>
             <button id="resetBtn" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
           </div>
           <button id="panToggleBtn" class="btn-red mt-2 w-full px-4 py-2 rounded-xl text-sm font-semibold">
@@ -111,6 +112,7 @@
             <div class="mt-2 grid grid-cols-2 gap-2">
               <button id="zoomOutBtnM" class="btn px-3 py-2 rounded-xl text-sm">Zoom −</button>
               <button id="zoomInBtnM" class="btn px-3 py-2 rounded-xl text-sm">Zoom +</button>
+              <button id="fitBtnM" class="btn px-3 py-2 rounded-xl text-sm">Ajustar</button>
               <button id="resetBtnM" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
             </div>
             <button id="panToggleBtnM" class="btn-red mt-2 w-full px-4 py-2 rounded-xl text-sm font-semibold">
@@ -167,6 +169,7 @@
         <div class="flex items-center gap-2">
           <button id="zoomOutBtnR" class="btn px-3 py-2 rounded-xl text-sm">−</button>
           <button id="zoomInBtnR" class="btn px-3 py-2 rounded-xl text-sm">+</button>
+          <button id="fitBtnR" class="btn px-3 py-2 rounded-xl text-sm">Ajustar</button>
           <button id="resetBtnR" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
         </div>
       </div>
@@ -539,16 +542,19 @@ function bindClick(id, fn){
 }
 bindClick("zoomInBtn", ()=>zoomBy(1.15));
 bindClick("zoomOutBtn", ()=>zoomBy(1/1.15));
+bindClick("fitBtn", fitToWidth);
 bindClick("resetBtn", resetZoom);
 bindClick("panToggleBtn", ()=>setPan(!panEnabled));
 
 bindClick("zoomInBtnM", ()=>zoomBy(1.15));
 bindClick("zoomOutBtnM", ()=>zoomBy(1/1.15));
+bindClick("fitBtnM", fitToWidth);
 bindClick("resetBtnM", resetZoom);
 bindClick("panToggleBtnM", ()=>setPan(!panEnabled));
 
 bindClick("zoomInBtnR", ()=>zoomBy(1.15));
 bindClick("zoomOutBtnR", ()=>zoomBy(1/1.15));
+bindClick("fitBtnR", fitToWidth);
 bindClick("resetBtnR", resetZoom);
 
 bindClick("zoomInTop", ()=>zoomBy(1.15));
