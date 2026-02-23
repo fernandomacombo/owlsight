@@ -75,13 +75,12 @@
           <button id="closeDrawerBtn" class="btn px-3 py-2 rounded-xl text-sm">✕</button>
         </div>
 
-        <!-- ✅ Menu do leitor: só Página inicial + Sair -->
+        <!-- ✅ Menu do leitor: só Página inicial -->
         <div class="mt-4 rounded-2xl p-3"
              style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
           <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Navegação</div>
           <div class="mt-2 grid gap-2">
             <a href="/" class="btn px-4 py-2 rounded-xl text-sm">Página inicial</a>
-            <a href="/logout/" class="btn-red px-4 py-2 rounded-xl text-sm font-semibold">Sair</a>
           </div>
         </div>
 
@@ -157,7 +156,7 @@
           <button id="annotateToggleBtn" class="btn px-4 py-2 rounded-xl text-sm">
             Anotar: OFF
           </button>
-          <a href="/logout/" class="btn-red px-4 py-2 rounded-xl text-sm font-semibold">Sair</a>
+          <!-- ✅ removido botão Sair -->
         </div>
 
         <div class="flex items-center gap-2">
@@ -219,6 +218,13 @@
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
   }
+
+  /* ✅ CAMADAS (corrige clique no pin e label invisível) */
+  #viewer{ position: relative; z-index: 20; }
+  #wmOverlay{ position: absolute; inset: 0; z-index: 10; }
+  .pinWrap{ z-index: 40; }
+  .pin{ z-index: 41; }
+  .pin-label{ z-index: 42; }
 
   #contentBox{
     transform-origin: 0 0;
@@ -706,6 +712,7 @@ function renderAnnos(arr){
     wrap.style.left = (a.x * 100) + "%";
     wrap.style.top = (a.y * 100) + "%";
     wrap.style.pointerEvents = "auto";
+    wrap.style.zIndex = "50"; /* ✅ garante acima do watermark */
 
     const pin = document.createElement("div");
     pin.className = "pin";
@@ -725,7 +732,6 @@ function renderAnnos(arr){
     pin.addEventListener("dblclick", async (e)=>{
       e.stopPropagation();
 
-      // ✅ tenta apagar na API se tiver id
       if(a.id){
         try{
           await apiDelete(`/api/books/annotations/${a.id}/`);
@@ -733,11 +739,10 @@ function renderAnnos(arr){
           renderAnnos(fresh);
           return;
         }catch(err){
-          // se API falhar, cai no fallback LS
+          // fallback LS
         }
       }
 
-      // fallback LS: apaga por índice
       const all = loadAnnosLS(bookId, page).filter((_, i)=>i !== idx);
       saveAnnosLS(bookId, page, all);
       renderAnnos(all);
@@ -769,7 +774,6 @@ async function addCommentReal(bookId, page, text){
     const fresh = await loadCommentsReal(bookId, page);
     renderCommentsUI(fresh);
   }catch(e){
-    // fallback LS
     const arr = loadCommentsLS(bookId, page);
     arr.unshift({ text: t, at: nowStamp(), user: currentUserLabel });
     saveCommentsLS(bookId, page, arr);
@@ -801,7 +805,6 @@ async function addAnnoAtReal(bookId, page, xNorm, yNorm, text){
     const fresh = await loadAnnosReal(bookId, page);
     renderAnnos(fresh);
   }catch(e){
-    // fallback LS
     const arr = loadAnnosLS(bookId, page);
     arr.unshift({ x: xNorm, y: yNorm, text: t, at: nowStamp(), user: currentUserLabel });
     saveAnnosLS(bookId, page, arr);
