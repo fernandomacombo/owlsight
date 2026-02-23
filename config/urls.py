@@ -11,7 +11,8 @@ urlpatterns = [
     # ✅ API (tudo aqui dentro)
     path("api/", include("frontend.api_urls")),  # csrf/me/login/logout
     path("api/", include("books.urls")),         # /api/books/...
-    path("api/", include("reading.urls")),       # /api/read/<book>/<page>/  ✅ (vamos criar já abaixo)
+    path("api/", include("reading.urls")),       # /api/read/<book>/<page>/
+    path("api/auth/", include("accounts.urls")), # ✅ /api/auth/register/ e /api/auth/me/
 
     # ✅ Dashboard
     path("dash/", include(("dashboard.urls", "dashboard"), namespace="dashboard")),
