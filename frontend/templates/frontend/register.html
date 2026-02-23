@@ -2,71 +2,242 @@
 {% block title %}Owlsight — Cadastro{% endblock %}
 
 {% block content %}
-<div class="max-w-xl mx-auto fade-in">
-  <div class="glass soft-shadow rounded-3xl p-5">
-    <h1 class="text-2xl font-black">Criar conta</h1>
-    <p class="text-sm mt-1" style="color: rgba(255,255,255,.62);">
-      Preencha com atenção. Depois faz login e começa a ler.
-    </p>
+<section class="fade-in">
+  <div class="max-w-5xl mx-auto px-3 sm:px-4">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6 items-stretch">
 
-    <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
-      <input id="first_name" class="input px-3 py-2 rounded-xl" placeholder="Nome" />
-      <input id="last_name" class="input px-3 py-2 rounded-xl" placeholder="Apelido" />
-      <input id="username" class="input px-3 py-2 rounded-xl md:col-span-2" placeholder="Username (ex: fernando)" />
-      <input id="email" type="email" class="input px-3 py-2 rounded-xl md:col-span-2" placeholder="Email" />
-      <input id="phone" class="input px-3 py-2 rounded-xl" placeholder="Celular" />
-      <input id="birth_year" type="number" class="input px-3 py-2 rounded-xl" placeholder="Ano de nascimento (ex: 1998)" />
-      <input id="address" class="input px-3 py-2 rounded-xl md:col-span-2" placeholder="Endereço" />
-      <input id="password" type="password" class="input px-3 py-2 rounded-xl md:col-span-2" placeholder="Senha" />
-    </div>
+      <!-- LEFT: Brand / Benefits -->
+      <div class="glass soft-shadow rounded-3xl p-6 lg:p-8 relative overflow-hidden">
+        <!-- subtle red glow -->
+        <div class="pointer-events-none absolute -top-24 -right-24 w-80 h-80 rounded-full"
+             style="background: radial-gradient(circle at 30% 30%, rgba(225,6,0,.25), transparent 60%);"></div>
+        <div class="pointer-events-none absolute -bottom-28 -left-28 w-96 h-96 rounded-full"
+             style="background: radial-gradient(circle at 60% 40%, rgba(225,6,0,.16), transparent 62%);"></div>
 
-    <button id="btn" class="btn-red mt-4 w-full px-4 py-2 rounded-xl font-semibold">
-      Criar conta
-    </button>
+        <div class="flex items-center gap-3">
+          <div class="h-12 w-12 rounded-2xl grid place-items-center"
+               style="border:1px solid rgba(255,255,255,.10); background: rgba(0,0,0,.25);">
+            <span style="color: rgba(225,6,0,.92); font-weight: 900; font-size: 18px;">🦉</span>
+          </div>
+          <div>
+            <div class="text-xs uppercase tracking-wider" style="color: rgba(255,255,255,.55);">Owlsight</div>
+            <h1 class="text-2xl sm:text-3xl font-black leading-tight">
+              Crie sua conta e comece a ler
+            </h1>
+          </div>
+        </div>
 
-    <p id="msg" class="mt-3 text-sm" style="color: rgba(225,6,0,.92);"></p>
+        <p class="mt-3 text-sm sm:text-base" style="color: rgba(255,255,255,.70);">
+          Cadastro rápido. Depois do registo, você será redirecionado para o <b>Login</b>.
+        </p>
 
-    <div class="mt-4 text-sm">
-      Já tem conta? <a class="underline" style="color: rgba(255,255,255,.72)" href="/login/">Entrar</a>
+        <div class="mt-6 grid gap-3">
+          <div class="rounded-2xl p-4"
+               style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
+            <div class="font-semibold">📚 Biblioteca organizada</div>
+            <div class="text-sm mt-1" style="color: rgba(255,255,255,.65);">
+              Acesse os seus livros com uma experiência de leitura limpa e fluida.
+            </div>
+          </div>
+
+          <div class="rounded-2xl p-4"
+               style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
+            <div class="font-semibold">📝 Comentários e anotações</div>
+            <div class="text-sm mt-1" style="color: rgba(255,255,255,.65);">
+              Salvos no servidor, ligados ao seu utilizador e ao livro.
+            </div>
+          </div>
+
+          <div class="rounded-2xl p-4"
+               style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
+            <div class="font-semibold">🔒 Conta segura</div>
+            <div class="text-sm mt-1" style="color: rgba(255,255,255,.65);">
+              Sua senha é protegida e não fica exposta no frontend.
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 text-xs" style="color: rgba(255,255,255,.55);">
+          Ao criar conta, você concorda em usar a plataforma de forma responsável.
+        </div>
+      </div>
+
+      <!-- RIGHT: Form -->
+      <div class="glass soft-shadow rounded-3xl p-6 lg:p-8">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="text-xs uppercase tracking-wider" style="color: rgba(255,255,255,.55);">Cadastro</div>
+            <div class="text-xl font-black">Dados da conta</div>
+          </div>
+          <a href="/login/" class="btn px-4 py-2 rounded-xl text-sm"
+             style="text-decoration:none;">
+            Já tenho conta
+          </a>
+        </div>
+
+        <!-- Message -->
+        <div id="msgWrap" class="hidden mt-4 rounded-2xl p-3"
+             style="background: rgba(225,6,0,.10); border: 1px solid rgba(225,6,0,.26);">
+          <div class="text-sm font-semibold" style="color: rgba(225,6,0,.92);">Erro</div>
+          <div id="msg" class="text-sm mt-1" style="color: rgba(255,255,255,.80);"></div>
+        </div>
+
+        <div class="mt-5 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs" style="color: rgba(255,255,255,.65);">Nome</label>
+            <input id="first_name" class="input w-full px-3 py-2 rounded-xl mt-1" placeholder="Ex: Fernando" />
+          </div>
+
+          <div>
+            <label class="text-xs" style="color: rgba(255,255,255,.65);">Apelido</label>
+            <input id="last_name" class="input w-full px-3 py-2 rounded-xl mt-1" placeholder="Ex: Macombo" />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="text-xs" style="color: rgba(255,255,255,.65);">Username</label>
+            <input id="username" class="input w-full px-3 py-2 rounded-xl mt-1" placeholder="Ex: fernando" />
+            <div class="text-[11px] mt-1" style="color: rgba(255,255,255,.50);">
+              Use algo simples e único (sem espaços).
+            </div>
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="text-xs" style="color: rgba(255,255,255,.65);">Email</label>
+            <input id="email" type="email" class="input w-full px-3 py-2 rounded-xl mt-1" placeholder="Ex: fernando@email.com" />
+          </div>
+
+          <div>
+            <label class="text-xs" style="color: rgba(255,255,255,.65);">Celular</label>
+            <input id="phone" class="input w-full px-3 py-2 rounded-xl mt-1" placeholder="Ex: 84xxxxxxx" />
+          </div>
+
+          <div>
+            <label class="text-xs" style="color: rgba(255,255,255,.65);">Ano de nascimento</label>
+            <input id="birth_year" type="number" class="input w-full px-3 py-2 rounded-xl mt-1" placeholder="Ex: 1998" />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="text-xs" style="color: rgba(255,255,255,.65);">Endereço</label>
+            <input id="address" class="input w-full px-3 py-2 rounded-xl mt-1" placeholder="Bairro, Rua, Cidade" />
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="text-xs" style="color: rgba(255,255,255,.65);">Senha</label>
+            <div class="relative mt-1">
+              <input id="password" type="password" class="input w-full px-3 py-2 rounded-xl pr-12" placeholder="Mínimo 6 caracteres" />
+              <button id="togglePw" type="button"
+                      class="absolute right-2 top-1/2 -translate-y-1/2 btn px-3 py-2 rounded-xl text-xs">
+                Ver
+              </button>
+            </div>
+            <div class="text-[11px] mt-1" style="color: rgba(255,255,255,.50);">
+              Dica: use letras e números.
+            </div>
+          </div>
+        </div>
+
+        <button id="btn" class="btn-red mt-5 w-full px-4 py-3 rounded-xl font-semibold flex items-center justify-center gap-2">
+          <span id="btnText">Criar conta</span>
+          <span id="btnSpinner" class="hidden"
+                style="width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color: rgba(255,255,255,.95);border-radius:999px;display:inline-block;animation:spin 0.9s linear infinite;"></span>
+        </button>
+
+        <div class="mt-4 text-sm">
+          <span style="color: rgba(255,255,255,.65);">Já tem conta?</span>
+          <a class="underline ml-1" style="color: rgba(255,255,255,.92)" href="/login/">Entrar</a>
+        </div>
+      </div>
     </div>
   </div>
-</div>
+</section>
+
+<style>
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-document.getElementById("btn").onclick = async () => {
-  await ensureCsrf();
-
-  const payload = {
-    first_name: document.getElementById("first_name").value.trim(),
-    last_name: document.getElementById("last_name").value.trim(),
-    username: document.getElementById("username").value.trim(),
-    email: document.getElementById("email").value.trim(),
-    phone: document.getElementById("phone").value.trim(),
-    address: document.getElementById("address").value.trim(),
-    birth_year: Number(document.getElementById("birth_year").value),
-    password: document.getElementById("password").value,
-  };
-
-  const msg = document.getElementById("msg");
-  msg.textContent = "";
-
-  const res = await apiFetch("/api/auth/register/", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify(payload),
-  });
-
-  const data = await res.json().catch(() => ({}));
-
-  if(!res.ok){
-    msg.textContent = data.error || data.detail || JSON.stringify(data);
-    return;
+  // Toggle password
+  const togglePw = document.getElementById("togglePw");
+  const pw = document.getElementById("password");
+  if(togglePw && pw){
+    togglePw.onclick = () => {
+      const isPwd = pw.getAttribute("type") === "password";
+      pw.setAttribute("type", isPwd ? "text" : "password");
+      togglePw.textContent = isPwd ? "Ocultar" : "Ver";
+    };
   }
 
-  alert("Conta criada! Agora faça login.");
-  window.location.href = "/login/";
-};
+  function showError(text){
+    const wrap = document.getElementById("msgWrap");
+    const msg = document.getElementById("msg");
+    if(msg) msg.textContent = text || "";
+    if(wrap){
+      if(text) wrap.classList.remove("hidden");
+      else wrap.classList.add("hidden");
+    }
+  }
+
+  function setLoading(on){
+    const btn = document.getElementById("btn");
+    const t = document.getElementById("btnText");
+    const sp = document.getElementById("btnSpinner");
+    if(btn){
+      btn.disabled = !!on;
+      btn.style.opacity = on ? "0.85" : "1";
+      btn.style.cursor = on ? "not-allowed" : "pointer";
+    }
+    if(t) t.textContent = on ? "Criando..." : "Criar conta";
+    if(sp) sp.classList.toggle("hidden", !on);
+  }
+
+  document.getElementById("btn").onclick = async () => {
+    showError("");
+    setLoading(true);
+
+    try{
+      await ensureCsrf();
+
+      const birthRaw = document.getElementById("birth_year").value;
+      const birth = birthRaw ? Number(birthRaw) : null;
+
+      const payload = {
+        first_name: document.getElementById("first_name").value.trim(),
+        last_name: document.getElementById("last_name").value.trim(),
+        username: document.getElementById("username").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        address: document.getElementById("address").value.trim(),
+        birth_year: birth,
+        password: document.getElementById("password").value,
+      };
+
+      const res = await apiFetch("/api/auth/register/", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => ({}));
+
+      if(!res.ok){
+        // tenta formatar erros do DRF/django
+        const pretty =
+          data.error || data.detail ||
+          (typeof data === "string" ? data : JSON.stringify(data));
+
+        showError(pretty);
+        setLoading(false);
+        return;
+      }
+
+      alert("Conta criada! Agora faça login.");
+      window.location.href = "/login/";
+    }catch(e){
+      showError("Erro inesperado ao criar conta. Tente novamente.");
+      setLoading(false);
+    }
+  };
 </script>
 {% endblock %}
