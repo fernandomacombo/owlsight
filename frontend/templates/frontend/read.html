@@ -24,7 +24,7 @@
         <div id="blocker" class="hidden rounded-2xl p-3"
              style="background: rgba(225,6,0,.10); border:1px solid rgba(225,6,0,.26);"></div>
 
-        <!-- ✅ Debug (para você ver o que o backend está mandando) -->
+        <!-- ✅ Debug -->
         <details class="mt-2 rounded-2xl p-3"
                  style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
           <summary class="text-sm" style="color: rgba(255,255,255,.75)">Debug (resposta do servidor)</summary>
@@ -35,8 +35,12 @@
 
     <!-- RIGHT -->
     <section class="glass soft-shadow rounded-3xl p-4">
-      <div id="contentShell" class="relative rounded-2xl overflow-hidden">
-        <div id="contentBox" class="rounded-2xl overflow-hidden"></div>
+      <!-- ✅ Scroll vertical para páginas A4 altas (corrige “quebradas/cortadas”) -->
+      <div id="contentShell"
+           class="relative rounded-2xl overflow-auto"
+           style="max-height: calc(100vh - 2.5rem);">
+
+        <div id="contentBox" class="rounded-2xl"></div>
 
         <!-- Watermark overlay -->
         <div id="wmOverlay"
@@ -63,8 +67,16 @@
 </section>
 
 <style>
+  /* Anti seleção/cópia (dificulta) */
   #contentShell, #contentShell *{ -webkit-user-select:none; user-select:none; }
   img{ -webkit-user-drag:none; user-drag:none; }
+
+  /* ✅ garante que a página não fica “cortada” */
+  #contentBox img{
+    display:block;
+    width:100%;
+    height:auto;
+  }
 </style>
 {% endblock %}
 
@@ -82,9 +94,7 @@ function getCookie(name){
 }
 async function apiFetch(url, opts={}){
   const headers = new Headers(opts.headers || {});
-  // envia cookies (session)
   opts.credentials = "same-origin";
-  // CSRF só em métodos que alteram estado
   const method = (opts.method || "GET").toUpperCase();
   if(["POST","PUT","PATCH","DELETE"].includes(method)){
     const csrf = getCookie("csrftoken");
@@ -205,7 +215,6 @@ async function loadPage(){
   // ✅ mostra sempre o JSON no debug
   debugBox.textContent = JSON.stringify({ status: res.status, data }, null, 2);
 
-  // 🔁 Aceita vários nomes possíveis que o backend pode estar mandando
   const totalPages = Number(pick(data, ["total_pages","totalPages","pages_total","pages","total"], 0)) || 0;
   const limitPage  = Number(pick(data, ["allowed_until_page","limit_until_page","allowedUntilPage","limitPage","allowed_until","limit_until"], 0)) || 0;
 
@@ -236,7 +245,7 @@ async function loadPage(){
     </div>
   `;
 
-  // Bloqueio (o backend decide)
+  // Bloqueio
   if(res.status === 403 && data.blocked){
     contentBox.innerHTML = `
       <div class="p-10 text-center">
@@ -266,7 +275,6 @@ async function loadPage(){
     return;
   }
 
-  // Se não veio imagem, avisa claramente (e o debug vai mostrar o motivo)
   if(!pageImg){
     contentBox.innerHTML = `
       <div class="p-10 text-center">
@@ -280,7 +288,7 @@ async function loadPage(){
     return;
   }
 
-  // Render da página
+  // ✅ Render da página (agora sem “cortar”)
   contentBox.innerHTML = `<img src="${pageImg}" class="w-full rounded-2xl" draggable="false" />`;
 
   setWatermarkOverlay({
@@ -297,7 +305,7 @@ document.getElementById("nextBtn").onclick = () => {
   else alert("Você chegou ao final do livro.");
 };
 
-// Ações (mantém, mas só funciona se teus endpoints existirem)
+// Ações (só funciona se endpoints existirem)
 async function payPlan(plan){
   const res = await apiFetch("/api/pay/", {
     method: "POST",
