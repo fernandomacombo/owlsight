@@ -19,29 +19,36 @@ def _cover_url(book: Book) -> str:
 @login_required
 @require_GET
 def read_page(request, book_id: int, page: int):
-   from books.models import Book
-from django.http import JsonResponse
+    book = Book.objects.filter(id=book_id).first()
+    if not book:
+        return JsonResponse({"error": "Livro não encontrado."}, status=404)
 
-# ...
+    title = book.title
+    book_type = (book.book_type or "free").lower()
+    cover_url = _cover_url(book)
 
-book = Book.objects.filter(id=book_id).first()
-if not book:
-    # ✅ dica: mostra alguns livros existentes (pra você pegar o ID certo)
-    sample = list(Book.objects.all().order_by("-id").values("id", "title")[:10])
-    return JsonResponse({
-        "error": "Livro não encontrado.",
-        "hint": "Use /api/books/list/ para ver os IDs reais nesta base.",
-        "available_sample": sample
-    }, status=404)
+    # ✅ total_pages: se estiver vazio, calcula a partir das páginas renderizadas no banco
+    total_pages = int(book.total_pages or 0)
+    if total_pages <= 0:
+        total_pages = BookPageImage.objects.filter(book_id=book_id).count()
 
-        # ✅ opcional: salva total_pages no Book para não recalcular sempre
+        if total_pages <= 0:
+            return JsonResponse({
+                "error": "Este livro não tem total_pages e não encontrei páginas (BookPageImage).",
+                "hint": "Você precisa gerar/salvar as páginas (imagens) no BookPageImage, ou preencher total_pages no Book.",
+                "book": title,
+                "book_type": book_type,
+                "cover": cover_url,
+            }, status=400)
+
+        # ✅ salva total_pages no Book para não recalcular sempre
         book.total_pages = total_pages
         book.save(update_fields=["total_pages"])
 
-    # ✅ 2) limites: FREE 10% | PREMIUM 5%
+    # ✅ limites: FREE 10% | PREMIUM 5%
     allowed_until = max(1, math.ceil(total_pages * (0.05 if book_type == "premium" else 0.10)))
 
-    # ✅ 3) bloqueio por limite
+    # ✅ bloqueio por limite
     if page > allowed_until:
         return JsonResponse({
             "blocked": True,
@@ -58,7 +65,7 @@ if not book:
             "cover": cover_url,
         }, status=403)
 
-    # ✅ 4) buscar imagem da página
+    # ✅ buscar imagem da página
     obj = BookPageImage.objects.filter(book_id=book_id, page_number=page).first()
     if not obj or not obj.image:
         return JsonResponse({
@@ -70,7 +77,6 @@ if not book:
             "cover": cover_url,
         }, status=404)
 
-    page_image_url = ""
     try:
         page_image_url = obj.image.url
     except Exception:
@@ -86,12 +92,15 @@ if not book:
             "cover": cover_url,
         }, status=500)
 
-    # ✅ 5) salva progresso
+    # ✅ atualizar progresso (opcional)
     percent = int(round((page / total_pages) * 100))
     ReadingProgress.objects.update_or_create(
         user=request.user,
         book=book,
-        defaults={"last_page": page, "progress_percent": max(0, min(100, percent))}
+        defaults={
+            "last_page": page,
+            "progress_percent": max(0, min(100, percent)),
+        }
     )
 
     return JsonResponse({
