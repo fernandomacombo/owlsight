@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 
 
 class Tag(models.Model):
@@ -61,3 +62,42 @@ class BookPage(models.Model):
 
     def __str__(self):
         return f"{self.book.title} - Página {self.page_number}"
+
+
+# =========================================================
+# ✅ COMENTÁRIOS / ANOTAÇÕES (DB)
+# =========================================================
+class BookComment(models.Model):
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="comments")
+    page_number = models.PositiveIntegerField(db_index=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="book_comments")
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["book", "page_number", "-created_at"]),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Comment book={self.book_id} page={self.page_number} user={self.user_id}"
+
+
+class BookAnnotation(models.Model):
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name="annotations")
+    page_number = models.PositiveIntegerField(db_index=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="book_annotations")
+    text = models.TextField()
+    x = models.FloatField()  # 0..1
+    y = models.FloatField()  # 0..1
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["book", "page_number", "-created_at"]),
+        ]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Anno book={self.book_id} page={self.page_number} user={self.user_id}"

@@ -8,14 +8,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 from django.core.files.storage import default_storage
 
-from .models import Book
-
-# Se já criaste o model BookPage em books/models.py, importa aqui:
-try:
-    from .models import BookPage
-except Exception:
-    BookPage = None
-
+from .models import Book, BookPage, BookComment, BookAnnotation
 from reading.models import Rating, ReadingProgress
 
 
@@ -23,15 +16,6 @@ from reading.models import Rating, ReadingProgress
 # Helpers (B2 S3 + URL assinada)
 # =========================================================
 def _s3_client():
-    """
-    Backblaze B2 S3-compatible client.
-    Requer settings:
-      AWS_S3_ENDPOINT_URL
-      AWS_ACCESS_KEY_ID
-      AWS_SECRET_ACCESS_KEY
-      AWS_STORAGE_BUCKET_NAME
-      (opcional) AWS_S3_REGION_NAME
-    """
     endpoint = getattr(settings, "AWS_S3_ENDPOINT_URL", None)
     region = getattr(settings, "AWS_S3_REGION_NAME", None) or "us-east-1"
 
@@ -45,15 +29,6 @@ def _s3_client():
 
 
 def _presign_get(key: str, expires: int = 900) -> str:
-    """
-    Gera URL assinada curta para objeto privado no bucket.
-    Guarda SEMPRE a key/path no DB, não a URL assinada.
-
-    NOTA:
-    - Mantive esta função caso você ainda use em algum lugar.
-    - Mas para CAPA e PÁGINAS, vamos usar default_storage.url()
-      (porque é o mesmo motor que já funciona na index).
-    """
     if not key:
         return ""
 
@@ -70,10 +45,6 @@ def _presign_get(key: str, expires: int = 900) -> str:
 
 
 def _filefield_key(filefield) -> str:
-    """
-    Para django-storages: normalmente o "key" é filefield.name
-    (ex: 'media/pdfs/xxx.pdf' ou 'pdfs/xxx.pdf')
-    """
     try:
         return getattr(filefield, "name", "") or ""
     except Exception:
@@ -81,9 +52,6 @@ def _filefield_key(filefield) -> str:
 
 
 def _get_book_type(book: Book) -> str:
-    """
-    Resolve tipo: free/premium (compatível com vários nomes de campo).
-    """
     if hasattr(book, "book_type") and getattr(book, "book_type"):
         return str(book.book_type)
     if hasattr(book, "type") and getattr(book, "type"):
@@ -94,34 +62,25 @@ def _get_book_type(book: Book) -> str:
 
 
 # =========================================================
-# APIs
+# APIs EXISTENTES
 # =========================================================
 @require_GET
 def books_list_api(request):
-    """
-    GET /api/books/
-    Retorna livros + métricas:
-      - avg_rating, ratings_count (Rating)
-      - readers_count, active_readers (ReadingProgress)
-    """
     now = timezone.now()
     active_window = now - timedelta(hours=24)
 
-    # Agregações de ratings por livro
     rating_aggs = (
         Rating.objects.values("book_id")
         .annotate(avg=Avg("stars"), cnt=Count("id"))
     )
     rating_map = {r["book_id"]: r for r in rating_aggs}
 
-    # Leitores totais (qualquer progresso)
     readers_aggs = (
         ReadingProgress.objects.values("book_id")
         .annotate(readers=Count("user_id", distinct=True))
     )
     readers_map = {r["book_id"]: r["readers"] for r in readers_aggs}
 
-    # "A ler agora" (ativos nas últimas 24h)
     active_aggs = (
         ReadingProgress.objects.filter(updated_at__gte=active_window)
         .values("book_id")
@@ -133,7 +92,6 @@ def books_list_api(request):
 
     data = []
     for b in qs:
-        # ✅ usa o storage (mesmo motor que já funciona no teu projeto)
         cover_url = ""
         try:
             if getattr(b, "cover", None) and b.cover.name:
@@ -190,29 +148,14 @@ def books_list(request):
 
 @require_GET
 def read_page_api(request, book_id: int, page_number: int):
-    """
-    GET /api/read/<book_id>/<page_number>/
-    Retorna:
-      - page_image (URL assinada via default_storage.url)
-      - cover_url  (URL assinada via default_storage.url) ✅ corrigido
-    """
-    # --- auth básica ---
     if not request.user.is_authenticated:
         return JsonResponse({"detail": "Auth required"}, status=401)
 
-    # --- book ---
     try:
         book = Book.objects.get(id=book_id)
     except Book.DoesNotExist:
         return JsonResponse({"detail": "Book not found"}, status=404)
 
-    # --- se ainda não tens BookPage, para aqui ---
-    if BookPage is None:
-        return JsonResponse({
-            "detail": "BookPage model not available. Crie o model BookPage em books/models.py e rode migrations."
-        }, status=500)
-
-    # --- limite por plano (ajusta depois para o teu sistema real) ---
     book_type = _get_book_type(book)
     total_pages = int(getattr(book, "total_pages", 0) or 0)
 
@@ -229,7 +172,6 @@ def read_page_api(request, book_id: int, page_number: int):
             "total_pages": total_pages,
         }, status=403)
 
-    # --- se não existem páginas ainda, tenta gerar on-demand ---
     if not BookPage.objects.filter(book=book).exists():
         try:
             from .page_build import build_pages_if_missing
@@ -240,7 +182,6 @@ def read_page_api(request, book_id: int, page_number: int):
                 "hint": "Você precisa converter o PDF em imagens (BookPage) antes de conseguir ler."
             }, status=409)
 
-    # --- buscar página ---
     try:
         page = BookPage.objects.get(book=book, page_number=page_number)
     except BookPage.DoesNotExist:
@@ -250,10 +191,8 @@ def read_page_api(request, book_id: int, page_number: int):
             "total_pages": total_pages,
         }, status=404)
 
-    # ✅ URL assinada curta para a página (via storage)
     page_url = default_storage.url(page.image_key)
 
-    # ✅ CORREÇÃO: capa via storage também (não boto3 presign)
     cover_url = ""
     try:
         if getattr(book, "cover", None) and book.cover.name:
@@ -273,3 +212,113 @@ def read_page_api(request, book_id: int, page_number: int):
         "page_image": page_url,
         "cover_url": cover_url,
     })
+
+
+# =========================================================
+# ✅ DRF: COMMENTS + ANNOTATIONS (REAL)
+# =========================================================
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
+
+from .serializers import BookCommentSerializer, BookAnnotationSerializer
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def book_comments_api(request, book_id: int):
+    if not Book.objects.filter(id=book_id).exists():
+        return Response({"detail": "Livro não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == "GET":
+        page = request.query_params.get("page")
+        qs = BookComment.objects.filter(book_id=book_id)
+        if page is not None:
+            try:
+                qs = qs.filter(page_number=int(page))
+            except ValueError:
+                return Response({"detail": "page inválido."}, status=400)
+
+        qs = qs.order_by("-created_at")
+        return Response(BookCommentSerializer(qs, many=True).data)
+
+    # POST
+    page_number = request.data.get("page_number")
+    text = (request.data.get("text") or "").strip()
+
+    if not page_number or not str(page_number).isdigit():
+        return Response({"detail": "page_number inválido."}, status=400)
+    if not text:
+        return Response({"detail": "text é obrigatório."}, status=400)
+
+    obj = BookComment.objects.create(
+        book_id=book_id,
+        page_number=int(page_number),
+        user=request.user,
+        text=text,
+    )
+    return Response(BookCommentSerializer(obj).data, status=201)
+
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def book_annotations_api(request, book_id: int):
+    if not Book.objects.filter(id=book_id).exists():
+        return Response({"detail": "Livro não encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+    if request.method == "GET":
+        page = request.query_params.get("page")
+        qs = BookAnnotation.objects.filter(book_id=book_id)
+        if page is not None:
+            try:
+                qs = qs.filter(page_number=int(page))
+            except ValueError:
+                return Response({"detail": "page inválido."}, status=400)
+
+        qs = qs.order_by("-created_at")
+        return Response(BookAnnotationSerializer(qs, many=True).data)
+
+    # POST
+    page_number = request.data.get("page_number")
+    text = (request.data.get("text") or "").strip()
+    x = request.data.get("x")
+    y = request.data.get("y")
+
+    if not page_number or not str(page_number).isdigit():
+        return Response({"detail": "page_number inválido."}, status=400)
+    if not text:
+        return Response({"detail": "text é obrigatório."}, status=400)
+
+    try:
+        x = float(x)
+        y = float(y)
+    except (TypeError, ValueError):
+        return Response({"detail": "x/y inválidos."}, status=400)
+
+    if not (0 <= x <= 1 and 0 <= y <= 1):
+        return Response({"detail": "x/y devem estar entre 0 e 1."}, status=400)
+
+    obj = BookAnnotation.objects.create(
+        book_id=book_id,
+        page_number=int(page_number),
+        user=request.user,
+        text=text,
+        x=x,
+        y=y,
+    )
+    return Response(BookAnnotationSerializer(obj).data, status=201)
+
+
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def book_annotation_delete_api(request, annotation_id: int):
+    obj = BookAnnotation.objects.filter(id=annotation_id).first()
+    if not obj:
+        return Response({"detail": "Não encontrado."}, status=404)
+
+    if obj.user_id != request.user.id:
+        return Response({"detail": "Sem permissão."}, status=403)
+
+    obj.delete()
+    return Response(status=204)

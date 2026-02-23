@@ -29,9 +29,6 @@
       </div>
 
       <div class="mt-4 grid gap-2">
-        <!-- ✅ REMOVIDO: zoom duplicado do left -->
-        <!-- ✅ REMOVIDO: botões Anterior/Próxima do left (agora estão no topo) -->
-
         <p id="msg" class="text-sm" style="color: rgba(225,6,0,.92);"></p>
 
         <div id="blocker" class="hidden rounded-2xl p-3"
@@ -78,17 +75,17 @@
           <button id="closeDrawerBtn" class="btn px-3 py-2 rounded-xl text-sm">✕</button>
         </div>
 
-        <!-- ✅ Menu do leitor -->
+        <!-- ✅ Menu do leitor: só Página inicial + Sair -->
         <div class="mt-4 rounded-2xl p-3"
              style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
           <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Navegação</div>
           <div class="mt-2 grid gap-2">
             <a href="/" class="btn px-4 py-2 rounded-xl text-sm">Página inicial</a>
+            <a href="/logout/" class="btn-red px-4 py-2 rounded-xl text-sm font-semibold">Sair</a>
           </div>
         </div>
 
         <div class="mt-4 grid gap-2">
-          <!-- mantém aqui no drawer (mobile) -->
           <div class="flex gap-2">
             <button id="prevBtnM" class="btn px-4 py-2 rounded-xl w-1/2">Anterior</button>
             <button id="nextBtnM" class="btn-red px-4 py-2 rounded-xl w-1/2 font-semibold">Próxima</button>
@@ -154,7 +151,6 @@
       <!-- Toolbar (Desktop inside right) -->
       <div class="hidden lg:flex items-center justify-between px-4 p-4">
         <div class="flex items-center gap-2">
-          <!-- ✅ Prev/Next junto do zoom (desktop) -->
           <button id="prevBtnDesktop" class="btn px-4 py-2 rounded-xl text-sm">Anterior</button>
           <button id="nextBtnDesktop" class="btn-red px-4 py-2 rounded-xl text-sm font-semibold">Próxima</button>
 
@@ -175,19 +171,14 @@
            class="relative rounded-2xl overflow-auto"
            style="max-height: calc(100vh - 2.5rem);">
 
-        <!-- Viewer layer -->
         <div id="viewer" class="relative w-full h-full">
           <div id="contentBox" class="rounded-2xl"></div>
-
-          <!-- Annotations overlay (pins) -->
           <div id="annoLayer" class="absolute inset-0 pointer-events-none"></div>
         </div>
 
-        <!-- Watermark overlay -->
         <div id="wmOverlay"
              class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200"></div>
 
-        <!-- Blur ao trocar de aba -->
         <div id="privacyBlur"
              class="hidden absolute inset-0 backdrop-blur-2xl"
              style="background: rgba(0,0,0,.35);">
@@ -208,7 +199,6 @@
 </section>
 
 <style>
-  /* ✅ Esconde o menu do base SOMENTE nesta página para não conflitar com o drawer do leitor */
   body > header,
   body > nav,
   #navbar, #topbar, #mainNav, #siteNav,
@@ -216,30 +206,25 @@
     display: none !important;
   }
 
-  /* ✅ Desativa scroll normal do site */
   html, body{
     height: 100%;
     overflow: hidden !important;
   }
 
-  /* Anti seleção/cópia (dificulta) */
   #contentShell, #contentShell *{ -webkit-user-select:none; user-select:none; }
   img{ -webkit-user-drag:none; user-drag:none; }
 
-  /* ✅ Scroll só dentro do RIGHT (contentShell) */
   #contentShell{
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    touch-action: pan-y; /* padrão: deixa scroll vertical */
+    touch-action: pan-y;
   }
 
-  /* Viewer: imagem controlada por transform (zoom/pan) */
   #contentBox{
     transform-origin: 0 0;
     will-change: transform;
   }
 
-  /* A imagem (página) fica responsiva dentro do viewer */
   #contentBox img{
     display:block;
     width:100%;
@@ -247,7 +232,6 @@
     pointer-events: none;
   }
 
-  /* Caixa de erro quando imagem falha */
   .img-error{
     border:1px solid rgba(225,6,0,.28);
     background: rgba(225,6,0,.08);
@@ -255,7 +239,6 @@
     padding: 16px;
   }
 
-  /* Pins de anotação */
   .pin{
     width: 14px;
     height: 14px;
@@ -284,7 +267,6 @@
     pointer-events: none;
   }
 
-  /* Comentário item */
   .c-item{
     border:1px solid rgba(255,255,255,.10);
     background: rgba(0,0,0,.22);
@@ -316,6 +298,29 @@ async function apiFetch(url, opts={}){
   }
   opts.headers = headers;
   return fetch(url, opts);
+}
+
+async function apiGetJson(url){
+  const res = await apiFetch(url);
+  if(!res.ok) throw new Error(`GET ${url} -> ${res.status}`);
+  return res.json();
+}
+
+async function apiPostJson(url, body){
+  const res = await apiFetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(()=>null);
+  if(!res.ok) throw new Error(`POST ${url} -> ${res.status} ${JSON.stringify(data)}`);
+  return data;
+}
+
+async function apiDelete(url){
+  const res = await apiFetch(url, { method: "DELETE" });
+  if(!res.ok) throw new Error(`DELETE ${url} -> ${res.status}`);
+  return true;
 }
 
 /* =========================
@@ -413,7 +418,7 @@ if(closeDrawerBtn) closeDrawerBtn.addEventListener("click", closeDrawer);
 if(drawerOverlay) drawerOverlay.addEventListener("click", closeDrawer);
 
 /* =========================
-   Zoom/Pan state (START ALWAYS 100%)
+   Zoom/Pan
    ========================= */
 const contentShell = document.getElementById("contentShell");
 const contentBox = document.getElementById("contentBox");
@@ -430,15 +435,10 @@ function applyTransform(){
   contentBox.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
 }
 
-/* ✅ Controla quando o scroll normal pode acontecer no RIGHT */
 function setRightScrollMode(mode){
-  // mode: "scroll" | "lock"
   if(!contentShell) return;
-  if(mode === "lock"){
-    contentShell.style.touchAction = "none";     // trava scroll do browser
-  }else{
-    contentShell.style.touchAction = "pan-y";    // permite scroll vertical normal
-  }
+  if(mode === "lock") contentShell.style.touchAction = "none";
+  else contentShell.style.touchAction = "pan-y";
 }
 setRightScrollMode("scroll");
 
@@ -470,8 +470,6 @@ function setPan(enabled){
   const txt = enabled ? "Mão: ON" : "Mão: OFF";
   const btns = [document.getElementById("panToggleBtnM")].filter(Boolean);
   btns.forEach(b => b.textContent = txt);
-
-  // ✅ se ativar Mão, trava scroll do browser (porque agora arrasta a página)
   setRightScrollMode((panEnabled || annotateEnabled) ? "lock" : "scroll");
 }
 setPan(false);
@@ -481,8 +479,6 @@ function setAnnotate(enabled){
   const txt = enabled ? "Anotar: ON" : "Anotar: OFF";
   const btns = [document.getElementById("annotateToggleBtn"), document.getElementById("annotateToggleBtnM")].filter(Boolean);
   btns.forEach(b => b.textContent = txt);
-
-  // ✅ se ativar Anotar, trava scroll (para o clique/pin ficar preciso)
   setRightScrollMode((panEnabled || annotateEnabled) ? "lock" : "scroll");
 }
 setAnnotate(false);
@@ -492,7 +488,6 @@ function bindClick(id, fn){
   if(el) el.addEventListener("click", fn);
 }
 
-/* Zoom (desktop right + mobile top + mobile drawer) */
 bindClick("zoomInBtnR", ()=>zoomBy(1.15));
 bindClick("zoomOutBtnR", ()=>zoomBy(1/1.15));
 bindClick("resetBtnR", resetZoom);
@@ -509,9 +504,7 @@ bindClick("annotateToggleBtn", ()=>setAnnotate(!annotateEnabled));
 bindClick("annotateToggleBtnM", ()=>setAnnotate(!annotateEnabled));
 bindClick("panToggleBtnM", ()=>setPan(!panEnabled));
 
-/* =========================
-   ✅ Pointer: Pan + Pinch Zoom (sem puxar página)
-   ========================= */
+/* Pointer: Pan + Pinch Zoom */
 const pointers = new Map();
 let lastPinchDist = null;
 let lastPinchCenter = null;
@@ -532,11 +525,9 @@ function _center(a,b){
 }
 
 function onPointerDown(e){
-  // só bloqueia comportamento padrão quando vamos usar gesto nosso
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   contentShell.setPointerCapture?.(e.pointerId);
 
-  // 2 dedos: pinch -> trava scroll
   if(pointers.size === 2){
     e.preventDefault();
     setRightScrollMode("lock");
@@ -547,7 +538,6 @@ function onPointerDown(e){
     return;
   }
 
-  // 1 dedo: pan só se Mão ON e Anotar OFF
   if(pointers.size === 1){
     if(annotateEnabled) return;
     if(!panEnabled) return;
@@ -566,7 +556,6 @@ function onPointerMove(e){
   if(!pointers.has(e.pointerId)) return;
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-  // pinch zoom (2 dedos)
   if(pointers.size === 2){
     e.preventDefault();
     const pts = Array.from(pointers.values());
@@ -599,7 +588,6 @@ function onPointerMove(e){
     return;
   }
 
-  // pan (1 dedo)
   if(pointers.size === 1 && isDragging){
     e.preventDefault();
     const dx = e.clientX - dragStartX;
@@ -619,7 +607,6 @@ function onPointerUp(e){
   }
   if(pointers.size === 0){
     isDragging = false;
-    // ✅ volta a permitir scroll se não estiver em Mão/Anotar
     setRightScrollMode((panEnabled || annotateEnabled) ? "lock" : "scroll");
   }
 }
@@ -630,11 +617,33 @@ contentShell.addEventListener("pointerup", onPointerUp, { passive:false });
 contentShell.addEventListener("pointercancel", onPointerUp, { passive:false });
 
 /* =========================
-   Comments + Annotations (localStorage)
+   Comments + Annotations
+   - API first
+   - localStorage fallback
    ========================= */
 let currentUserLabel = "user";
 
-function loadComments(bookId, page){
+function normalizeComment(c){
+  return {
+    id: c?.id ?? null,
+    text: c?.text ?? "",
+    user: c?.user_label ?? c?.user ?? "user",
+    at: c?.created_at_display ?? c?.at ?? "",
+  };
+}
+function normalizeAnno(a){
+  return {
+    id: a?.id ?? null,
+    x: Number(a?.x ?? 0),
+    y: Number(a?.y ?? 0),
+    text: a?.text ?? "",
+    user: a?.user_label ?? a?.user ?? "user",
+    at: a?.created_at_display ?? a?.at ?? "",
+  };
+}
+
+/* localStorage fallback */
+function loadCommentsLS(bookId, page){
   try{
     const raw = localStorage.getItem(lsKeyComments(bookId, page));
     const arr = raw ? JSON.parse(raw) : [];
@@ -643,50 +652,10 @@ function loadComments(bookId, page){
     return [];
   }
 }
-function saveComments(bookId, page, arr){
+function saveCommentsLS(bookId, page, arr){
   localStorage.setItem(lsKeyComments(bookId, page), JSON.stringify(arr));
 }
-function renderCommentsUI(arr){
-  const list = document.getElementById("commentsList");
-  const listM = document.getElementById("commentsListM");
-  const count = document.getElementById("commentCount");
-  const countM = document.getElementById("commentCountM");
-
-  const html = arr.map(c => `
-    <div class="c-item">
-      <div class="text-xs" style="color: rgba(255,255,255,.65)">${escapeHtml(c.at)} • ${escapeHtml(c.user)}</div>
-      <div class="text-sm mt-1" style="color: rgba(255,255,255,.92)">${escapeHtml(c.text)}</div>
-    </div>
-  `).join("");
-
-  if(list) list.innerHTML = html || `<div class="text-xs" style="color: rgba(255,255,255,.55)">Sem comentários ainda.</div>`;
-  if(listM) listM.innerHTML = html || `<div class="text-xs" style="color: rgba(255,255,255,.55)">Sem comentários ainda.</div>`;
-  if(count) count.textContent = String(arr.length);
-  if(countM) countM.textContent = String(arr.length);
-}
-function addComment(bookId, page, text){
-  const t = (text || "").trim();
-  if(!t) return;
-  const arr = loadComments(bookId, page);
-  arr.unshift({ text: t, at: nowStamp(), user: currentUserLabel });
-  saveComments(bookId, page, arr);
-  renderCommentsUI(arr);
-}
-function bindCommentButtons(){
-  const btn = document.getElementById("addCommentBtn");
-  const txt = document.getElementById("commentText");
-  if(btn && txt){
-    btn.onclick = ()=>{ addComment(bookId, page, txt.value); txt.value = ""; };
-  }
-  const btnM = document.getElementById("addCommentBtnM");
-  const txtM = document.getElementById("commentTextM");
-  if(btnM && txtM){
-    btnM.onclick = ()=>{ addComment(bookId, page, txtM.value); txtM.value = ""; };
-  }
-}
-
-/* Annotations */
-function loadAnnos(bookId, page){
+function loadAnnosLS(bookId, page){
   try{
     const raw = localStorage.getItem(lsKeyAnnos(bookId, page));
     const arr = raw ? JSON.parse(raw) : [];
@@ -695,17 +664,42 @@ function loadAnnos(bookId, page){
     return [];
   }
 }
-function saveAnnos(bookId, page, arr){
+function saveAnnosLS(bookId, page, arr){
   localStorage.setItem(lsKeyAnnos(bookId, page), JSON.stringify(arr));
 }
+
+/* UI */
+function renderCommentsUI(arr){
+  const list = document.getElementById("commentsList");
+  const listM = document.getElementById("commentsListM");
+  const count = document.getElementById("commentCount");
+  const countM = document.getElementById("commentCountM");
+
+  const normalized = (arr || []).map(normalizeComment);
+
+  const html = normalized.map(c => `
+    <div class="c-item">
+      <div class="text-xs" style="color: rgba(255,255,255,.65)">${escapeHtml(c.at)} • ${escapeHtml(c.user)}</div>
+      <div class="text-sm mt-1" style="color: rgba(255,255,255,.92)">${escapeHtml(c.text)}</div>
+    </div>
+  `).join("");
+
+  if(list) list.innerHTML = html || `<div class="text-xs" style="color: rgba(255,255,255,.55)">Sem comentários ainda.</div>`;
+  if(listM) listM.innerHTML = html || `<div class="text-xs" style="color: rgba(255,255,255,.55)">Sem comentários ainda.</div>`;
+  if(count) count.textContent = String(normalized.length);
+  if(countM) countM.textContent = String(normalized.length);
+}
+
 function renderAnnos(arr){
   const img = contentBox.querySelector("img");
   if(!img) return;
 
+  const normalized = (arr || []).map(normalizeAnno);
+
   contentBox.style.position = "relative";
   contentBox.querySelectorAll(".pinWrap").forEach(n=>n.remove());
 
-  arr.forEach((a, idx)=>{
+  normalized.forEach((a, idx)=>{
     const wrap = document.createElement("div");
     wrap.className = "pinWrap";
     wrap.style.position = "absolute";
@@ -728,10 +722,24 @@ function renderAnnos(arr){
       label.style.display = (label.style.display === "none") ? "block" : "none";
     });
 
-    pin.addEventListener("dblclick", (e)=>{
+    pin.addEventListener("dblclick", async (e)=>{
       e.stopPropagation();
-      const all = loadAnnos(bookId, page).filter((_, i)=>i !== idx);
-      saveAnnos(bookId, page, all);
+
+      // ✅ tenta apagar na API se tiver id
+      if(a.id){
+        try{
+          await apiDelete(`/api/books/annotations/${a.id}/`);
+          const fresh = await loadAnnosReal(bookId, page);
+          renderAnnos(fresh);
+          return;
+        }catch(err){
+          // se API falhar, cai no fallback LS
+        }
+      }
+
+      // fallback LS: apaga por índice
+      const all = loadAnnosLS(bookId, page).filter((_, i)=>i !== idx);
+      saveAnnosLS(bookId, page, all);
       renderAnnos(all);
     });
 
@@ -740,16 +748,84 @@ function renderAnnos(arr){
     contentBox.appendChild(wrap);
   });
 }
-function addAnnoAt(bookId, page, xNorm, yNorm, text){
+
+/* API-first loaders */
+async function loadCommentsReal(bookId, page){
+  try{
+    const arr = await apiGetJson(`/api/books/${bookId}/comments/?page=${page}`);
+    if(Array.isArray(arr)) return arr;
+    return [];
+  }catch(e){
+    return loadCommentsLS(bookId, page);
+  }
+}
+
+async function addCommentReal(bookId, page, text){
   const t = (text || "").trim();
   if(!t) return;
 
-  const arr = loadAnnos(bookId, page);
-  arr.unshift({ x: xNorm, y: yNorm, text: t, at: nowStamp(), user: currentUserLabel });
-  saveAnnos(bookId, page, arr);
-  renderAnnos(arr);
+  try{
+    await apiPostJson(`/api/books/${bookId}/comments/`, { page_number: page, text: t });
+    const fresh = await loadCommentsReal(bookId, page);
+    renderCommentsUI(fresh);
+  }catch(e){
+    // fallback LS
+    const arr = loadCommentsLS(bookId, page);
+    arr.unshift({ text: t, at: nowStamp(), user: currentUserLabel });
+    saveCommentsLS(bookId, page, arr);
+    renderCommentsUI(arr);
+  }
 }
-contentShell.addEventListener("click", (e)=>{
+
+async function loadAnnosReal(bookId, page){
+  try{
+    const arr = await apiGetJson(`/api/books/${bookId}/annotations/?page=${page}`);
+    if(Array.isArray(arr)) return arr;
+    return [];
+  }catch(e){
+    return loadAnnosLS(bookId, page);
+  }
+}
+
+async function addAnnoAtReal(bookId, page, xNorm, yNorm, text){
+  const t = (text || "").trim();
+  if(!t) return;
+
+  try{
+    await apiPostJson(`/api/books/${bookId}/annotations/`, {
+      page_number: page,
+      x: xNorm,
+      y: yNorm,
+      text: t,
+    });
+    const fresh = await loadAnnosReal(bookId, page);
+    renderAnnos(fresh);
+  }catch(e){
+    // fallback LS
+    const arr = loadAnnosLS(bookId, page);
+    arr.unshift({ x: xNorm, y: yNorm, text: t, at: nowStamp(), user: currentUserLabel });
+    saveAnnosLS(bookId, page, arr);
+    renderAnnos(arr);
+  }
+}
+
+function bindCommentButtons(){
+  const btn = document.getElementById("addCommentBtn");
+  const txt = document.getElementById("commentText");
+  if(btn && txt){
+    btn.onclick = async ()=>{ await addCommentReal(bookId, page, txt.value); txt.value = ""; };
+  }
+  const btnM = document.getElementById("addCommentBtnM");
+  const txtM = document.getElementById("commentTextM");
+  if(btnM && txtM){
+    btnM.onclick = async ()=>{ await addCommentReal(bookId, page, txtM.value); txtM.value = ""; };
+  }
+}
+
+/* =========================
+   Anotar (clique)
+   ========================= */
+contentShell.addEventListener("click", async (e)=>{
   if(!annotateEnabled) return;
 
   const img = contentBox.querySelector("img");
@@ -764,7 +840,7 @@ contentShell.addEventListener("click", (e)=>{
   const note = prompt("Texto da anotação:");
   if(note === null) return;
 
-  addAnnoAt(bookId, page, x, y, note);
+  await addAnnoAtReal(bookId, page, x, y, note);
 });
 
 /* =========================
@@ -789,12 +865,9 @@ function renderPageImageOrError(pageImg, bookTitle){
   img.onload = () => {
     contentBox.innerHTML = "";
     contentBox.appendChild(img);
-
-    // ✅ sempre começar em 100% em cada página
     resetZoom();
 
-    const annos = loadAnnos(bookId, page);
-    renderAnnos(annos);
+    loadAnnosReal(bookId, page).then(renderAnnos).catch(()=>renderAnnos(loadAnnosLS(bookId, page)));
   };
 
   img.onerror = () => {
@@ -855,15 +928,6 @@ function renderHeader(whereId, bookTitle, bookType, coverUrl, totalPages, limitP
 async function loadPage(){
   const debugBox = document.getElementById("debugBox");
   const debugBoxM = document.getElementById("debugBoxM");
-  const msg = document.getElementById("msg");
-  const msgM = document.getElementById("msgM");
-  const blocker = document.getElementById("blocker");
-  const blockerM = document.getElementById("blockerM");
-
-  if(msg) msg.textContent = "";
-  if(msgM) msgM.textContent = "";
-  if(blocker) blocker.classList.add("hidden");
-  if(blockerM) blockerM.classList.add("hidden");
 
   const me = await fetchMe();
   if(!me){
@@ -909,7 +973,7 @@ async function loadPage(){
 
   renderPageImageOrError(pageImg, bookTitle);
 
-  const comments = loadComments(bookId, page);
+  const comments = await loadCommentsReal(bookId, page);
   renderCommentsUI(comments);
 
   setWatermarkOverlay({ bookTitle, pageNum: page, userLabel: currentUserLabel });
@@ -922,7 +986,7 @@ function goNext(){
   else alert("Você chegou ao final do livro.");
 }
 
-/* ✅ Botões (mobile top + desktop toolbar + drawer) */
+/* Botões */
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 if(prevBtn) prevBtn.onclick = goPrev;
@@ -938,10 +1002,8 @@ const nextBtnM = document.getElementById("nextBtnM");
 if(prevBtnM) prevBtnM.onclick = goPrev;
 if(nextBtnM) nextBtnM.onclick = goNext;
 
-/* Comments buttons */
-bindCommentButtons();
-
 /* Start */
+bindCommentButtons();
 loadPage();
 </script>
 {% endblock %}
