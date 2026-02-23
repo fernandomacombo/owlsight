@@ -1,16 +1,12 @@
 import io
 from django.conf import settings
 from django.db import transaction
-from PIL import Image  # pillow
 import boto3
 import pypdfium2 as pdfium
 
 from .models import Book, BookPage
 
 
-# =========================================================
-# S3 client (Backblaze B2 S3)
-# =========================================================
 def _s3_client():
     return boto3.client(
         "s3",
@@ -26,20 +22,11 @@ def _bucket():
 
 
 def _key_prefix() -> str:
-    """
-    Se você usa AWS_LOCATION="media", então os arquivos devem ir para:
-      media/pages/<book_id>/0001.webp
-
-    Se AWS_LOCATION estiver vazio, vai para:
-      pages/<book_id>/0001.webp
-    """
+    # se AWS_LOCATION="media" => prefix "media/"
     location = (getattr(settings, "AWS_LOCATION", "") or "").strip("/")
     return f"{location}/" if location else ""
 
 
-# =========================================================
-# PDF -> WEBP bytes
-# =========================================================
 def _render_pdf_pages(pdf_bytes: bytes, scale: float = 2.0, quality: int = 80):
     """
     Yields: (page_number, webp_bytes, width, height)
@@ -48,8 +35,6 @@ def _render_pdf_pages(pdf_bytes: bytes, scale: float = 2.0, quality: int = 80):
 
     for i in range(len(doc)):
         page = doc[i]
-
-        # Render básico (se algum PDF vier rodado, depois ajustamos com rotation)
         bitmap = page.render(scale=scale)
         img = bitmap.to_pil()
 
@@ -59,19 +44,13 @@ def _render_pdf_pages(pdf_bytes: bytes, scale: float = 2.0, quality: int = 80):
         buf = io.BytesIO()
         img.save(buf, format="WEBP", quality=quality, method=6)
         w, h = img.size
-
         yield (i + 1, buf.getvalue(), w, h)
 
 
-# =========================================================
-# Main: build pages if missing
-# =========================================================
 def build_pages_if_missing(book: Book) -> int:
     """
     Converte o PDF do livro em imagens (WEBP), envia para o B2,
     cria BookPage no DB. Só faz isso se ainda não existirem páginas.
-
-    Retorna total_pages.
     """
     existing = BookPage.objects.filter(book=book).count()
     if existing > 0:
