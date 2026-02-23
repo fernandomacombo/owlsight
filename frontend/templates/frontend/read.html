@@ -93,6 +93,18 @@
           <button id="closeDrawerBtn" class="btn px-3 py-2 rounded-xl text-sm">✕</button>
         </div>
 
+        <!-- ✅ Menu do leitor (substitui o menu do base nesta página) -->
+        <div class="mt-4 rounded-2xl p-3"
+             style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
+          <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Navegação</div>
+          <div class="mt-2 grid gap-2">
+            <a href="/" class="btn px-4 py-2 rounded-xl text-sm">Página inicial</a>
+            <a href="/books/" class="btn px-4 py-2 rounded-xl text-sm">Biblioteca</a>
+            <a href="/profile/" class="btn px-4 py-2 rounded-xl text-sm">Meu perfil</a>
+            <a href="/logout/" class="btn-red px-4 py-2 rounded-xl text-sm font-semibold">Sair</a>
+          </div>
+        </div>
+
         <div class="mt-4 grid gap-2">
           <div class="flex gap-2">
             <button id="prevBtnM" class="btn px-4 py-2 rounded-xl w-1/2">Anterior</button>
@@ -162,6 +174,7 @@
           <button id="annotateToggleBtn" class="btn px-4 py-2 rounded-xl text-sm">
             Anotar: OFF
           </button>
+          <a href="/logout/" class="btn-red px-4 py-2 rounded-xl text-sm font-semibold">Sair</a>
         </div>
 
         <div class="flex items-center gap-2">
@@ -208,9 +221,23 @@
 </section>
 
 <style>
+  /* ✅ Esconde o menu do base SOMENTE nesta página para não conflitar com o drawer do leitor */
+  body > header,
+  body > nav,
+  #navbar, #topbar, #mainNav, #siteNav,
+  .navbar, .topbar, .site-header, .site-nav, .main-nav{
+    display: none !important;
+  }
+
   /* Anti seleção/cópia (dificulta) */
   #contentShell, #contentShell *{ -webkit-user-select:none; user-select:none; }
   img{ -webkit-user-drag:none; user-drag:none; }
+
+  /* ✅ IMPORTANTÍSSIMO no mobile: impede o browser de rolar/puxar a tela durante pinch/pan */
+  #contentShell{
+    touch-action: none;              /* trava o gesto do browser aqui dentro */
+    overscroll-behavior: contain;    /* evita “puxar a página” */
+  }
 
   /* Viewer: imagem controlada por transform (zoom/pan) */
   #contentBox{
@@ -405,12 +432,6 @@ let ty = 0;
 let panEnabled = false;
 let annotateEnabled = false;
 
-let isDragging = false;
-let dragStartX = 0;
-let dragStartY = 0;
-let dragStartTX = 0;
-let dragStartTY = 0;
-
 function applyTransform(){
   contentBox.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
 }
@@ -443,8 +464,6 @@ function setPan(enabled){
   const txt = enabled ? "Mão: ON" : "Mão: OFF";
   const btns = [document.getElementById("panToggleBtn"), document.getElementById("panToggleBtnM")].filter(Boolean);
   btns.forEach(b => b.textContent = txt);
-
-  contentShell.style.cursor = enabled ? "grab" : "default";
 }
 setPan(false);
 
@@ -453,41 +472,8 @@ function setAnnotate(enabled){
   const txt = enabled ? "Anotar: ON" : "Anotar: OFF";
   const btns = [document.getElementById("annotateToggleBtn"), document.getElementById("annotateToggleBtnM")].filter(Boolean);
   btns.forEach(b => b.textContent = txt);
-
-  if(enabled){
-    contentShell.style.cursor = "crosshair";
-  }else{
-    contentShell.style.cursor = panEnabled ? "grab" : "default";
-  }
 }
 setAnnotate(false);
-
-function onPointerDown(e){
-  if(annotateEnabled) return;
-  if(!panEnabled) return;
-  isDragging = true;
-  contentShell.style.cursor = "grabbing";
-  dragStartX = e.clientX;
-  dragStartY = e.clientY;
-  dragStartTX = tx;
-  dragStartTY = ty;
-}
-function onPointerMove(e){
-  if(!isDragging) return;
-  const dx = e.clientX - dragStartX;
-  const dy = e.clientY - dragStartY;
-  tx = dragStartTX + dx;
-  ty = dragStartTY + dy;
-  applyTransform();
-}
-function onPointerUp(){
-  if(!isDragging) return;
-  isDragging = false;
-  contentShell.style.cursor = panEnabled ? "grab" : "default";
-}
-contentShell.addEventListener("pointerdown", onPointerDown);
-window.addEventListener("pointermove", onPointerMove);
-window.addEventListener("pointerup", onPointerUp);
 
 function bindClick(id, fn){
   const el = document.getElementById(id);
@@ -515,9 +501,126 @@ bindClick("annotateToggleBtn", ()=>setAnnotate(!annotateEnabled));
 bindClick("annotateToggleBtnM", ()=>setAnnotate(!annotateEnabled));
 
 /* =========================
+   ✅ Mobile fix: Pan + Pinch Zoom sem “arrastar a tela”
+   (passive:false + preventDefault + pinch)
+   ========================= */
+const pointers = new Map(); // pointerId -> {x,y}
+let lastPinchDist = null;
+let lastPinchCenter = null;
+
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let dragStartTX = 0;
+let dragStartTY = 0;
+
+function _dist(a,b){
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return Math.hypot(dx, dy);
+}
+function _center(a,b){
+  return { x:(a.x+b.x)/2, y:(a.y+b.y)/2 };
+}
+
+function onPointerDown(e){
+  e.preventDefault();
+  contentShell.setPointerCapture?.(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  // 2 dedos: inicia pinch
+  if(pointers.size === 2){
+    isDragging = false;
+    const pts = Array.from(pointers.values());
+    lastPinchDist = _dist(pts[0], pts[1]);
+    lastPinchCenter = _center(pts[0], pts[1]);
+    return;
+  }
+
+  // 1 dedo: pan só se Mão ON e Anotar OFF
+  if(pointers.size === 1){
+    if(annotateEnabled) return;
+    if(!panEnabled) return;
+
+    isDragging = true;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    dragStartTX = tx;
+    dragStartTY = ty;
+  }
+}
+
+function onPointerMove(e){
+  if(!pointers.has(e.pointerId)) return;
+  e.preventDefault();
+
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  // pinch zoom (2 dedos)
+  if(pointers.size === 2){
+    const pts = Array.from(pointers.values());
+    const d = _dist(pts[0], pts[1]);
+    const c = _center(pts[0], pts[1]);
+
+    if(lastPinchDist && lastPinchCenter){
+      const ratio = d / lastPinchDist;
+      const prev = zoom;
+
+      let next = zoom * ratio;
+      next = Math.max(minZoom, Math.min(maxZoom, next));
+
+      // zoom no centro do pinch
+      const rect = contentShell.getBoundingClientRect();
+      const px = c.x - rect.left;
+      const py = c.y - rect.top;
+
+      tx = px - (px - tx) * (next / prev);
+      ty = py - (py - ty) * (next / prev);
+
+      // pan natural acompanhando o centro do pinch
+      tx += (c.x - lastPinchCenter.x);
+      ty += (c.y - lastPinchCenter.y);
+
+      zoom = next;
+      applyTransform();
+    }
+
+    lastPinchDist = d;
+    lastPinchCenter = c;
+    return;
+  }
+
+  // pan (1 dedo)
+  if(pointers.size === 1 && isDragging){
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    tx = dragStartTX + dx;
+    ty = dragStartTY + dy;
+    applyTransform();
+  }
+}
+
+function onPointerUp(e){
+  e.preventDefault();
+  pointers.delete(e.pointerId);
+
+  if(pointers.size < 2){
+    lastPinchDist = null;
+    lastPinchCenter = null;
+  }
+  if(pointers.size === 0){
+    isDragging = false;
+  }
+}
+
+contentShell.addEventListener("pointerdown", onPointerDown, { passive:false });
+contentShell.addEventListener("pointermove", onPointerMove, { passive:false });
+contentShell.addEventListener("pointerup", onPointerUp, { passive:false });
+contentShell.addEventListener("pointercancel", onPointerUp, { passive:false });
+
+/* =========================
    Comments + Annotations (localStorage)
    ========================= */
-let currentBookTitle = "Livro";
 let currentUserLabel = "user";
 
 function loadComments(bookId, page){
@@ -690,20 +793,10 @@ function renderPageImageOrError(pageImg, bookTitle){
         <div class="text-sm mt-2" style="color: rgba(255,255,255,.75)">
           O link da imagem (page_image) está inválido/expirado ou sem permissão.
         </div>
-
         <div class="text-xs mt-3" style="color: rgba(255,255,255,.70)">
           <div><b>Livro:</b> ${escapeHtml(bookTitle)}</div>
           <div class="mt-1"><b>URL:</b></div>
           <div class="mt-1" style="word-break: break-all; color: rgba(255,255,255,.60)">${escapeHtml(pageImg)}</div>
-        </div>
-
-        <div class="mt-3 flex flex-wrap gap-2">
-          <a class="btn px-4 py-2 rounded-xl text-sm" href="${pageImg}" target="_blank" rel="noopener">
-            Abrir imagem (nova aba)
-          </a>
-          <button class="btn-red px-4 py-2 rounded-xl text-sm font-semibold" onclick="loadPage()">
-            Recarregar
-          </button>
         </div>
       </div>
     `;
@@ -779,8 +872,6 @@ async function loadPage(){
   const limitPage  = Number(pick(data, ["allowed_until_page","limit_until_page","allowedUntilPage","limitPage","allowed_until","limit_until"], 0)) || 0;
 
   const bookTitle = pick(data, ["title","book_title","name","book"], "Livro");
-  currentBookTitle = bookTitle;
-
   const bookType  = pick(data, ["book_type","type","tier"], "");
   const coverUrl = pick(data, [
     "cover_url","cover","coverUrl","coverURL","book_cover","bookCover","coverImage","cover_image","coverKey","cover_key"
@@ -791,27 +882,6 @@ async function loadPage(){
 
   renderHeader("header", bookTitle, bookType, coverUrl, totalPages, limitPage);
   renderHeader("headerMobile", bookTitle, bookType, coverUrl, totalPages, limitPage);
-
-  if(res.status === 403 && data.blocked){
-    contentBox.innerHTML = `
-      <div class="p-10 text-center">
-        <div class="text-xl font-black">Conteúdo bloqueado</div>
-        <div class="text-sm mt-2" style="color: rgba(255,255,255,.62)">
-          ${escapeHtml(data.message || "Acesso limitado.")}
-        </div>
-      </div>
-    `;
-    const blockerHtml = `
-      <div class="font-bold">Para continuar:</div>
-      <div class="text-sm mt-1" style="color: rgba(255,255,255,.72)">${escapeHtml(data.message || "")}</div>
-      <button class="btn-red mt-3 w-full px-4 py-2 rounded-xl font-semibold" onclick="share()">Partilhar link</button>
-    `;
-    if(blocker){ blocker.innerHTML = blockerHtml; blocker.classList.remove("hidden"); }
-    if(blockerM){ blockerM.innerHTML = blockerHtml; blockerM.classList.remove("hidden"); }
-
-    setWatermarkOverlay({ bookTitle, pageNum: page, userLabel: currentUserLabel });
-    return;
-  }
 
   if(!pageImg){
     contentBox.innerHTML = `
@@ -834,9 +904,7 @@ async function loadPage(){
   setWatermarkOverlay({ bookTitle, pageNum: page, userLabel: currentUserLabel });
 }
 
-/* =========================
-   Navigation (desktop + mobile)
-   ========================= */
+/* Navigation */
 function goPrev(){ if(page > 1){ page--; loadPage(); } }
 function goNext(){
   if(page < maxPages){ page++; loadPage(); }
@@ -852,26 +920,10 @@ const nextBtnM = document.getElementById("nextBtnM");
 if(prevBtnM) prevBtnM.onclick = goPrev;
 if(nextBtnM) nextBtnM.onclick = goNext;
 
-/* =========================
-   Share
-   ========================= */
-async function share(){
-  const url = window.location.href;
-  try{ await navigator.clipboard.writeText(url); }catch(e){ prompt("Copie o link:", url); }
-  const res = await apiFetch(`/api/unlock/share/${bookId}/`, { method:"POST" });
-  const data = await res.json().catch(()=>({}));
-  alert(data.message || "Partilha registrada!");
-  loadPage();
-}
-
-/* =========================
-   Bind comments buttons
-   ========================= */
+/* Comments buttons */
 bindCommentButtons();
 
-/* =========================
-   Start
-   ========================= */
+/* Start */
 loadPage();
 </script>
 {% endblock %}
