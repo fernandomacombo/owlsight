@@ -48,6 +48,11 @@ def _presign_get(key: str, expires: int = 900) -> str:
     """
     Gera URL assinada curta para objeto privado no bucket.
     Guarda SEMPRE a key/path no DB, não a URL assinada.
+
+    NOTA:
+    - Mantive esta função caso você ainda use em algum lugar.
+    - Mas para CAPA e PÁGINAS, vamos usar default_storage.url()
+      (porque é o mesmo motor que já funciona na index).
     """
     if not key:
         return ""
@@ -66,7 +71,8 @@ def _presign_get(key: str, expires: int = 900) -> str:
 
 def _filefield_key(filefield) -> str:
     """
-    Para django-storages: normalmente o "key" é filefield.name (ex: 'media/pdfs/xxx.pdf' ou 'pdfs/xxx.pdf')
+    Para django-storages: normalmente o "key" é filefield.name
+    (ex: 'media/pdfs/xxx.pdf' ou 'pdfs/xxx.pdf')
     """
     try:
         return getattr(filefield, "name", "") or ""
@@ -127,12 +133,11 @@ def books_list_api(request):
 
     data = []
     for b in qs:
-        # cover: se estiveres a usar storage privado, a .url pode ser assinada e expirar.
-        # Aqui tentamos usar .url se existir; se der erro, deixamos vazio.
+        # ✅ usa o storage (mesmo motor que já funciona no teu projeto)
         cover_url = ""
         try:
-            if getattr(b, "cover", None):
-                cover_url = b.cover.url or ""
+            if getattr(b, "cover", None) and b.cover.name:
+                cover_url = default_storage.url(b.cover.name)
         except Exception:
             cover_url = ""
 
@@ -187,12 +192,9 @@ def books_list(request):
 def read_page_api(request, book_id: int, page_number: int):
     """
     GET /api/read/<book_id>/<page_number>/
-    Retorna URL assinada curta para a imagem da página (se existir).
-
-    Requisitos:
-      - Model BookPage criado (books.models.BookPage)
-      - BookPage.image_key guarda SOMENTE a key/path no bucket (não URL assinada)
-      - (Opcional) função build_pages_if_missing(book) para converter PDF->imagens on-demand
+    Retorna:
+      - page_image (URL assinada via default_storage.url)
+      - cover_url  (URL assinada via default_storage.url) ✅ corrigido
     """
     # --- auth básica ---
     if not request.user.is_authenticated:
@@ -211,10 +213,6 @@ def read_page_api(request, book_id: int, page_number: int):
         }, status=500)
 
     # --- limite por plano (ajusta depois para o teu sistema real) ---
-    # Por agora:
-    #   - free: pode ler tudo
-    #   - premium: se ainda não pagou, bloqueia depois de X páginas (ex: 10)
-    # Troca isso pela tua lógica real (subscrição/compra/partilha).
     book_type = _get_book_type(book)
     total_pages = int(getattr(book, "total_pages", 0) or 0)
 
@@ -231,10 +229,10 @@ def read_page_api(request, book_id: int, page_number: int):
             "total_pages": total_pages,
         }, status=403)
 
-    # --- se não existem páginas ainda, tenta gerar on-demand (se já criares a função) ---
+    # --- se não existem páginas ainda, tenta gerar on-demand ---
     if not BookPage.objects.filter(book=book).exists():
         try:
-            from .page_build import build_pages_if_missing  # criaremos este ficheiro depois
+            from .page_build import build_pages_if_missing
             build_pages_if_missing(book)
         except Exception:
             return JsonResponse({
@@ -252,17 +250,14 @@ def read_page_api(request, book_id: int, page_number: int):
             "total_pages": total_pages,
         }, status=404)
 
-    # --- URL assinada curta para a página ---
-
+    # ✅ URL assinada curta para a página (via storage)
     page_url = default_storage.url(page.image_key)
 
-    # --- capa (opcional): também assina se quiseres ---
+    # ✅ CORREÇÃO: capa via storage também (não boto3 presign)
     cover_url = ""
     try:
-        if getattr(book, "cover", None):
-            # se cover for privado, o mais seguro é assinar usando a key do filefield
-            cover_key = _filefield_key(book.cover)
-            cover_url = _presign_get(cover_key, expires=900) if cover_key else (book.cover.url or "")
+        if getattr(book, "cover", None) and book.cover.name:
+            cover_url = default_storage.url(book.cover.name)
     except Exception:
         cover_url = ""
 
@@ -270,13 +265,11 @@ def read_page_api(request, book_id: int, page_number: int):
         "blocked": False,
         "book_id": book.id,
         "title": str(getattr(book, "title", "") or ""),
+        "book_type": book_type,
         "page_number": int(page.page_number),
         "total_pages": int(getattr(book, "total_pages", 0) or 0),
         "allowed_until_page": int(allowed_until_page),
 
-        # O read.html já procura por "page_image" (e variações)
         "page_image": page_url,
-
-        # opcional
         "cover_url": cover_url,
     })
