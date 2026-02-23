@@ -25,32 +25,14 @@
       </div>
 
       <div class="mt-4 grid gap-2">
-        <div class="flex gap-2">
-          <button id="prevBtn" class="btn px-4 py-2 rounded-xl w-1/2">Anterior</button>
-          <button id="nextBtn" class="btn-red px-4 py-2 rounded-xl w-1/2 font-semibold">Próxima</button>
-        </div>
+        <!-- ✅ Removido: botões Anterior/Próxima daqui (agora ficam no toolbar da direita) -->
 
         <p id="msg" class="text-sm" style="color: rgba(225,6,0,.92);"></p>
 
         <div id="blocker" class="hidden rounded-2xl p-3"
              style="background: rgba(225,6,0,.10); border:1px solid rgba(225,6,0,.26);"></div>
 
-        <!-- Zoom controls (Desktop) -->
-        <div class="mt-2 rounded-2xl p-3"
-             style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
-          <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Zoom & Movimento</div>
-          <div class="mt-2 grid grid-cols-2 gap-2">
-            <button id="zoomOutBtn" class="btn px-3 py-2 rounded-xl text-sm">Zoom −</button>
-            <button id="zoomInBtn" class="btn px-3 py-2 rounded-xl text-sm">Zoom +</button>
-            <button id="resetBtn" class="btn px-3 py-2 rounded-xl text-sm col-span-2">100%</button>
-          </div>
-          <button id="panToggleBtn" class="btn-red mt-2 w-full px-4 py-2 rounded-xl text-sm font-semibold">
-            Mão: OFF
-          </button>
-          <div class="text-xs mt-2" style="color: rgba(255,255,255,.60)">
-            Dica: ative “Mão” e arraste a página (mouse ou toque).
-          </div>
-        </div>
+        <!-- ✅ Removido: Zoom controls (Desktop) do LEFT (era repetição) -->
 
         <!-- Comentários -->
         <div class="mt-2 rounded-2xl p-3"
@@ -170,13 +152,23 @@
     <section class="glass soft-shadow rounded-3xl p-0 lg:p-4" id="rightPanel">
       <!-- Toolbar (Desktop inside right) -->
       <div class="hidden lg:flex items-center justify-between px-4 p-4">
+        <!-- ✅ Aqui ficam: Anotar + Anterior/Próxima + Sair -->
         <div class="flex items-center gap-2">
           <button id="annotateToggleBtn" class="btn px-4 py-2 rounded-xl text-sm">
             Anotar: OFF
           </button>
+
+          <button id="prevBtn" class="btn px-4 py-2 rounded-xl text-sm">Anterior</button>
+          <button id="nextBtn" class="btn-red px-4 py-2 rounded-xl text-sm font-semibold">Próxima</button>
+
+          <button id="panToggleBtn" class="btn-red px-4 py-2 rounded-xl text-sm font-semibold">
+            Mão: OFF
+          </button>
+
           <a href="/logout/" class="btn-red px-4 py-2 rounded-xl text-sm font-semibold">Sair</a>
         </div>
 
+        <!-- Zoom (Desktop) -->
         <div class="flex items-center gap-2">
           <button id="zoomOutBtnR" class="btn px-3 py-2 rounded-xl text-sm">−</button>
           <button id="zoomInBtnR" class="btn px-3 py-2 rounded-xl text-sm">+</button>
@@ -185,7 +177,7 @@
       </div>
 
       <div id="contentShell"
-           class="relative rounded-2xl overflow-hidden lg:overflow-auto"
+           class="relative rounded-2xl overflow-auto"
            style="max-height: calc(100vh - 2.5rem);">
 
         <!-- Viewer layer -->
@@ -221,6 +213,12 @@
 </section>
 
 <style>
+  /* ✅ Desativa scroll NORMAL do site (a página não rola) */
+  html, body{
+    height: 100%;
+    overflow: hidden;
+  }
+
   /* ✅ Esconde o menu do base SOMENTE nesta página para não conflitar com o drawer do leitor */
   body > header,
   body > nav,
@@ -233,10 +231,15 @@
   #contentShell, #contentShell *{ -webkit-user-select:none; user-select:none; }
   img{ -webkit-user-drag:none; user-drag:none; }
 
-  /* ✅ IMPORTANTÍSSIMO no mobile: impede o browser de rolar/puxar a tela durante pinch/pan */
+  /* ✅ Scroll fica só no RIGHT (contentShell) */
   #contentShell{
-    touch-action: none;              /* trava o gesto do browser aqui dentro */
-    overscroll-behavior: contain;    /* evita “puxar a página” */
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+
+    /* Permite scroll com 1 dedo dentro do leitor.
+       Pinch/pan será controlado por JS quando necessário. */
+    touch-action: pan-y;
   }
 
   /* Viewer: imagem controlada por transform (zoom/pan) */
@@ -462,7 +465,10 @@ function resetZoom(){
 function setPan(enabled){
   panEnabled = enabled;
   const txt = enabled ? "Mão: ON" : "Mão: OFF";
-  const btns = [document.getElementById("panToggleBtn"), document.getElementById("panToggleBtnM")].filter(Boolean);
+  const btns = [
+    document.getElementById("panToggleBtn"),
+    document.getElementById("panToggleBtnM")
+  ].filter(Boolean);
   btns.forEach(b => b.textContent = txt);
 }
 setPan(false);
@@ -470,7 +476,10 @@ setPan(false);
 function setAnnotate(enabled){
   annotateEnabled = enabled;
   const txt = enabled ? "Anotar: ON" : "Anotar: OFF";
-  const btns = [document.getElementById("annotateToggleBtn"), document.getElementById("annotateToggleBtnM")].filter(Boolean);
+  const btns = [
+    document.getElementById("annotateToggleBtn"),
+    document.getElementById("annotateToggleBtnM")
+  ].filter(Boolean);
   btns.forEach(b => b.textContent = txt);
 }
 setAnnotate(false);
@@ -479,15 +488,9 @@ function bindClick(id, fn){
   const el = document.getElementById(id);
   if(el) el.addEventListener("click", fn);
 }
-bindClick("zoomInBtn", ()=>zoomBy(1.15));
-bindClick("zoomOutBtn", ()=>zoomBy(1/1.15));
-bindClick("resetBtn", resetZoom);
-bindClick("panToggleBtn", ()=>setPan(!panEnabled));
-
 bindClick("zoomInBtnM", ()=>zoomBy(1.15));
 bindClick("zoomOutBtnM", ()=>zoomBy(1/1.15));
 bindClick("resetBtnM", resetZoom);
-bindClick("panToggleBtnM", ()=>setPan(!panEnabled));
 
 bindClick("zoomInBtnR", ()=>zoomBy(1.15));
 bindClick("zoomOutBtnR", ()=>zoomBy(1/1.15));
@@ -497,12 +500,17 @@ bindClick("zoomInTop", ()=>zoomBy(1.15));
 bindClick("zoomOutTop", ()=>zoomBy(1/1.15));
 bindClick("resetTop", resetZoom);
 
+bindClick("panToggleBtn", ()=>setPan(!panEnabled));
+bindClick("panToggleBtnM", ()=>setPan(!panEnabled));
+
 bindClick("annotateToggleBtn", ()=>setAnnotate(!annotateEnabled));
 bindClick("annotateToggleBtnM", ()=>setAnnotate(!annotateEnabled));
 
 /* =========================
-   ✅ Mobile fix: Pan + Pinch Zoom sem “arrastar a tela”
-   (passive:false + preventDefault + pinch)
+   ✅ Pan + Pinch Zoom sem “puxar a página”
+   - Quando Mão=OFF e Anotar=OFF: deixa scroll normal dentro do contentShell
+   - Quando Mão=ON: pan com 1 dedo/mouse
+   - Com 2 dedos: pinch zoom sempre
    ========================= */
 const pointers = new Map(); // pointerId -> {x,y}
 let lastPinchDist = null;
@@ -524,23 +532,32 @@ function _center(a,b){
 }
 
 function onPointerDown(e){
-  e.preventDefault();
-  contentShell.setPointerCapture?.(e.pointerId);
+  // Sempre registrar ponteiro (permite detectar 2 dedos)
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
-  // 2 dedos: inicia pinch
+  // 2 dedos: inicia pinch (bloqueia gesto do browser)
   if(pointers.size === 2){
-    isDragging = false;
+    e.preventDefault();
+    contentShell.setPointerCapture?.(e.pointerId);
     const pts = Array.from(pointers.values());
     lastPinchDist = _dist(pts[0], pts[1]);
     lastPinchCenter = _center(pts[0], pts[1]);
+    isDragging = false;
+    return;
+  }
+
+  // 1 dedo: se Anotar ON -> bloquear scroll e esperar click
+  if(pointers.size === 1 && annotateEnabled){
+    e.preventDefault();
+    contentShell.setPointerCapture?.(e.pointerId);
+    isDragging = false;
     return;
   }
 
   // 1 dedo: pan só se Mão ON e Anotar OFF
-  if(pointers.size === 1){
-    if(annotateEnabled) return;
-    if(!panEnabled) return;
+  if(pointers.size === 1 && panEnabled && !annotateEnabled){
+    e.preventDefault();
+    contentShell.setPointerCapture?.(e.pointerId);
 
     isDragging = true;
     dragStartX = e.clientX;
@@ -548,16 +565,17 @@ function onPointerDown(e){
     dragStartTX = tx;
     dragStartTY = ty;
   }
+  // Caso contrário: deixa o scroll normal acontecer dentro do #contentShell
 }
 
 function onPointerMove(e){
   if(!pointers.has(e.pointerId)) return;
-  e.preventDefault();
 
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
   // pinch zoom (2 dedos)
   if(pointers.size === 2){
+    e.preventDefault();
     const pts = Array.from(pointers.values());
     const d = _dist(pts[0], pts[1]);
     const c = _center(pts[0], pts[1]);
@@ -590,18 +608,19 @@ function onPointerMove(e){
     return;
   }
 
-  // pan (1 dedo)
+  // pan (1 dedo) quando Mão ON
   if(pointers.size === 1 && isDragging){
+    e.preventDefault();
     const dx = e.clientX - dragStartX;
     const dy = e.clientY - dragStartY;
     tx = dragStartTX + dx;
     ty = dragStartTY + dy;
     applyTransform();
   }
+  // senão: deixa scroll normal
 }
 
 function onPointerUp(e){
-  e.preventDefault();
   pointers.delete(e.pointerId);
 
   if(pointers.size < 2){
@@ -615,8 +634,8 @@ function onPointerUp(e){
 
 contentShell.addEventListener("pointerdown", onPointerDown, { passive:false });
 contentShell.addEventListener("pointermove", onPointerMove, { passive:false });
-contentShell.addEventListener("pointerup", onPointerUp, { passive:false });
-contentShell.addEventListener("pointercancel", onPointerUp, { passive:false });
+contentShell.addEventListener("pointerup", onPointerUp, { passive:true });
+contentShell.addEventListener("pointercancel", onPointerUp, { passive:true });
 
 /* =========================
    Comments + Annotations (localStorage)
@@ -910,6 +929,7 @@ function goNext(){
   if(page < maxPages){ page++; loadPage(); }
   else alert("Você chegou ao final do livro.");
 }
+
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 if(prevBtn) prevBtn.onclick = goPrev;
