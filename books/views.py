@@ -1,48 +1,122 @@
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
-from .models import Book
-
-from django.http import JsonResponse
-from django.views.decorators.http import require_GET
-from django.db.models import Avg, Count, Q
-from django.utils import timezone
 from datetime import timedelta
 
+import boto3
+from django.conf import settings
+from django.db.models import Avg, Count
+from django.http import JsonResponse
+from django.utils import timezone
+from django.views.decorators.http import require_GET
+
 from .models import Book
+
+# Se já criaste o model BookPage em books/models.py, importa aqui:
+try:
+    from .models import BookPage
+except Exception:
+    BookPage = None
+
 from reading.models import Rating, ReadingProgress
 
 
+# =========================================================
+# Helpers (B2 S3 + URL assinada)
+# =========================================================
+def _s3_client():
+    """
+    Backblaze B2 S3-compatible client.
+    Requer settings:
+      AWS_S3_ENDPOINT_URL
+      AWS_ACCESS_KEY_ID
+      AWS_SECRET_ACCESS_KEY
+      AWS_STORAGE_BUCKET_NAME
+      (opcional) AWS_S3_REGION_NAME
+    """
+    endpoint = getattr(settings, "AWS_S3_ENDPOINT_URL", None)
+    region = getattr(settings, "AWS_S3_REGION_NAME", None) or "us-east-1"
+
+    return boto3.client(
+        "s3",
+        endpoint_url=endpoint,
+        aws_access_key_id=getattr(settings, "AWS_ACCESS_KEY_ID", None),
+        aws_secret_access_key=getattr(settings, "AWS_SECRET_ACCESS_KEY", None),
+        region_name=region,
+    )
+
+
+def _presign_get(key: str, expires: int = 900) -> str:
+    """
+    Gera URL assinada curta para objeto privado no bucket.
+    Guarda SEMPRE a key/path no DB, não a URL assinada.
+    """
+    if not key:
+        return ""
+
+    bucket = getattr(settings, "AWS_STORAGE_BUCKET_NAME", "")
+    if not bucket:
+        return ""
+
+    s3 = _s3_client()
+    return s3.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": bucket, "Key": key},
+        ExpiresIn=expires,
+    )
+
+
+def _filefield_key(filefield) -> str:
+    """
+    Para django-storages: normalmente o "key" é filefield.name (ex: 'media/pdfs/xxx.pdf' ou 'pdfs/xxx.pdf')
+    """
+    try:
+        return getattr(filefield, "name", "") or ""
+    except Exception:
+        return ""
+
+
+def _get_book_type(book: Book) -> str:
+    """
+    Resolve tipo: free/premium (compatível com vários nomes de campo).
+    """
+    if hasattr(book, "book_type") and getattr(book, "book_type"):
+        return str(book.book_type)
+    if hasattr(book, "type") and getattr(book, "type"):
+        return str(book.type)
+    if hasattr(book, "is_premium"):
+        return "premium" if bool(getattr(book, "is_premium")) else "free"
+    return "free"
+
+
+# =========================================================
+# APIs
+# =========================================================
 @require_GET
 def books_list_api(request):
     """
     GET /api/books/
     Retorna livros + métricas:
-      - avg_rating, ratings_count (da tabela Rating)
-      - readers_count, active_readers (da tabela ReadingProgress)
+      - avg_rating, ratings_count (Rating)
+      - readers_count, active_readers (ReadingProgress)
     """
     now = timezone.now()
     active_window = now - timedelta(hours=24)
 
-    # agrega ratings por livro
+    # Agregações de ratings por livro
     rating_aggs = (
-        Rating.objects
-        .values("book_id")
+        Rating.objects.values("book_id")
         .annotate(avg=Avg("stars"), cnt=Count("id"))
     )
     rating_map = {r["book_id"]: r for r in rating_aggs}
 
-    # agrega leitores por livro (qualquer progresso)
+    # Leitores totais (qualquer progresso)
     readers_aggs = (
-        ReadingProgress.objects
-        .values("book_id")
+        ReadingProgress.objects.values("book_id")
         .annotate(readers=Count("user_id", distinct=True))
     )
     readers_map = {r["book_id"]: r["readers"] for r in readers_aggs}
 
-    # agrega "a ler agora" (ativos nas últimas 24h)
+    # "A ler agora" (ativos nas últimas 24h)
     active_aggs = (
-        ReadingProgress.objects
-        .filter(updated_at__gte=active_window)
+        ReadingProgress.objects.filter(updated_at__gte=active_window)
         .values("book_id")
         .annotate(active=Count("user_id", distinct=True))
     )
@@ -52,6 +126,8 @@ def books_list_api(request):
 
     data = []
     for b in qs:
+        # cover: se estiveres a usar storage privado, a .url pode ser assinada e expirar.
+        # Aqui tentamos usar .url se existir; se der erro, deixamos vazio.
         cover_url = ""
         try:
             if getattr(b, "cover", None):
@@ -66,13 +142,7 @@ def books_list_api(request):
             except Exception:
                 created_at = None
 
-        book_type = "free"
-        if hasattr(b, "book_type") and getattr(b, "book_type"):
-            book_type = str(b.book_type)
-        elif hasattr(b, "type") and getattr(b, "type"):
-            book_type = str(b.type)
-        elif hasattr(b, "is_premium"):
-            book_type = "premium" if bool(getattr(b, "is_premium")) else "free"
+        book_type = _get_book_type(b)
 
         genre = ""
         if hasattr(b, "genre") and getattr(b, "genre"):
@@ -106,6 +176,105 @@ def books_list_api(request):
     return JsonResponse(data, safe=False)
 
 
+@require_GET
 def books_list(request):
     qs = Book.objects.all().order_by("-id").values("id", "title", "book_type", "total_pages")[:50]
     return JsonResponse(list(qs), safe=False)
+
+
+@require_GET
+def read_page_api(request, book_id: int, page_number: int):
+    """
+    GET /api/read/<book_id>/<page_number>/
+    Retorna URL assinada curta para a imagem da página (se existir).
+
+    Requisitos:
+      - Model BookPage criado (books.models.BookPage)
+      - BookPage.image_key guarda SOMENTE a key/path no bucket (não URL assinada)
+      - (Opcional) função build_pages_if_missing(book) para converter PDF->imagens on-demand
+    """
+    # --- auth básica ---
+    if not request.user.is_authenticated:
+        return JsonResponse({"detail": "Auth required"}, status=401)
+
+    # --- book ---
+    try:
+        book = Book.objects.get(id=book_id)
+    except Book.DoesNotExist:
+        return JsonResponse({"detail": "Book not found"}, status=404)
+
+    # --- se ainda não tens BookPage, para aqui ---
+    if BookPage is None:
+        return JsonResponse({
+            "detail": "BookPage model not available. Crie o model BookPage em books/models.py e rode migrations."
+        }, status=500)
+
+    # --- limite por plano (ajusta depois para o teu sistema real) ---
+    # Por agora:
+    #   - free: pode ler tudo
+    #   - premium: se ainda não pagou, bloqueia depois de X páginas (ex: 10)
+    # Troca isso pela tua lógica real (subscrição/compra/partilha).
+    book_type = _get_book_type(book)
+    total_pages = int(getattr(book, "total_pages", 0) or 0)
+
+    if book_type == "premium":
+        allowed_until_page = 10
+    else:
+        allowed_until_page = total_pages if total_pages else 999999
+
+    if page_number > allowed_until_page:
+        return JsonResponse({
+            "blocked": True,
+            "reason": "LIMIT_REACHED",
+            "allowed_until_page": allowed_until_page,
+            "total_pages": total_pages,
+        }, status=403)
+
+    # --- se não existem páginas ainda, tenta gerar on-demand (se já criares a função) ---
+    if not BookPage.objects.filter(book=book).exists():
+        try:
+            from .page_build import build_pages_if_missing  # criaremos este ficheiro depois
+            build_pages_if_missing(book)
+        except Exception:
+            return JsonResponse({
+                "detail": "Páginas não foram geradas ainda. Crie o gerador on-demand em books/page_build.py.",
+                "hint": "Você precisa converter o PDF em imagens (BookPage) antes de conseguir ler."
+            }, status=409)
+
+    # --- buscar página ---
+    try:
+        page = BookPage.objects.get(book=book, page_number=page_number)
+    except BookPage.DoesNotExist:
+        return JsonResponse({
+            "detail": "Page not found",
+            "page_number": page_number,
+            "total_pages": total_pages,
+        }, status=404)
+
+    # --- URL assinada curta para a página ---
+    page_url = _presign_get(page.image_key, expires=900)  # 15 min
+
+    # --- capa (opcional): também assina se quiseres ---
+    cover_url = ""
+    try:
+        if getattr(book, "cover", None):
+            # se cover for privado, o mais seguro é assinar usando a key do filefield
+            cover_key = _filefield_key(book.cover)
+            cover_url = _presign_get(cover_key, expires=900) if cover_key else (book.cover.url or "")
+    except Exception:
+        cover_url = ""
+
+    return JsonResponse({
+        "blocked": False,
+        "book_id": book.id,
+        "title": str(getattr(book, "title", "") or ""),
+        "page_number": int(page.page_number),
+        "total_pages": int(getattr(book, "total_pages", 0) or 0),
+        "allowed_until_page": int(allowed_until_page),
+
+        # O read.html já procura por "page_image" (e variações)
+        "page_image": page_url,
+
+        # opcional
+        "cover_url": cover_url,
+    })

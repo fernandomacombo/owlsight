@@ -24,9 +24,10 @@ class Book(models.Model):
         choices=BookType.choices,
         default=BookType.FREE
     )
+
     total_pages = models.PositiveIntegerField(null=True, blank=True)
 
-    # ✅ upload_to não leva "media/"
+    # upload_to NÃO leva "media/"
     cover = models.ImageField(upload_to="covers/", blank=True, null=True)
     pdf_file = models.FileField(upload_to="pdfs/", blank=True, null=True)
 
@@ -35,3 +36,28 @@ class Book(models.Model):
 
     def __str__(self):
         return self.title
+
+
+# =========================================================
+# PÁGINAS CONVERTIDAS (PDF → IMAGENS)
+# =========================================================
+class BookPage(models.Model):
+    book = models.ForeignKey(
+        Book,
+        on_delete=models.CASCADE,
+        related_name="pages"
+    )
+
+    page_number = models.PositiveIntegerField()
+    image_key = models.CharField(max_length=500)  # guarda a KEY do B2 (não URL assinada)
+    width = models.PositiveIntegerField(default=0)
+    height = models.PositiveIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("book", "page_number")
+        ordering = ["page_number"]
+
+    def __str__(self):
+        return f"{self.book.title} - Página {self.page_number}"
