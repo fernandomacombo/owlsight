@@ -43,6 +43,8 @@ urlpatterns = [
     path("terms/", terms_view, name="terms"),
     path("privacy/", privacy_view, name="privacy"),
 
+     path("read/<int:book_id>/<int:page_number>/", read_view, name="read"),
+
     # 🔒 PÁGINAS PROTEGIDAS (exigem login)
     path("read/<int:book_id>/<int:page_number>/", login_required(read_view), name="read"),
     path("favorites/", login_required(favorites_view), name="favorites"),

@@ -151,6 +151,22 @@ function setWatermarkOverlay({ bookTitle, pageNum, userLabel }){
    Leitura
    ========================= */
 const bookId = Number("{{ book_id }}");
+
+if (!Number.isFinite(bookId) || bookId <= 0) {
+  document.getElementById("debugBox").textContent =
+    JSON.stringify({ error: "book_id inválido vindo do template", bookId }, null, 2);
+  document.getElementById("contentBox").innerHTML = `
+    <div class="p-10 text-center">
+      <div class="text-lg font-black">ID do livro inválido</div>
+      <div class="text-sm mt-2" style="color: rgba(255,255,255,.65)">
+        Abra pela rota: <b>/read/&lt;book_id&gt;/1/</b><br/>
+        Exemplo: <b>/read/21/1/</b>
+      </div>
+    </div>
+  `;
+  throw new Error("book_id inválido");
+}
+
 let page = Number("{{ page_number }}");
 let maxPages = 1;
 
