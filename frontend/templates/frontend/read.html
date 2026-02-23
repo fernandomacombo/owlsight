@@ -3,13 +3,17 @@
 
 {% block content %}
 <section class="fade-in">
-  <!-- Top bar (mobile): hamburger + quick actions -->
-  <div class="lg:hidden flex items-center justify-between mb-3">
+  <!-- Top bar (mobile): hamburger + nav + zoom -->
+  <div class="lg:hidden flex items-center justify-between gap-2 mb-3">
     <button id="openDrawerBtn" class="btn px-4 py-2 rounded-xl text-sm">
       ☰ Menu
     </button>
 
+    <!-- ✅ Prev/Next junto do zoom (mobile) -->
     <div class="flex items-center gap-2">
+      <button id="prevBtn" class="btn px-3 py-2 rounded-xl text-sm">⟵</button>
+      <button id="nextBtn" class="btn-red px-3 py-2 rounded-xl text-sm font-semibold">⟶</button>
+
       <button id="zoomOutTop" class="btn px-3 py-2 rounded-xl text-sm">−</button>
       <button id="zoomInTop" class="btn px-3 py-2 rounded-xl text-sm">+</button>
       <button id="resetTop" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
@@ -25,14 +29,13 @@
       </div>
 
       <div class="mt-4 grid gap-2">
-        <!-- ✅ Removido: botões Anterior/Próxima daqui (agora ficam no toolbar da direita) -->
+        <!-- ✅ REMOVIDO: zoom duplicado do left -->
+        <!-- ✅ REMOVIDO: botões Anterior/Próxima do left (agora estão no topo) -->
 
         <p id="msg" class="text-sm" style="color: rgba(225,6,0,.92);"></p>
 
         <div id="blocker" class="hidden rounded-2xl p-3"
              style="background: rgba(225,6,0,.10); border:1px solid rgba(225,6,0,.26);"></div>
-
-        <!-- ✅ Removido: Zoom controls (Desktop) do LEFT (era repetição) -->
 
         <!-- Comentários -->
         <div class="mt-2 rounded-2xl p-3"
@@ -75,7 +78,7 @@
           <button id="closeDrawerBtn" class="btn px-3 py-2 rounded-xl text-sm">✕</button>
         </div>
 
-        <!-- ✅ Menu do leitor (substitui o menu do base nesta página) -->
+        <!-- ✅ Menu do leitor -->
         <div class="mt-4 rounded-2xl p-3"
              style="border:1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04)">
           <div class="text-sm font-semibold" style="color: rgba(255,255,255,.82)">Navegação</div>
@@ -88,6 +91,7 @@
         </div>
 
         <div class="mt-4 grid gap-2">
+          <!-- mantém aqui no drawer (mobile) -->
           <div class="flex gap-2">
             <button id="prevBtnM" class="btn px-4 py-2 rounded-xl w-1/2">Anterior</button>
             <button id="nextBtnM" class="btn-red px-4 py-2 rounded-xl w-1/2 font-semibold">Próxima</button>
@@ -152,23 +156,17 @@
     <section class="glass soft-shadow rounded-3xl p-0 lg:p-4" id="rightPanel">
       <!-- Toolbar (Desktop inside right) -->
       <div class="hidden lg:flex items-center justify-between px-4 p-4">
-        <!-- ✅ Aqui ficam: Anotar + Anterior/Próxima + Sair -->
         <div class="flex items-center gap-2">
+          <!-- ✅ Prev/Next junto do zoom (desktop) -->
+          <button id="prevBtnDesktop" class="btn px-4 py-2 rounded-xl text-sm">Anterior</button>
+          <button id="nextBtnDesktop" class="btn-red px-4 py-2 rounded-xl text-sm font-semibold">Próxima</button>
+
           <button id="annotateToggleBtn" class="btn px-4 py-2 rounded-xl text-sm">
             Anotar: OFF
           </button>
-
-          <button id="prevBtn" class="btn px-4 py-2 rounded-xl text-sm">Anterior</button>
-          <button id="nextBtn" class="btn-red px-4 py-2 rounded-xl text-sm font-semibold">Próxima</button>
-
-          <button id="panToggleBtn" class="btn-red px-4 py-2 rounded-xl text-sm font-semibold">
-            Mão: OFF
-          </button>
-
           <a href="/logout/" class="btn-red px-4 py-2 rounded-xl text-sm font-semibold">Sair</a>
         </div>
 
-        <!-- Zoom (Desktop) -->
         <div class="flex items-center gap-2">
           <button id="zoomOutBtnR" class="btn px-3 py-2 rounded-xl text-sm">−</button>
           <button id="zoomInBtnR" class="btn px-3 py-2 rounded-xl text-sm">+</button>
@@ -213,12 +211,6 @@
 </section>
 
 <style>
-  /* ✅ Desativa scroll NORMAL do site (a página não rola) */
-  html, body{
-    height: 100%;
-    overflow: hidden;
-  }
-
   /* ✅ Esconde o menu do base SOMENTE nesta página para não conflitar com o drawer do leitor */
   body > header,
   body > nav,
@@ -227,19 +219,21 @@
     display: none !important;
   }
 
+  /* ✅ Desativa scroll normal do site */
+  html, body{
+    height: 100%;
+    overflow: hidden !important;
+  }
+
   /* Anti seleção/cópia (dificulta) */
   #contentShell, #contentShell *{ -webkit-user-select:none; user-select:none; }
   img{ -webkit-user-drag:none; user-drag:none; }
 
-  /* ✅ Scroll fica só no RIGHT (contentShell) */
+  /* ✅ Scroll só dentro do RIGHT (contentShell) */
   #contentShell{
-    overflow: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-
-    /* Permite scroll com 1 dedo dentro do leitor.
-       Pinch/pan será controlado por JS quando necessário. */
-    touch-action: pan-y;
+    touch-action: pan-y; /* padrão: deixa scroll vertical */
   }
 
   /* Viewer: imagem controlada por transform (zoom/pan) */
@@ -253,7 +247,7 @@
     display:block;
     width:100%;
     height:auto;
-    pointer-events: none; /* evita “arrastar imagem” no browser */
+    pointer-events: none;
   }
 
   /* Caixa de erro quando imagem falha */
@@ -439,6 +433,18 @@ function applyTransform(){
   contentBox.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
 }
 
+/* ✅ Controla quando o scroll normal pode acontecer no RIGHT */
+function setRightScrollMode(mode){
+  // mode: "scroll" | "lock"
+  if(!contentShell) return;
+  if(mode === "lock"){
+    contentShell.style.touchAction = "none";     // trava scroll do browser
+  }else{
+    contentShell.style.touchAction = "pan-y";    // permite scroll vertical normal
+  }
+}
+setRightScrollMode("scroll");
+
 function zoomBy(factor){
   const prev = zoom;
   let next = zoom * factor;
@@ -465,22 +471,22 @@ function resetZoom(){
 function setPan(enabled){
   panEnabled = enabled;
   const txt = enabled ? "Mão: ON" : "Mão: OFF";
-  const btns = [
-    document.getElementById("panToggleBtn"),
-    document.getElementById("panToggleBtnM")
-  ].filter(Boolean);
+  const btns = [document.getElementById("panToggleBtnM")].filter(Boolean);
   btns.forEach(b => b.textContent = txt);
+
+  // ✅ se ativar Mão, trava scroll do browser (porque agora arrasta a página)
+  setRightScrollMode((panEnabled || annotateEnabled) ? "lock" : "scroll");
 }
 setPan(false);
 
 function setAnnotate(enabled){
   annotateEnabled = enabled;
   const txt = enabled ? "Anotar: ON" : "Anotar: OFF";
-  const btns = [
-    document.getElementById("annotateToggleBtn"),
-    document.getElementById("annotateToggleBtnM")
-  ].filter(Boolean);
+  const btns = [document.getElementById("annotateToggleBtn"), document.getElementById("annotateToggleBtnM")].filter(Boolean);
   btns.forEach(b => b.textContent = txt);
+
+  // ✅ se ativar Anotar, trava scroll (para o clique/pin ficar preciso)
+  setRightScrollMode((panEnabled || annotateEnabled) ? "lock" : "scroll");
 }
 setAnnotate(false);
 
@@ -488,10 +494,8 @@ function bindClick(id, fn){
   const el = document.getElementById(id);
   if(el) el.addEventListener("click", fn);
 }
-bindClick("zoomInBtnM", ()=>zoomBy(1.15));
-bindClick("zoomOutBtnM", ()=>zoomBy(1/1.15));
-bindClick("resetBtnM", resetZoom);
 
+/* Zoom (desktop right + mobile top + mobile drawer) */
 bindClick("zoomInBtnR", ()=>zoomBy(1.15));
 bindClick("zoomOutBtnR", ()=>zoomBy(1/1.15));
 bindClick("resetBtnR", resetZoom);
@@ -500,19 +504,18 @@ bindClick("zoomInTop", ()=>zoomBy(1.15));
 bindClick("zoomOutTop", ()=>zoomBy(1/1.15));
 bindClick("resetTop", resetZoom);
 
-bindClick("panToggleBtn", ()=>setPan(!panEnabled));
-bindClick("panToggleBtnM", ()=>setPan(!panEnabled));
+bindClick("zoomInBtnM", ()=>zoomBy(1.15));
+bindClick("zoomOutBtnM", ()=>zoomBy(1/1.15));
+bindClick("resetBtnM", resetZoom);
 
 bindClick("annotateToggleBtn", ()=>setAnnotate(!annotateEnabled));
 bindClick("annotateToggleBtnM", ()=>setAnnotate(!annotateEnabled));
+bindClick("panToggleBtnM", ()=>setPan(!panEnabled));
 
 /* =========================
-   ✅ Pan + Pinch Zoom sem “puxar a página”
-   - Quando Mão=OFF e Anotar=OFF: deixa scroll normal dentro do contentShell
-   - Quando Mão=ON: pan com 1 dedo/mouse
-   - Com 2 dedos: pinch zoom sempre
+   ✅ Pointer: Pan + Pinch Zoom (sem puxar página)
    ========================= */
-const pointers = new Map(); // pointerId -> {x,y}
+const pointers = new Map();
 let lastPinchDist = null;
 let lastPinchCenter = null;
 
@@ -532,32 +535,27 @@ function _center(a,b){
 }
 
 function onPointerDown(e){
-  // Sempre registrar ponteiro (permite detectar 2 dedos)
+  // só bloqueia comportamento padrão quando vamos usar gesto nosso
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  contentShell.setPointerCapture?.(e.pointerId);
 
-  // 2 dedos: inicia pinch (bloqueia gesto do browser)
+  // 2 dedos: pinch -> trava scroll
   if(pointers.size === 2){
     e.preventDefault();
-    contentShell.setPointerCapture?.(e.pointerId);
+    setRightScrollMode("lock");
+    isDragging = false;
     const pts = Array.from(pointers.values());
     lastPinchDist = _dist(pts[0], pts[1]);
     lastPinchCenter = _center(pts[0], pts[1]);
-    isDragging = false;
-    return;
-  }
-
-  // 1 dedo: se Anotar ON -> bloquear scroll e esperar click
-  if(pointers.size === 1 && annotateEnabled){
-    e.preventDefault();
-    contentShell.setPointerCapture?.(e.pointerId);
-    isDragging = false;
     return;
   }
 
   // 1 dedo: pan só se Mão ON e Anotar OFF
-  if(pointers.size === 1 && panEnabled && !annotateEnabled){
+  if(pointers.size === 1){
+    if(annotateEnabled) return;
+    if(!panEnabled) return;
     e.preventDefault();
-    contentShell.setPointerCapture?.(e.pointerId);
+    setRightScrollMode("lock");
 
     isDragging = true;
     dragStartX = e.clientX;
@@ -565,12 +563,10 @@ function onPointerDown(e){
     dragStartTX = tx;
     dragStartTY = ty;
   }
-  // Caso contrário: deixa o scroll normal acontecer dentro do #contentShell
 }
 
 function onPointerMove(e){
   if(!pointers.has(e.pointerId)) return;
-
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
   // pinch zoom (2 dedos)
@@ -587,7 +583,6 @@ function onPointerMove(e){
       let next = zoom * ratio;
       next = Math.max(minZoom, Math.min(maxZoom, next));
 
-      // zoom no centro do pinch
       const rect = contentShell.getBoundingClientRect();
       const px = c.x - rect.left;
       const py = c.y - rect.top;
@@ -595,7 +590,6 @@ function onPointerMove(e){
       tx = px - (px - tx) * (next / prev);
       ty = py - (py - ty) * (next / prev);
 
-      // pan natural acompanhando o centro do pinch
       tx += (c.x - lastPinchCenter.x);
       ty += (c.y - lastPinchCenter.y);
 
@@ -608,7 +602,7 @@ function onPointerMove(e){
     return;
   }
 
-  // pan (1 dedo) quando Mão ON
+  // pan (1 dedo)
   if(pointers.size === 1 && isDragging){
     e.preventDefault();
     const dx = e.clientX - dragStartX;
@@ -617,7 +611,6 @@ function onPointerMove(e){
     ty = dragStartTY + dy;
     applyTransform();
   }
-  // senão: deixa scroll normal
 }
 
 function onPointerUp(e){
@@ -629,13 +622,15 @@ function onPointerUp(e){
   }
   if(pointers.size === 0){
     isDragging = false;
+    // ✅ volta a permitir scroll se não estiver em Mão/Anotar
+    setRightScrollMode((panEnabled || annotateEnabled) ? "lock" : "scroll");
   }
 }
 
 contentShell.addEventListener("pointerdown", onPointerDown, { passive:false });
 contentShell.addEventListener("pointermove", onPointerMove, { passive:false });
-contentShell.addEventListener("pointerup", onPointerUp, { passive:true });
-contentShell.addEventListener("pointercancel", onPointerUp, { passive:true });
+contentShell.addEventListener("pointerup", onPointerUp, { passive:false });
+contentShell.addEventListener("pointercancel", onPointerUp, { passive:false });
 
 /* =========================
    Comments + Annotations (localStorage)
@@ -930,10 +925,16 @@ function goNext(){
   else alert("Você chegou ao final do livro.");
 }
 
+/* ✅ Botões (mobile top + desktop toolbar + drawer) */
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 if(prevBtn) prevBtn.onclick = goPrev;
 if(nextBtn) nextBtn.onclick = goNext;
+
+const prevBtnDesktop = document.getElementById("prevBtnDesktop");
+const nextBtnDesktop = document.getElementById("nextBtnDesktop");
+if(prevBtnDesktop) prevBtnDesktop.onclick = goPrev;
+if(nextBtnDesktop) nextBtnDesktop.onclick = goNext;
 
 const prevBtnM = document.getElementById("prevBtnM");
 const nextBtnM = document.getElementById("nextBtnM");
