@@ -12,7 +12,7 @@
     <div class="flex items-center gap-2">
       <button id="zoomOutTop" class="btn px-3 py-2 rounded-xl text-sm">−</button>
       <button id="zoomInTop" class="btn px-3 py-2 rounded-xl text-sm">+</button>
-      <button id="fitTop" class="btn px-3 py-2 rounded-xl text-sm">Ajustar</button>
+      <button id="resetTop" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
     </div>
   </div>
 
@@ -42,8 +42,7 @@
           <div class="mt-2 grid grid-cols-2 gap-2">
             <button id="zoomOutBtn" class="btn px-3 py-2 rounded-xl text-sm">Zoom −</button>
             <button id="zoomInBtn" class="btn px-3 py-2 rounded-xl text-sm">Zoom +</button>
-            <button id="fitBtn" class="btn px-3 py-2 rounded-xl text-sm">Ajustar</button>
-            <button id="resetBtn" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
+            <button id="resetBtn" class="btn px-3 py-2 rounded-xl text-sm col-span-2">100%</button>
           </div>
           <button id="panToggleBtn" class="btn-red mt-2 w-full px-4 py-2 rounded-xl text-sm font-semibold">
             Mão: OFF
@@ -112,8 +111,7 @@
             <div class="mt-2 grid grid-cols-2 gap-2">
               <button id="zoomOutBtnM" class="btn px-3 py-2 rounded-xl text-sm">Zoom −</button>
               <button id="zoomInBtnM" class="btn px-3 py-2 rounded-xl text-sm">Zoom +</button>
-              <button id="fitBtnM" class="btn px-3 py-2 rounded-xl text-sm">Ajustar</button>
-              <button id="resetBtnM" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
+              <button id="resetBtnM" class="btn px-3 py-2 rounded-xl text-sm col-span-2">100%</button>
             </div>
             <button id="panToggleBtnM" class="btn-red mt-2 w-full px-4 py-2 rounded-xl text-sm font-semibold">
               Mão: OFF
@@ -169,7 +167,6 @@
         <div class="flex items-center gap-2">
           <button id="zoomOutBtnR" class="btn px-3 py-2 rounded-xl text-sm">−</button>
           <button id="zoomInBtnR" class="btn px-3 py-2 rounded-xl text-sm">+</button>
-          <button id="fitBtnR" class="btn px-3 py-2 rounded-xl text-sm">Ajustar</button>
           <button id="resetBtnR" class="btn px-3 py-2 rounded-xl text-sm">100%</button>
         </div>
       </div>
@@ -235,12 +232,6 @@
     background: rgba(225,6,0,.08);
     border-radius: 16px;
     padding: 16px;
-  }
-
-  /* Drawer animation (simples) */
-  #drawerPanel{
-    transform: translateX(-10px);
-    opacity: .98;
   }
 
   /* Pins de anotação */
@@ -368,14 +359,11 @@ function pick(data, keys, fallback=null){
   }
   return fallback;
 }
-
 function nowStamp(){
-  // yyyy-mm-dd hh:mm
   const d = new Date();
   const pad = (n)=> String(n).padStart(2,"0");
   return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
-
 function lsKeyComments(bookId, page){
   return `owlsight:comments:${bookId}:${page}`;
 }
@@ -404,11 +392,10 @@ if(closeDrawerBtn) closeDrawerBtn.addEventListener("click", closeDrawer);
 if(drawerOverlay) drawerOverlay.addEventListener("click", closeDrawer);
 
 /* =========================
-   Zoom/Pan state
+   Zoom/Pan state (START ALWAYS 100%)
    ========================= */
 const contentShell = document.getElementById("contentShell");
 const contentBox = document.getElementById("contentBox");
-const viewer = document.getElementById("viewer");
 
 let zoom = 1;
 let minZoom = 0.5;
@@ -424,28 +411,8 @@ let dragStartY = 0;
 let dragStartTX = 0;
 let dragStartTY = 0;
 
-// apply transform
 function applyTransform(){
   contentBox.style.transform = `translate(${tx}px, ${ty}px) scale(${zoom})`;
-  // annotations must follow same transform → we put pins relative to image and attach to annoLayer using same transform via parent (contentBox)
-}
-
-// fit to width intelligently
-function fitToWidth(){
-  const img = contentBox.querySelector("img");
-  if(!img) return;
-
-  const shellW = contentShell.clientWidth;
-  const imgW = img.naturalWidth || img.width || shellW;
-
-  // Fit to width with a little padding feeling
-  let target = shellW / imgW;
-  target = Math.max(minZoom, Math.min(maxZoom, target));
-
-  zoom = target;
-  tx = 0;
-  ty = 0;
-  applyTransform();
 }
 
 function zoomBy(factor){
@@ -453,12 +420,10 @@ function zoomBy(factor){
   let next = zoom * factor;
   next = Math.max(minZoom, Math.min(maxZoom, next));
 
-  // zoom around center of viewport
   const rect = contentShell.getBoundingClientRect();
   const cx = rect.width / 2;
   const cy = rect.height / 2;
 
-  // adjust translation to keep center stable
   tx = cx - (cx - tx) * (next / prev);
   ty = cy - (cy - ty) * (next / prev);
 
@@ -473,14 +438,12 @@ function resetZoom(){
   applyTransform();
 }
 
-// pan interactions
 function setPan(enabled){
   panEnabled = enabled;
   const txt = enabled ? "Mão: ON" : "Mão: OFF";
   const btns = [document.getElementById("panToggleBtn"), document.getElementById("panToggleBtnM")].filter(Boolean);
   btns.forEach(b => b.textContent = txt);
 
-  // cursor feedback
   contentShell.style.cursor = enabled ? "grab" : "default";
 }
 setPan(false);
@@ -491,7 +454,6 @@ function setAnnotate(enabled){
   const btns = [document.getElementById("annotateToggleBtn"), document.getElementById("annotateToggleBtnM")].filter(Boolean);
   btns.forEach(b => b.textContent = txt);
 
-  // When annotate is on, we want clicks to place pins
   if(enabled){
     contentShell.style.cursor = "crosshair";
   }else{
@@ -501,9 +463,7 @@ function setAnnotate(enabled){
 setAnnotate(false);
 
 function onPointerDown(e){
-  // annotate mode: click to place pin (no drag)
   if(annotateEnabled) return;
-
   if(!panEnabled) return;
   isDragging = true;
   contentShell.style.cursor = "grabbing";
@@ -529,37 +489,27 @@ contentShell.addEventListener("pointerdown", onPointerDown);
 window.addEventListener("pointermove", onPointerMove);
 window.addEventListener("pointerup", onPointerUp);
 
-// double click to fit (nice)
-contentShell.addEventListener("dblclick", (e)=>{
-  e.preventDefault();
-  fitToWidth();
-});
-
-// bind zoom buttons (desktop + mobile + top)
 function bindClick(id, fn){
   const el = document.getElementById(id);
   if(el) el.addEventListener("click", fn);
 }
 bindClick("zoomInBtn", ()=>zoomBy(1.15));
 bindClick("zoomOutBtn", ()=>zoomBy(1/1.15));
-bindClick("fitBtn", fitToWidth);
 bindClick("resetBtn", resetZoom);
 bindClick("panToggleBtn", ()=>setPan(!panEnabled));
 
 bindClick("zoomInBtnM", ()=>zoomBy(1.15));
 bindClick("zoomOutBtnM", ()=>zoomBy(1/1.15));
-bindClick("fitBtnM", fitToWidth);
 bindClick("resetBtnM", resetZoom);
 bindClick("panToggleBtnM", ()=>setPan(!panEnabled));
 
 bindClick("zoomInBtnR", ()=>zoomBy(1.15));
 bindClick("zoomOutBtnR", ()=>zoomBy(1/1.15));
-bindClick("fitBtnR", fitToWidth);
 bindClick("resetBtnR", resetZoom);
 
 bindClick("zoomInTop", ()=>zoomBy(1.15));
 bindClick("zoomOutTop", ()=>zoomBy(1/1.15));
-bindClick("fitTop", fitToWidth);
+bindClick("resetTop", resetZoom);
 
 bindClick("annotateToggleBtn", ()=>setAnnotate(!annotateEnabled));
 bindClick("annotateToggleBtnM", ()=>setAnnotate(!annotateEnabled));
@@ -600,7 +550,6 @@ function renderCommentsUI(arr){
   if(count) count.textContent = String(arr.length);
   if(countM) countM.textContent = String(arr.length);
 }
-
 function addComment(bookId, page, text){
   const t = (text || "").trim();
   if(!t) return;
@@ -609,7 +558,6 @@ function addComment(bookId, page, text){
   saveComments(bookId, page, arr);
   renderCommentsUI(arr);
 }
-
 function bindCommentButtons(){
   const btn = document.getElementById("addCommentBtn");
   const txt = document.getElementById("commentText");
@@ -636,24 +584,11 @@ function loadAnnos(bookId, page){
 function saveAnnos(bookId, page, arr){
   localStorage.setItem(lsKeyAnnos(bookId, page), JSON.stringify(arr));
 }
-
-const annoLayer = document.getElementById("annoLayer");
-
-function clearAnnos(){
-  if(annoLayer) annoLayer.innerHTML = "";
-}
-
 function renderAnnos(arr){
-  clearAnnos();
-  // We place pins relative to the visible image box (contentBox)
-  // We'll create pins inside contentBox (so it transforms together)
   const img = contentBox.querySelector("img");
   if(!img) return;
 
-  // ensure contentBox is position relative
   contentBox.style.position = "relative";
-
-  // remove old pins if any
   contentBox.querySelectorAll(".pinWrap").forEach(n=>n.remove());
 
   arr.forEach((a, idx)=>{
@@ -672,7 +607,6 @@ function renderAnnos(arr){
     label.innerHTML = `<div style="font-weight:700">${escapeHtml(a.text)}</div>
       <div style="margin-top:4px;color:rgba(255,255,255,.65)">${escapeHtml(a.at)} • ${escapeHtml(a.user)}</div>
       <div style="margin-top:6px;color:rgba(255,255,255,.55)">(duplo clique para apagar)</div>`;
-
     label.style.display = "none";
 
     pin.addEventListener("click", (e)=>{
@@ -680,7 +614,6 @@ function renderAnnos(arr){
       label.style.display = (label.style.display === "none") ? "block" : "none";
     });
 
-    // remove annotation by dblclick on pin
     pin.addEventListener("dblclick", (e)=>{
       e.stopPropagation();
       const all = loadAnnos(bookId, page).filter((_, i)=>i !== idx);
@@ -693,7 +626,6 @@ function renderAnnos(arr){
     contentBox.appendChild(wrap);
   });
 }
-
 function addAnnoAt(bookId, page, xNorm, yNorm, text){
   const t = (text || "").trim();
   if(!t) return;
@@ -703,24 +635,15 @@ function addAnnoAt(bookId, page, xNorm, yNorm, text){
   saveAnnos(bookId, page, arr);
   renderAnnos(arr);
 }
-
-// Click in contentShell when annotate is ON
 contentShell.addEventListener("click", (e)=>{
   if(!annotateEnabled) return;
 
   const img = contentBox.querySelector("img");
   if(!img) return;
 
-  // get position relative to image box (contentBox)
   const boxRect = contentBox.getBoundingClientRect();
-
-  // click position in viewport
-  const cx = e.clientX;
-  const cy = e.clientY;
-
-  // normalized 0..1
-  const x = (cx - boxRect.left) / boxRect.width;
-  const y = (cy - boxRect.top) / boxRect.height;
+  const x = (e.clientX - boxRect.left) / boxRect.width;
+  const y = (e.clientY - boxRect.top) / boxRect.height;
 
   if(x < 0 || x > 1 || y < 0 || y > 1) return;
 
@@ -753,10 +676,9 @@ function renderPageImageOrError(pageImg, bookTitle){
     contentBox.innerHTML = "";
     contentBox.appendChild(img);
 
-    // after image loads, apply fit on first load
-    setTimeout(()=>fitToWidth(), 0);
+    // ✅ sempre começar em 100% em cada página
+    resetZoom();
 
-    // load annotations
     const annos = loadAnnos(bookId, page);
     renderAnnos(annos);
   };
@@ -867,13 +789,11 @@ async function loadPage(){
 
   if(totalPages > 0) maxPages = totalPages;
 
-  // headers (desktop + mobile drawer)
   renderHeader("header", bookTitle, bookType, coverUrl, totalPages, limitPage);
   renderHeader("headerMobile", bookTitle, bookType, coverUrl, totalPages, limitPage);
 
-  // blocked
   if(res.status === 403 && data.blocked){
-    const blockedHtml = `
+    contentBox.innerHTML = `
       <div class="p-10 text-center">
         <div class="text-xl font-black">Conteúdo bloqueado</div>
         <div class="text-sm mt-2" style="color: rgba(255,255,255,.62)">
@@ -881,8 +801,6 @@ async function loadPage(){
         </div>
       </div>
     `;
-    contentBox.innerHTML = blockedHtml;
-
     const blockerHtml = `
       <div class="font-bold">Para continuar:</div>
       <div class="text-sm mt-1" style="color: rgba(255,255,255,.72)">${escapeHtml(data.message || "")}</div>
@@ -908,10 +826,8 @@ async function loadPage(){
     return;
   }
 
-  // page image
   renderPageImageOrError(pageImg, bookTitle);
 
-  // comments for this page
   const comments = loadComments(bookId, page);
   renderCommentsUI(comments);
 
@@ -919,14 +835,13 @@ async function loadPage(){
 }
 
 /* =========================
-   Navigation bind (desktop + mobile)
+   Navigation (desktop + mobile)
    ========================= */
 function goPrev(){ if(page > 1){ page--; loadPage(); } }
 function goNext(){
   if(page < maxPages){ page++; loadPage(); }
   else alert("Você chegou ao final do livro.");
 }
-
 const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 if(prevBtn) prevBtn.onclick = goPrev;
@@ -958,12 +873,5 @@ bindCommentButtons();
    Start
    ========================= */
 loadPage();
-
-// refit on resize (inteligente)
-let resizeTimer = null;
-window.addEventListener("resize", ()=>{
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(()=>{ fitToWidth(); }, 120);
-});
 </script>
 {% endblock %}
