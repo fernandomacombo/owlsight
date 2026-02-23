@@ -257,7 +257,18 @@ async function loadPage(){
 
   const bookTitle = pick(data, ["title","book_title","name","book"], "Livro");
   const bookType  = pick(data, ["book_type","type","tier"], "");
-  const coverUrl  = pick(data, ["cover_url","cover","book_cover","coverImage","cover_image"], "");
+  const coverUrl = pick(data, [
+  "cover_url",
+  "cover",
+  "coverUrl",
+  "coverURL",
+  "book_cover",
+  "bookCover",
+  "coverImage",
+  "cover_image",
+  "coverKey",
+  "cover_key"
+], "");
   const pageImg   = pick(data, ["page_image","pageImage","image","image_url","img","url","page_url"], "");
 
   if(totalPages > 0) maxPages = totalPages;
