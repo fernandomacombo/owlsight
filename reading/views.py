@@ -19,28 +19,20 @@ def _cover_url(book: Book) -> str:
 @login_required
 @require_GET
 def read_page(request, book_id: int, page: int):
-    book = Book.objects.filter(id=book_id).first()
-    if not book:
-        return JsonResponse({"error": "Livro não encontrado."}, status=404)
+   from books.models import Book
+from django.http import JsonResponse
 
-    title = book.title
-    book_type = (book.book_type or "free").lower()
-    cover_url = _cover_url(book)
+# ...
 
-    # ✅ 1) total_pages: se estiver vazio, calcula a partir das páginas renderizadas no banco
-    total_pages = int(book.total_pages or 0)
-    if total_pages <= 0:
-        total_pages = BookPageImage.objects.filter(book_id=book_id).count()
-
-        # se ainda assim não tem páginas, devolve erro claro
-        if total_pages <= 0:
-            return JsonResponse({
-                "error": "Este livro não tem total_pages e não encontrei páginas (BookPageImage).",
-                "hint": "Você precisa gerar/salvar as páginas (imagens) no BookPageImage, ou preencher total_pages no Book.",
-                "book": title,
-                "book_type": book_type,
-                "cover": cover_url,
-            }, status=400)
+book = Book.objects.filter(id=book_id).first()
+if not book:
+    # ✅ dica: mostra alguns livros existentes (pra você pegar o ID certo)
+    sample = list(Book.objects.all().order_by("-id").values("id", "title")[:10])
+    return JsonResponse({
+        "error": "Livro não encontrado.",
+        "hint": "Use /api/books/list/ para ver os IDs reais nesta base.",
+        "available_sample": sample
+    }, status=404)
 
         # ✅ opcional: salva total_pages no Book para não recalcular sempre
         book.total_pages = total_pages

@@ -104,3 +104,8 @@ def books_list_api(request):
         })
 
     return JsonResponse(data, safe=False)
+
+
+def books_list(request):
+    qs = Book.objects.all().order_by("-id").values("id", "title", "book_type", "total_pages")[:50]
+    return JsonResponse(list(qs), safe=False)
